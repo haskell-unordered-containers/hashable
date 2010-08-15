@@ -7,7 +7,7 @@ Description:         This package provides a class 'Hashable', which contains
                      .
                      The instances for various integral types, 'String' and 'ByteString'
                      are provided.
-Homepage:            http://fox.auryn.cz/darcs/hashable
+Homepage:            http://fox.auryn.cz/darcs/hashable/
 License:             BSD3
 License-file:        LICENSE
 Author:              Milan Straka
