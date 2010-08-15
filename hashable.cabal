@@ -1,0 +1,27 @@
+Name:                hashable
+Version:             1.0.0
+Synopsis:            Class Hashable providing a hash method.
+Description:         This package provides a class 'Hashable', which contains
+                     one method @'hash' :: 'Hashable' a => a -> 'Int'@, which
+                     returns the hash of the given element.
+                     .
+                     The instances for various integral types, 'String' and 'ByteString'
+                     are provided.
+Homepage:            http://fox.auryn.cz/darcs/hashable
+License:             BSD3
+License-file:        LICENSE
+Author:              Milan Straka
+Maintainer:          fox@ucw.cz
+Stability:           Provisional
+Category:            Data
+Build-type:          Simple
+Cabal-version:       >=1.2
+Extra-source-files:  CHANGES
+
+
+Library
+  Exposed-modules:   Data.Hashable
+  Build-depends:     base >= 4.0 && < 5,
+                     bytestring >= 0.9
+
+  C-sources:         src/hashByteString.c

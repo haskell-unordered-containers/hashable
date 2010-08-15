@@ -1,0 +1,4 @@
+= Version 1.0.0, 2010-08-15 =
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+* Separating Hashable class to its own package
+from hashmap 1.0.0.3.
