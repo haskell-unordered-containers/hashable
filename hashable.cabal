@@ -15,14 +15,27 @@ Maintainer:          fox@ucw.cz
 Stability:           Provisional
 Category:            Data
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >=1.10
 Extra-source-files:  CHANGES
 
 
 Library
+  Default-language:  Haskell98
   Exposed-modules:   Data.Hashable
   Build-depends:     base >= 4.0 && < 5,
                      bytestring >= 0.9 && < 1.0
 
   C-sources:         cbits/hashByteString.c
+  Ghc-options:       -Wall
+
+Test-suite tests
+  Default-language:  Haskell98
+  Type:              exitcode-stdio-1.0
+  Hs-source-dirs:    tests
+  Main-is:           Properties.hs
+  Build-depends:     base >= 4.0 && < 5,
+                     hashable,
+                     QuickCheck == 1.2.*,
+                     random == 1.0.*
+
   Ghc-options:       -Wall
