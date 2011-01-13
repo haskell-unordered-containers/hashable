@@ -19,9 +19,13 @@
 -- values in an 'Int'.
 
 module Data.Hashable
-    ( Hashable(..)
+    (
+      -- * Computing hash values
+      Hashable(..)
+
       -- * Building blocks
       -- $blocks
+    , hashPtr
     , combine
     ) where
 
@@ -35,6 +39,7 @@ import qualified Data.ByteString.Unsafe as BInt
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BLInt
 import Foreign.C
+import Foreign.Ptr (Ptr, castPtr)
 
 -- | The class of types that can be converted to a hash value.
 class Hashable a where
@@ -112,7 +117,6 @@ instance Hashable a => Hashable [a] where
 hashAndCombine :: Hashable h => Int -> h -> Int
 hashAndCombine acc h = acc `combine` hash h
 
-foreign import ccall unsafe hashByteString :: CString -> CInt -> IO CInt
 instance Hashable B.ByteString where
     hash bstr = fromIntegral $ BInt.inlinePerformIO $ BInt.unsafeUseAsCStringLen bstr $
                   \(str, len) -> hashByteString str (fromIntegral len)
@@ -124,9 +128,35 @@ instance Hashable BL.ByteString where hash = BLInt.foldlChunks hashAndCombine 0
 
 -- $blocks
 --
--- These functions can be used when creating new instances of
--- Hashable.
+-- These functions can be used when defining new instances of
+-- 'Hashable'.  For example, the 'hash' method for many string-like
+-- types can be defined in terms of 'hashPtr' .  Here's how you could
+-- implement an instance for the 'B.ByteString' data type, from the
+-- @bytestring@ package:
+--
+-- > import qualified Data.ByteString as B
+-- > import qualified Data.ByteString.Internal as B
+-- > import qualified Data.ByteString.Unsafe as B
+-- > import Data.Hashable
+-- > import Foreign.Ptr (castPtr)
+-- >
+-- > instance Hashable B.ByteString where
+-- >     hash bs = B.inlinePerformIO $
+-- >         B.unsafeUseAsCStringLen bs $ \ (p, len) ->
+-- >             hashPtr (castPtr p) (fromIntegral len)
 
--- | Combines two given hash values.
+-- | Compute a hash value for a pointer to bytes.
+hashPtr :: Ptr Word8  -- ^ pointer to the data to hash
+        -> Int        -- ^ length of data, in bytes
+        -> IO Int     -- ^ hash value
+hashPtr p len =
+    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
+
+-- | Combine two given hash values.
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
+
+------------------------------------------------------------------------
+-- * Foreign imports
+
+foreign import ccall unsafe hashByteString :: CString -> CInt -> IO CInt
