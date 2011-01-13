@@ -18,9 +18,12 @@
 -- of @'hash' a == 'hash' b@ should ideally be 1 over the number of representable
 -- values in an 'Int'.
 
-module Data.Hashable ( Hashable(..)
-                     , combine
-                     ) where
+module Data.Hashable
+    ( Hashable(..)
+      -- * Building blocks
+      -- $blocks
+    , combine
+    ) where
 
 import Data.Bits
 import Data.Int
@@ -55,13 +58,6 @@ class Hashable a where
     --    may improve the performance of hashing-based data
     --    structures.
     hash :: a -> Int
-
--- | Combines two given hash values.
-combine :: Int -> Int -> Int
-combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
-
-hashAndCombine :: Hashable h => Int -> h -> Int
-hashAndCombine acc h = acc `combine` hash h
 
 instance Hashable () where hash _ = 0
 
@@ -113,9 +109,24 @@ instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hash = foldl' hashAndCombine 0
 
+hashAndCombine :: Hashable h => Int -> h -> Int
+hashAndCombine acc h = acc `combine` hash h
+
 foreign import ccall unsafe hashByteString :: CString -> CInt -> IO CInt
 instance Hashable B.ByteString where
     hash bstr = fromIntegral $ BInt.inlinePerformIO $ BInt.unsafeUseAsCStringLen bstr $
                   \(str, len) -> hashByteString str (fromIntegral len)
 
 instance Hashable BL.ByteString where hash = BLInt.foldlChunks hashAndCombine 0
+
+------------------------------------------------------------------------
+-- * Building blocks
+
+-- $blocks
+--
+-- These functions can be used when creating new instances of
+-- Hashable.
+
+-- | Combines two given hash values.
+combine :: Int -> Int -> Int
+combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
