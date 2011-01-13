@@ -26,6 +26,9 @@ module Data.Hashable
       -- * Building blocks
       -- $blocks
     , hashPtr
+#if defined(__GLASGOW_HASKELL__)
+    , hashByteArray
+#endif
     , combine
     ) where
 
@@ -40,6 +43,11 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BLInt
 import Foreign.C (CInt, CString)
 import Foreign.Ptr (Ptr, castPtr)
+
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Base (ByteArray#, Int(..), indexWord8Array#)
+import GHC.Word (Word8(..))
+#endif
 
 ------------------------------------------------------------------------
 -- * Computing hash values
@@ -161,6 +169,30 @@ hashPtr :: Ptr Word8  -- ^ pointer to the data to hash
         -> IO Int     -- ^ hash value
 hashPtr p len =
     fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
+
+#if defined(__GLASGOW_HASKELL__)
+-- | Compute a hash value for the content of the 'ByteArray#'.
+-- Availability: GHC.
+hashByteArray :: ByteArray#  -- ^ data to hash
+              -> Int         -- ^ offset, in bytes
+              -> Int         -- ^ length, in bytes
+              -> Int         -- ^ hash value
+hashByteArray ba0 off len = go ba0 off len 0
+  where
+    -- Bernstein's hash
+    go :: ByteArray# -> Int -> Int -> Int -> Int
+    go !ba !i !n !h
+        | i < n = let h' = (h * 33) `xor` (fromIntegral $ unsafeIndexWord8 ba i)
+                  in go ba (i + 1) n h'
+        | otherwise = h
+
+-- | Unchecked read of an immutable array.  May return garbage or
+-- crash on an out-of-bounds access.
+unsafeIndexWord8 :: ByteArray# -> Int -> Word8
+unsafeIndexWord8 ba (I# i#) =
+    case indexWord8Array# ba i# of r# -> (W8# r#)
+{-# INLINE unsafeIndexWord8 #-}
+#endif
 
 -- | Combine two given hash values.
 combine :: Int -> Int -> Int
