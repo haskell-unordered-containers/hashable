@@ -29,16 +29,16 @@ module Data.Hashable
     , combine
     ) where
 
-import Data.Bits
-import Data.Int
-import Data.Word
+import Data.Bits (shiftL, xor)
+import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as BInt
 import qualified Data.ByteString.Unsafe as BInt
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BLInt
-import Foreign.C
+import Foreign.C (CInt, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
 -- | The class of types that can be converted to a hash value.
