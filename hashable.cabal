@@ -25,3 +25,4 @@ Library
                      bytestring >= 0.9 && < 1.0
 
   C-sources:         cbits/hashByteString.c
+  Ghc-options:       -Wall
