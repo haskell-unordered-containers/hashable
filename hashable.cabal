@@ -7,11 +7,12 @@ Description:         This package provides a class 'Hashable', which contains
                      .
                      The instances for various integral types,
                      'String' and 'ByteString' are provided.
-Homepage:            http://fox.auryn.cz/darcs/hashable/
+Homepage:            http://github.com/tibbe/hashable
 License:             BSD3
 License-file:        LICENSE
 Author:              Milan Straka
-Maintainer:          fox@ucw.cz
+Maintainer:          Milan Straka <fox@ucw.cz>
+                     Johan Tibell <johan.tibell@gmail.com>
 Stability:           Provisional
 Category:            Data
 Build-type:          Simple
@@ -39,3 +40,7 @@ Test-suite tests
                      random == 1.0.*
 
   Ghc-options:       -Wall
+
+source-repository head
+  type:     git
+  location: http://github.com/tibbe/hashable.git
