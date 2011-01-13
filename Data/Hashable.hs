@@ -1,9 +1,10 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash #-}
 
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Hash
 -- Copyright   :  (c) Milan Straka 2010
+--                (c) Johan Tibell 2010
 -- License     :  BSD-style
 -- Maintainer  :  fox@ucw.cz
 -- Stability   :  provisional
