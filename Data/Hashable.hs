@@ -15,9 +15,9 @@
 -- hashing-based data structures.  The module provides instances for
 -- basic types and a way to combine hash values.
 --
--- The 'hash' function should be as collision-free as possible, the probability
--- of @'hash' a == 'hash' b@ should ideally be 1 over the number of representable
--- values in an 'Int'.
+-- The 'hash' function should be as collision-free as possible, the
+-- probability of @'hash' a == 'hash' b@ should ideally be 1 over the
+-- number of representable values in an 'Int'.
 
 module Data.Hashable
     (
