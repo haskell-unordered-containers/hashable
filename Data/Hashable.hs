@@ -9,21 +9,14 @@
 -- Stability   :  provisional
 -- Portability :  portable
 --
--- 'Hashable' class for hashable types, with instances for basic types. The only
--- function of this class is
---
--- @
---   'hash' :: Hashable h => h -> Int
--- @
+-- This module defines a class, 'Hashable', for types that can be
+-- converted to a hash value.  This class exists for the benefit of
+-- hashing-based data structures.  The module provides instances for
+-- basic types and a way to combine hash values.
 --
 -- The 'hash' function should be as collision-free as possible, the probability
 -- of @'hash' a == 'hash' b@ should ideally be 1 over the number of representable
 -- values in an 'Int'.
---
--- Returning an 'Int' is a result of the 'Data.IntMap.IntMap' using 'Int' as
--- a key, as inserting the hash values to the 'Data.IntMap.IntMap' was the
--- purpose of creating this class.
------------------------------------------------------------------------------
 
 module Data.Hashable ( Hashable(..)
                      , combine
@@ -40,12 +33,27 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BLInt
 import Foreign.C
 
--- | The class containing a function 'hash' which computes the hash values of
--- given value.
+-- | The class of types that can be converted to a hash value.
 class Hashable a where
-    -- | The computed 'hash' value should be as collision-free as possible, the
-    -- probability of @'hash' a == 'hash' b@ should ideally be 1 over the
-    -- number of representable values in an 'Int'.
+    -- | Return a hash value for the argument.
+    --
+    -- The general contract of 'hash' is:
+    --
+    --  * This integer need not remain consistent from one execution
+    --    of an application to another execution of the same
+    --    application.
+    --
+    --  * If two values are equal according to the '==' method, then
+    --    applying the 'hash' method on each of the two values must
+    --    produce the same integer result.
+    --
+    --  * It is /not/ required that if two values are unequal
+    --    according to the '==' method, then applying the 'hash'
+    --    method on each of the two values must produce distinct
+    --    integer results.  However, the programmer should be aware
+    --    that producing distinct integer results for unequal values
+    --    may improve the performance of hashing-based data
+    --    structures.
     hash :: a -> Int
 
 -- | Combines two given hash values.
