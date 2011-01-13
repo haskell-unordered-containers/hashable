@@ -24,4 +24,4 @@ Library
   Build-depends:     base >= 4.0 && < 5,
                      bytestring >= 0.9
 
-  C-sources:         src/hashByteString.c
+  C-sources:         cbits/hashByteString.c
