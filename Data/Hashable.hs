@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash #-}
 
------------------------------------------------------------------------------
+------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Hash
 -- Copyright   :  (c) Milan Straka 2010
@@ -38,10 +38,10 @@ import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Internal as BInt
-import qualified Data.ByteString.Unsafe as BInt
+import qualified Data.ByteString.Internal as B
+import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Internal as BLInt
+import qualified Data.ByteString.Lazy.Internal as BL
 import Foreign.C (CInt, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
@@ -136,11 +136,11 @@ hashAndCombine :: Hashable h => Int -> h -> Int
 hashAndCombine acc h = acc `combine` hash h
 
 instance Hashable B.ByteString where
-    hash bstr = fromIntegral $ BInt.inlinePerformIO $
-                BInt.unsafeUseAsCStringLen bstr $ \(str, len) ->
+    hash bstr = fromIntegral $ B.inlinePerformIO $
+                B.unsafeUseAsCStringLen bstr $ \(str, len) ->
                 hashByteString str (fromIntegral len)
 
-instance Hashable BL.ByteString where hash = BLInt.foldlChunks hashAndCombine 0
+instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 
 ------------------------------------------------------------------------
 -- * Building blocks
