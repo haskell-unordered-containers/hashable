@@ -209,6 +209,18 @@ unsafeIndexWord8 ba (I# i#) =
 #endif
 
 -- | Combine two given hash values.
+--
+-- You can use this function to implement 'Hashable' instances for
+-- your own types, using this recipe:
+--
+-- > hash (Foo a b) = 17 `combine` hash a `combine` hash b
+--
+-- A nonzero seed is used so the hash value will be affected by
+-- initial fields whose hash value is zero.  If no seed was provided,
+-- the overall hash value would be unaffected by any such initial
+-- fields, which could increase collisions.  The value 17 is
+-- arbitrary.
+
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 
