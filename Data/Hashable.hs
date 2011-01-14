@@ -96,7 +96,11 @@ instance Hashable Char where hash = fromEnum
 
 instance Hashable a => Hashable (Maybe a) where
     hash Nothing = 0
-    hash (Just a) = 42 `combine` hash a
+    hash (Just a) = 1 `combine` hash a
+
+instance (Hashable a, Hashable b) => Hashable (Either a b) where
+    hash (Left a)  = 0 `combine` hash a
+    hash (Right b) = 1 `combine` hash b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `combine` hash a2
