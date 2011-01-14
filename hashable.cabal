@@ -1,12 +1,11 @@
 Name:                hashable
 Version:             1.0.0
-Synopsis:            Class Hashable providing a hash method.
-Description:         This package provides a class 'Hashable', which contains
-                     one method @'hash' :: 'Hashable' a => a -> 'Int'@, which
-                     returns the hash of the given element.
-                     .
-                     The instances for various integral types,
-                     'String' and 'ByteString' are provided.
+Synopsis:            A class for types that can be converted to a hash value
+Description:         This package defines a class, 'Hashable', for types that
+                     can be converted to a hash value.  This class
+                     exists for the benefit of hashing-based data
+                     structures.  The package provides instances for
+                     basic types and a way to combine hash values.
 Homepage:            http://github.com/tibbe/hashable
 License:             BSD3
 License-file:        LICENSE
