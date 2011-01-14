@@ -213,7 +213,8 @@ unsafeIndexWord8 ba (I# i#) =
 -- You can use this function to implement 'Hashable' instances for
 -- your own types, using this recipe:
 --
--- > hash (Foo a b) = 17 `combine` hash a `combine` hash b
+-- > instance (Hashable a, Hashable b) => Hashable (Foo a b) where
+-- >     hash (Foo a b) = 17 `combine` hash a `combine` hash b
 --
 -- A nonzero seed is used so the hash value will be affected by
 -- initial fields whose hash value is zero.  If no seed was provided,
