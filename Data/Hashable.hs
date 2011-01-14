@@ -24,7 +24,7 @@ module Data.Hashable
       -- * Computing hash values
       Hashable(..)
 
-      -- * Building blocks
+      -- * Creating new instances
       -- $blocks
     , hashPtr
 #if defined(__GLASGOW_HASKELL__)
@@ -143,11 +143,11 @@ instance Hashable B.ByteString where
 instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 
 ------------------------------------------------------------------------
--- * Building blocks
+-- * Creating new instances
 
 -- $blocks
 --
--- These functions can be used when defining new instances of
+-- These functions can be used when creating new instances of
 -- 'Hashable'.  For example, the 'hash' method for many string-like
 -- types can be defined in terms of either 'hashPtr' or
 -- 'hashByteArray'.  Here's how you could implement an instance for
