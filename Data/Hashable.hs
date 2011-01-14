@@ -183,7 +183,8 @@ hashByteArray ba0 off len = go ba0 off len 0
     -- Bernstein's hash
     go :: ByteArray# -> Int -> Int -> Int -> Int
     go !ba !i !n !h
-        | i < n = let h' = (h * 33) `xor` (fromIntegral $ unsafeIndexWord8 ba i)
+        | i < n = let h' = (h + h `shiftL` 5) `xor`
+                           (fromIntegral $ unsafeIndexWord8 ba i)
                   in go ba (i + 1) n h'
         | otherwise = h
 
