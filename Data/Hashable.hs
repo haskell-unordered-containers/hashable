@@ -158,7 +158,7 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 
 -- $blocks
 --
--- These functions can be used when creating new instances of
+-- The functions below can be used when creating new instances of
 -- 'Hashable'.  For example, the 'hash' method for many string-like
 -- types can be defined in terms of either 'hashPtr' or
 -- 'hashByteArray'.  Here's how you could implement an instance for
@@ -174,6 +174,19 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 -- >     hash bs = B.inlinePerformIO $
 -- >               B.unsafeUseAsCStringLen bs $ \ (p, len) ->
 -- >               hashPtr p (fromIntegral len)
+--
+-- The 'combine' function can be used to implement 'Hashable'
+-- instances for data types with more than one field, using this
+-- recipe:
+--
+-- > instance (Hashable a, Hashable b) => Hashable (Foo a b) where
+-- >     hash (Foo a b) = 17 `combine` hash a `combine` hash b
+--
+-- A nonzero seed is used so the hash value will be affected by
+-- initial fields whose hash value is zero.  If no seed was provided,
+-- the overall hash value would be unaffected by any such initial
+-- fields, which could increase collisions.  The value 17 is
+-- arbitrary.
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
@@ -208,20 +221,8 @@ unsafeIndexWord8 ba (I# i#) =
 {-# INLINE unsafeIndexWord8 #-}
 #endif
 
--- | Combine two given hash values.
---
--- You can use this function to implement 'Hashable' instances for
--- your own types, using this recipe:
---
--- > instance (Hashable a, Hashable b) => Hashable (Foo a b) where
--- >     hash (Foo a b) = 17 `combine` hash a `combine` hash b
---
--- A nonzero seed is used so the hash value will be affected by
--- initial fields whose hash value is zero.  If no seed was provided,
--- the overall hash value would be unaffected by any such initial
--- fields, which could increase collisions.  The value 17 is
--- arbitrary.
-
+-- | Combine two given hash values.  'combine' has zero as a left
+-- identity.
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 
