@@ -4,7 +4,7 @@
 -- |
 -- Module      :  Data.Hash
 -- Copyright   :  (c) Milan Straka 2010
---                (c) Johan Tibell 2010
+--                (c) Johan Tibell 2011
 -- License     :  BSD-style
 -- Maintainer  :  fox@ucw.cz
 -- Stability   :  provisional
