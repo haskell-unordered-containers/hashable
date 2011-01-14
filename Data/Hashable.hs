@@ -136,9 +136,9 @@ hashAndCombine :: Hashable h => Int -> h -> Int
 hashAndCombine acc h = acc `combine` hash h
 
 instance Hashable B.ByteString where
-    hash bstr = fromIntegral $ B.inlinePerformIO $
-                B.unsafeUseAsCStringLen bstr $ \(str, len) ->
-                hashByteString str (fromIntegral len)
+    hash bs = B.inlinePerformIO $
+              B.unsafeUseAsCStringLen bs $ \(p, len) ->
+              hashPtr p (fromIntegral len)
 
 instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 
@@ -149,9 +149,9 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 --
 -- These functions can be used when defining new instances of
 -- 'Hashable'.  For example, the 'hash' method for many string-like
--- types can be defined in terms of 'hashPtr' .  Here's how you could
--- implement an instance for the 'B.ByteString' data type, from the
--- @bytestring@ package:
+-- types can be defined in terms of either 'hashPtr' or
+-- 'hashByteArray'.  Here's how you could implement an instance for
+-- the 'B.ByteString' data type, from the @bytestring@ package:
 --
 -- > import qualified Data.ByteString as B
 -- > import qualified Data.ByteString.Internal as B
@@ -161,8 +161,8 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 -- >
 -- > instance Hashable B.ByteString where
 -- >     hash bs = B.inlinePerformIO $
--- >         B.unsafeUseAsCStringLen bs $ \ (p, len) ->
--- >             hashPtr (castPtr p) (fromIntegral len)
+-- >               B.unsafeUseAsCStringLen bs $ \ (p, len) ->
+-- >               hashPtr p (fromIntegral len)
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
