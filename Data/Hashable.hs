@@ -166,13 +166,14 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
-        -> Int        -- ^ length of data, in bytes
+        -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
 hashPtr p len =
     fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
 
 #if defined(__GLASGOW_HASKELL__)
--- | Compute a hash value for the content of this 'ByteArray#'.
+-- | Compute a hash value for the content of this 'ByteArray#',
+-- beginning at the specified offset, using specified number of bytes.
 -- Availability: GHC.
 hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
