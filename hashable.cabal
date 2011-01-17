@@ -42,4 +42,4 @@ Test-suite tests
 
 source-repository head
   type:     git
-  location: http://github.com/tibbe/hashable.git
+  location: https://github.com/tibbe/hashable.git
