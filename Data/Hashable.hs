@@ -151,14 +151,20 @@ instance Hashable B.ByteString where
               B.unsafeUseAsCStringLen bs $ \(p, len) ->
               hashPtr p (fromIntegral len)
 
-hashBsChunk :: Int          -- ^ hash so far
-            -> B.ByteString -- ^ input chunk
-            -> Int          -- ^ result
-hashBsChunk h bs = B.inlinePerformIO $
-                   B.unsafeUseAsCStringLen bs $ \(p, len) ->
-                   hashPtrWithSalt p (fromIntegral len) h
+-- The arguments to this function are flipped to make the function
+-- easier to use with a left fold.
 
-instance Hashable BL.ByteString where hash = BL.foldlChunks hashBsChunk 0
+-- | Compute a hash value for this 'B.ByteString', using an initial
+-- salt.
+hashByteStringWithSalt :: Int           -- ^ salt
+                       -> B.ByteString  -- ^ data to hash
+                       -> Int           -- ^ hash value
+hashByteStringWithSalt salt bs =
+    B.inlinePerformIO $ B.unsafeUseAsCStringLen bs $ \(p, len) ->
+    hashPtrWithSalt p (fromIntegral len) salt
+
+instance Hashable BL.ByteString where
+    hash = BL.foldlChunks hashByteStringWithSalt 0
 
 ------------------------------------------------------------------------
 -- * Creating new instances
@@ -212,7 +218,7 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ salt
                 -> IO Int  -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
+    fromIntegral `fmap` hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
 
@@ -250,5 +256,5 @@ combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 ------------------------------------------------------------------------
 -- * Foreign imports
 
--- bytes, length of bytes, running hash so far
-foreign import ccall unsafe hashByteString :: CString -> CInt -> CInt -> IO CInt
+foreign import ccall unsafe "djb_hash" hashCString
+    :: CString -> CInt -> CInt -> IO CInt
