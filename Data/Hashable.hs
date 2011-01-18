@@ -156,7 +156,7 @@ hashBsChunk :: Int          -- ^ hash so far
             -> Int          -- ^ result
 hashBsChunk h bs = B.inlinePerformIO $
                    B.unsafeUseAsCStringLen bs $ \(p, len) ->
-                   hashPtrChunk p (fromIntegral len) h
+                   hashPtrWithSalt p (fromIntegral len) h
 
 instance Hashable BL.ByteString where hash = BL.foldlChunks hashBsChunk 0
 
@@ -199,18 +199,21 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashBsChunk 0
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
-hashPtr p len = hashPtrChunk p len 0
+hashPtr p len = hashPtrWithSalt p len 0
 
--- | Compute a running hash for the contents of this pointer.
--- Takes in a parameter for the hash 'so far' for doing chunk-wise
--- hashes. This version of 'hashPtr' is only needed for cases
--- where the hash should be invariant to the chunk-boundary.
-hashPtrChunk :: Ptr a      -- ^ pointer to the data to hash
-        -> Int        -- ^ length, in bytes
-        -> Int        -- ^ hash value so far
-        -> IO Int     -- ^ hash value
-hashPtrChunk p len h =
-    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len) (fromIntegral h)
+-- | Compute a hash value for the content of this pointer, using an
+-- initial salt.
+--
+-- This function can for example be used to hash non-contiguous
+-- segments of memory as if they were one contiguous segment, by using
+-- the output of one hash as the salt for the next.
+hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
+                -> Int     -- ^ length, in bytes
+                -> Int     -- ^ salt
+                -> IO Int  -- ^ hash value
+hashPtrWithSalt p len salt =
+    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
+    (fromIntegral salt)
 
 
 #if defined(__GLASGOW_HASKELL__)
