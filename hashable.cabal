@@ -27,6 +27,8 @@ Library
 
   C-sources:         cbits/hashByteString.c
   Ghc-options:       -Wall
+  if impl(ghc >= 6.8)
+    Ghc-options: -fwarn-tabs
 
 Test-suite tests
   Default-language:  Haskell98
