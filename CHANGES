@@ -1,4 +1,15 @@
-= Version 1.0.0, 2010-08-15 =
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-* Separating Hashable class to its own package
-from hashmap 1.0.0.3.
+Version 1.0.1.1
+
+* Fixed bug in Hashable instance for lazy ByteStrings where
+  differences in the internal structure of the ByteString could cause
+  different hash values for ByteStrings that are equal according to
+  ==.
+
+Version 1.0.1.0
+
+* Added two helpers for creating Hashable instances: hashPtr and
+  hashByteArray.
+
+Version 1.0.0
+
+* Separated Hashable class to its own package from hashmap 1.0.0.3.
