@@ -151,7 +151,14 @@ instance Hashable B.ByteString where
               B.unsafeUseAsCStringLen bs $ \(p, len) ->
               hashPtr p (fromIntegral len)
 
-instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
+hashBsChunk :: Int          -- ^ hash so far
+            -> B.ByteString -- ^ input chunk
+            -> Int          -- ^ result
+hashBsChunk h bs = B.inlinePerformIO $
+                   B.unsafeUseAsCStringLen bs $ \(p, len) ->
+                   hashPtrChunk p (fromIntegral len) h
+
+instance Hashable BL.ByteString where hash = BL.foldlChunks hashBsChunk 0
 
 ------------------------------------------------------------------------
 -- * Creating new instances
@@ -192,8 +199,19 @@ instance Hashable BL.ByteString where hash = BL.foldlChunks hashAndCombine 0
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
-hashPtr p len =
-    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len)
+hashPtr p len = hashPtrChunk p len 0
+
+-- | Compute a running hash for the contents of this pointer.
+-- Takes in a parameter for the hash 'so far' for doing chunk-wise
+-- hashes. This version of 'hashPtr' is only needed for cases
+-- where the hash should be invariant to the chunk-boundary.
+hashPtrChunk :: Ptr a      -- ^ pointer to the data to hash
+        -> Int        -- ^ length, in bytes
+        -> Int        -- ^ hash value so far
+        -> IO Int     -- ^ hash value
+hashPtrChunk p len h =
+    fromIntegral `fmap` hashByteString (castPtr p) (fromIntegral len) (fromIntegral h)
+
 
 #if defined(__GLASGOW_HASKELL__)
 -- | Compute a hash value for the content of this 'ByteArray#',
@@ -229,4 +247,5 @@ combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 ------------------------------------------------------------------------
 -- * Foreign imports
 
-foreign import ccall unsafe hashByteString :: CString -> CInt -> IO CInt
+-- bytes, length of bytes, running hash so far
+foreign import ccall unsafe hashByteString :: CString -> CInt -> CInt -> IO CInt
