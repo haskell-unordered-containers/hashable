@@ -27,8 +27,10 @@ module Data.Hashable
       -- * Creating new instances
       -- $blocks
     , hashPtr
+    , hashPtrWithSalt
 #if defined(__GLASGOW_HASKELL__)
     , hashByteArray
+    , hashByteArrayWithSalt
 #endif
     , combine
     ) where
@@ -230,7 +232,23 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
               -> Int         -- ^ hash value
-hashByteArray ba0 off len = go ba0 off len 0
+hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len 0
+
+-- | Compute a hash value for the content of this 'ByteArray#', using
+-- an initial salt.
+--
+-- This function can for example be used to hash non-contiguous
+-- segments of memory as if they were one contiguous segment, by using
+-- the output of one hash as the salt for the next.
+--
+-- Availability: GHC.
+hashByteArrayWithSalt
+    :: ByteArray#  -- ^ data to hash
+    -> Int         -- ^ offset, in bytes
+    -> Int         -- ^ length, in bytes
+    -> Int         -- ^ salt
+    -> Int         -- ^ hash value
+hashByteArrayWithSalt ba0 off len h = go ba0 off len h
   where
     -- Bernstein's hash
     go :: ByteArray# -> Int -> Int -> Int -> Int
