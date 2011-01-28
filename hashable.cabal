@@ -15,7 +15,7 @@ Maintainer:          Milan Straka <fox@ucw.cz>
 Stability:           Provisional
 Category:            Data
 Build-type:          Simple
-Cabal-version:       >=1.10
+Cabal-version:       >=1.8
 -- tests/Properties.hs shouldn't have to go here, but the source files
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
 Extra-source-files:
