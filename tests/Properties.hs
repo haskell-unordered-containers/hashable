@@ -1,11 +1,14 @@
-{-# LANGUAGE BangPatterns, MagicHash, Rank2Types, UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, GeneralizedNewtypeDeriving, MagicHash, Rank2Types,
+    UnboxedTuples #-}
 
 -- | Tests for the 'Data.Hashable' module.  We test functions by
 -- comparing the C and Haskell implementations.
 
 module Main (main) where
 
-import Data.Hashable (hashByteArray, hashPtr)
+import Data.Hashable (hash, hashByteArray, hashPtr)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
 import Foreign (unsafePerformIO)
 import Foreign.Marshal.Array (withArray)
 import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
@@ -13,8 +16,10 @@ import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
 import GHC.ST (ST(..), runST)
 import GHC.Word (Word8(..))
 import System.Random
+import Foreign.Storable
 import Test.QuickCheck
-import Test.QuickCheck.Batch
+import Test.Framework (defaultMain, testGroup)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 ------------------------------------------------------------------------
 -- * Properties
@@ -24,13 +29,11 @@ integralRandomR  (a,b) g = case randomR (fromIntegral a :: Integer,
                                          fromIntegral b :: Integer) g of
                             (x,g') -> (fromIntegral x, g')
 
-instance Random Word8 where
-    randomR = integralRandomR
-    random = randomR (minBound,maxBound)
+instance Arbitrary T.Text where
+    arbitrary = T.pack `fmap` arbitrary
 
-instance Arbitrary Word8 where
-    arbitrary = choose (97, 105)
-    coarbitrary c = variant (fromIntegral ((fromIntegral c) `rem` 4))
+instance Arbitrary L.Text where
+    arbitrary = L.pack `fmap` arbitrary
 
 -- | Validate the implementation by comparing the C and Haskell
 -- versions.
@@ -39,10 +42,26 @@ pHash xs = unsafePerformIO $ withArray xs $ \ p ->
     (hashByteArray (fromList xs) 0 len ==) `fmap` hashPtr p len
   where len = length xs
 
-tests :: [TestOptions -> IO TestResult]
-tests =
-    [ run pHash
-    ]
+-- | Content equality implies hash equality.
+pText :: T.Text -> T.Text -> Bool
+pText a b = (a == b) == (hash a == hash b)
+
+-- | Content equality implies hash equality.
+pTextLazy :: L.Text -> L.Text -> Bool
+pTextLazy a b = (a == b) == (hash a == hash b)
+
+-- | Content equality implies hash equality.
+pLazyRechunked :: T.Text -> [Int] -> Bool
+pLazyRechunked t cs = hash (L.fromStrict t) == hash (rechunk t cs)
+
+rechunk :: T.Text -> [Int] -> L.Text
+rechunk t cs = L.fromChunks (go cs t)
+  where
+    go [] t = [t]
+    go (c:cs) t | T.null t  = []
+                | otherwise = let (a,b) = T.splitAt (c `mod` maxChunk) t
+                              in a : go cs b
+    maxChunk = 16
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -63,12 +82,14 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
 ------------------------------------------------------------------------
 -- Test harness
 
-options :: TestOptions
-options = TestOptions
-    { no_of_tests     = 1000
-    , length_of_tests = 1
-    , debug_tests     = False
-    }
-
 main :: IO ()
-main = runTests "Bernstein's hash" options tests
+main = defaultMain tests
+
+tests = [
+    testProperty "bernstein" pHash
+  , testGroup "text" [
+      testProperty "text/strict" pText
+    , testProperty "text/lazy" pTextLazy
+    , testProperty "text/rechunked" pLazyRechunked
+  ]
+  ]
