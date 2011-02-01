@@ -269,14 +269,13 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
-hashByteArrayWithSalt ba0 off len h0 = go ba0 off len h0
+hashByteArrayWithSalt ba off len h0 = go 0 h0
   where
     -- Bernstein's hash
-    go :: ByteArray# -> Int -> Int -> Int -> Int
-    go !ba !i !n !h
-        | i < n = let h' = (h + h `shiftL` 5) `xor`
-                           (fromIntegral $ unsafeIndexWord8 ba i)
-                  in go ba (i + 1) n h'
+    go !i !h
+        | i < len = let h' = (h + h `shiftL` 5) `xor`
+                             (fromIntegral $ unsafeIndexWord8 ba (off+i))
+                    in go (i + 1) h'
         | otherwise = h
 
 -- | Unchecked read of an immutable array.  May return garbage or
