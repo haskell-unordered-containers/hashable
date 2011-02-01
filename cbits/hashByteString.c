@@ -1,5 +1,5 @@
 /* Bernstein's hash */
-int djb_hash(const unsigned char* str, int len, int hash) {
+long djb_hash(const unsigned char* str, long len, long hash) {
 
   while (len--) {
     hash = (hash * 33) ^ *str++;

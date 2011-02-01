@@ -48,7 +48,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
-import Foreign.C (CInt, CString)
+import Foreign.C (CLong, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
 #if defined(__GLASGOW_HASKELL__)
@@ -297,4 +297,4 @@ combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 -- * Foreign imports
 
 foreign import ccall unsafe "djb_hash" hashCString
-    :: CString -> CInt -> CInt -> IO CInt
+    :: CString -> CLong -> CLong -> IO CLong
