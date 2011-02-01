@@ -173,7 +173,8 @@ instance Hashable BL.ByteString where
     hash = BL.foldlChunks hashByteStringWithSalt 0
 
 instance Hashable T.Text where
-    hash (T.Text arr off len) = hashByteArray (TA.aBA arr) (off * 2) (len * 2)
+    hash (T.Text arr off len) = hashByteArray (TA.aBA arr)
+                                (off `shiftL` 1) (len `shiftL` 1)
 
 -- The arguments to this function are flipped to make the function
 -- easier to use with a left fold.
@@ -184,7 +185,7 @@ hashTextWithSalt :: Int     -- ^ salt
                  -> T.Text  -- ^ data to hash
                  -> Int     -- ^ hash value
 hashTextWithSalt salt (T.Text arr off len) =
-    hashByteArrayWithSalt (TA.aBA arr) (off * 2) (len * 2) salt
+    hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) salt
 
 instance Hashable LT.Text where
     hash = LT.foldlChunks hashTextWithSalt 0
@@ -254,6 +255,7 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ length, in bytes
               -> Int         -- ^ hash value
 hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len 0
+{-# INLINE hashByteArray #-}
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
 -- an initial salt.
@@ -269,7 +271,7 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
-hashByteArrayWithSalt ba off len h0 = go 0 h0
+hashByteArrayWithSalt ba !off !len !h0 = go 0 h0
   where
     -- Bernstein's hash
     go !i !h
