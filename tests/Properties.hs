@@ -50,18 +50,31 @@ pText a b = (a == b) == (hash a == hash b)
 pTextLazy :: L.Text -> L.Text -> Bool
 pTextLazy a b = (a == b) == (hash a == hash b)
 
+-- | A small positive integer.
+newtype ChunkSize = ChunkSize { unCS :: Int }
+    deriving (Eq, Ord, Num, Integral, Real, Enum, Show)
+
+instance Arbitrary ChunkSize where
+    arbitrary = (ChunkSize . (`mod` maxChunkSize)) `fmap`
+                (arbitrary `suchThat` ((/=0) . (`mod` maxChunkSize)))
+        where maxChunkSize = 16
+
+-- | Ensure that the rechunk function causes a rechunked string to
+-- still match its original form.
+pRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
+pRechunk t cs = L.fromStrict t == rechunk t cs
+
 -- | Content equality implies hash equality.
-pLazyRechunked :: T.Text -> [Int] -> Bool
+pLazyRechunked :: T.Text -> NonEmptyList ChunkSize -> Bool
 pLazyRechunked t cs = hash (L.fromStrict t) == hash (rechunk t cs)
 
-rechunk :: T.Text -> [Int] -> L.Text
-rechunk t cs = L.fromChunks (go cs t)
+-- | Break up a string into chunks of different sizes.
+rechunk :: T.Text -> NonEmptyList ChunkSize -> L.Text
+rechunk t0 (NonEmpty cs) = L.fromChunks . go t0 . cycle $ cs
   where
-    go [] t = [t]
-    go (c:cs) t | T.null t  = []
-                | otherwise = let (a,b) = T.splitAt (c `mod` maxChunk) t
-                              in a : go cs b
-    maxChunk = 16
+    go t _ | T.null t = []
+    go t (c:cs)       = a : go b cs
+      where (a,b)     = T.splitAt (unCS c) t
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -90,6 +103,7 @@ tests = [
   , testGroup "text" [
       testProperty "text/strict" pText
     , testProperty "text/lazy" pTextLazy
+    , testProperty "rechunk" pRechunk
     , testProperty "text/rechunked" pLazyRechunked
   ]
   ]
