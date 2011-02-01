@@ -44,6 +44,10 @@ import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BL
+import qualified Data.Text as T
+import qualified Data.Text.Array as TA
+import qualified Data.Text.Internal as T
+import qualified Data.Text.Lazy as LT
 import Foreign.C (CInt, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
@@ -168,6 +172,23 @@ hashByteStringWithSalt salt bs =
 instance Hashable BL.ByteString where
     hash = BL.foldlChunks hashByteStringWithSalt 0
 
+instance Hashable T.Text where
+    hash (T.Text arr off len) = hashByteArray (TA.aBA arr) (off * 2) (len * 2)
+
+-- The arguments to this function are flipped to make the function
+-- easier to use with a left fold.
+
+-- | Compute a hash value for this 'B.Text', using an initial
+-- salt.
+hashTextWithSalt :: Int     -- ^ salt
+                 -> T.Text  -- ^ data to hash
+                 -> Int     -- ^ hash value
+hashTextWithSalt salt (T.Text arr off len) =
+    hashByteArrayWithSalt (TA.aBA arr) (off * 2) (len * 2) salt
+
+instance Hashable LT.Text where
+    hash = LT.foldlChunks hashTextWithSalt 0
+
 ------------------------------------------------------------------------
 -- * Creating new instances
 
@@ -248,7 +269,7 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
-hashByteArrayWithSalt ba0 off len h = go ba0 off len h
+hashByteArrayWithSalt ba0 off len h0 = go ba0 off len h0
   where
     -- Bernstein's hash
     go :: ByteArray# -> Int -> Int -> Int -> Int
