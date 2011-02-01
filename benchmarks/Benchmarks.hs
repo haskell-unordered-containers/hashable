@@ -53,7 +53,7 @@ main = do
 data ByteArray = BA { unBA :: !ByteArray# }
 
 new :: Int -> ByteArray#
-new (I# n#) = unBA $ runST $ ST $ \s1 ->
+new (I# n#) = unBA (runST $ ST $ \s1 ->
     case newByteArray# n# s1 of
         (# s2, ary #) -> case unsafeFreezeByteArray# ary s2 of
-            (# s3, ba #) -> (# s3, BA ba #)
+            (# s3, ba #) -> (# s3, BA ba #))
