@@ -49,10 +49,10 @@ data ByteArray = BA { unBA :: ByteArray# }
 
 -- | Create a 'ByteArray#' from a list of 'Word8' values.
 fromList :: [Word8] -> ByteArray#
-fromList xs0 = unBA $ runST $ ST $ \ s1# ->
+fromList xs0 = unBA (runST $ ST $ \ s1# ->
     case newByteArray# len# s1# of
         (# s2#, marr# #) -> case go s2# 0 marr# xs0 of
-            s3# -> (# s3#, BA (unsafeCoerce# marr#) #)
+            s3# -> (# s3#, BA (unsafeCoerce# marr#) #))
   where
     !(I# len#) = length xs0
     go s# _         _     []           = s#
