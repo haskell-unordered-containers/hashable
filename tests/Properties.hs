@@ -24,11 +24,6 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 ------------------------------------------------------------------------
 -- * Properties
 
-integralRandomR :: (Integral a, RandomGen g) => (a,a) -> g -> (a,g)
-integralRandomR  (a,b) g = case randomR (fromIntegral a :: Integer,
-                                         fromIntegral b :: Integer) g of
-                            (x,g') -> (fromIntegral x, g')
-
 instance Arbitrary T.Text where
     arbitrary = T.pack `fmap` arbitrary
 
