@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash #-}
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash, UnliftedFFITypes #-}
 
 ------------------------------------------------------------------------
 -- |
@@ -271,21 +271,9 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h0 = go 0 h0
-  where
-    -- Bernstein's hash
-    go !i !h
-        | i < len = let h' = (h + h `shiftL` 5) `xor`
-                             (fromIntegral $ unsafeIndexWord8 ba (off+i))
-                    in go (i + 1) h'
-        | otherwise = h
-
--- | Unchecked read of an immutable array.  May return garbage or
--- crash on an out-of-bounds access.
-unsafeIndexWord8 :: ByteArray# -> Int -> Word8
-unsafeIndexWord8 ba (I# i#) =
-    case indexWord8Array# ba i# of r# -> (W8# r#)
-{-# INLINE unsafeIndexWord8 #-}
+hashByteArrayWithSalt ba !off !len !h0 =
+    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
+    (fromIntegral h0)
 #endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
@@ -298,3 +286,6 @@ combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
 
 foreign import ccall unsafe "djb_hash" hashCString
     :: CString -> CLong -> CLong -> IO CLong
+
+foreign import ccall unsafe "djb_hash_offset" c_hashByteArray
+    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
