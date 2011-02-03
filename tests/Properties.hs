@@ -15,10 +15,8 @@ import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
                  writeWord8Array#)
 import GHC.ST (ST(..), runST)
 import GHC.Word (Word8(..))
-import System.Random
-import Foreign.Storable
 import Test.QuickCheck
-import Test.Framework (defaultMain, testGroup)
+import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 ------------------------------------------------------------------------
@@ -65,7 +63,7 @@ pLazyRechunked t cs = hash (L.fromStrict t) == hash (rechunk t cs)
 
 -- | Break up a string into chunks of different sizes.
 rechunk :: T.Text -> NonEmptyList ChunkSize -> L.Text
-rechunk t0 (NonEmpty cs) = L.fromChunks . go t0 . cycle $ cs
+rechunk t0 (NonEmpty cs0) = L.fromChunks . go t0 . cycle $ cs0
   where
     go t _ | T.null t = []
     go t (c:cs)       = a : go b cs
@@ -93,12 +91,13 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
 main :: IO ()
 main = defaultMain tests
 
-tests = [
-    testProperty "bernstein" pHash
-  , testGroup "text" [
-      testProperty "text/strict" pText
-    , testProperty "text/lazy" pTextLazy
-    , testProperty "rechunk" pRechunk
-    , testProperty "text/rechunked" pLazyRechunked
-  ]
-  ]
+tests :: [Test]
+tests =
+    [ testProperty "bernstein" pHash
+    , testGroup "text"
+      [ testProperty "text/strict" pText
+      , testProperty "text/lazy" pTextLazy
+      , testProperty "rechunk" pRechunk
+      , testProperty "text/rechunked" pLazyRechunked
+      ]
+    ]

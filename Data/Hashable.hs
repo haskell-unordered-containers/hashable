@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash, UnliftedFFITypes #-}
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
+             UnliftedFFITypes #-}
 
 ------------------------------------------------------------------------
 -- |
@@ -52,8 +53,7 @@ import Foreign.C (CLong, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
 #if defined(__GLASGOW_HASKELL__)
-import GHC.Base (ByteArray#, Int(..), indexWord8Array#)
-import GHC.Word (Word8(..))
+import GHC.Base (ByteArray#)
 #endif
 
 ------------------------------------------------------------------------
