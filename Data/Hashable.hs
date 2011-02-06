@@ -36,6 +36,7 @@ module Data.Hashable
     , combine
     ) where
 
+import Control.Concurrent (ThreadId)
 import Data.Bits (bitSize, shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
@@ -148,6 +149,10 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hash = foldl' hashAndCombine 0
+
+instance Hashable ThreadId where
+    hash = hash . show
+    {-# INLINE hash #-}
 
 hashAndCombine :: Hashable h => Int -> h -> Int
 hashAndCombine acc h = acc `combine` hash h
