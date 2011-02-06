@@ -6,6 +6,7 @@
 -- Module      :  Data.Hash
 -- Copyright   :  (c) Milan Straka 2010
 --                (c) Johan Tibell 2011
+--                (c) Bryan O'Sullivan 2011
 -- License     :  BSD-style
 -- Maintainer  :  fox@ucw.cz
 -- Stability   :  provisional
@@ -36,7 +37,6 @@ module Data.Hashable
     , combine
     ) where
 
-import Control.Concurrent (ThreadId)
 import Data.Bits (bitSize, shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
@@ -54,7 +54,12 @@ import Foreign.C (CLong, CString)
 import Foreign.Ptr (Ptr, castPtr)
 
 #if defined(__GLASGOW_HASKELL__)
+import Foreign.C.Types (CInt)
 import GHC.Base (ByteArray#)
+import GHC.Conc (ThreadId(..))
+import GHC.Prim (ThreadId#)
+#else
+import Control.Concurrent (ThreadId)
 #endif
 
 ------------------------------------------------------------------------
@@ -150,8 +155,19 @@ instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hash = foldl' hashAndCombine 0
 
+-- | Compute the hash of a ThreadId.  For GHC, we happen to know a
+-- trick to make this fast.
+hashThreadId :: ThreadId -> Int
+{-# INLINE hashThreadId #-}
+#if defined(__GLASGOW_HASKELL__)
+hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
+foreign import ccall unsafe "rts_getThreadId" getThreadId :: ThreadId# -> CInt
+#else
+hashThreadId = hash . show
+#endif
+
 instance Hashable ThreadId where
-    hash = hash . show
+    hash = hashThreadId
     {-# INLINE hash #-}
 
 hashAndCombine :: Hashable h => Int -> h -> Int
