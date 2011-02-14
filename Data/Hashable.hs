@@ -266,6 +266,8 @@ hashPtrWithSalt p len salt =
     fromIntegral `fmap` hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
+foreign import ccall unsafe "djb_hash" hashCString
+    :: CString -> CLong -> CLong -> IO CLong
 
 #if defined(__GLASGOW_HASKELL__)
 -- | Compute a hash value for the content of this 'ByteArray#',
@@ -295,18 +297,12 @@ hashByteArrayWithSalt
 hashByteArrayWithSalt ba !off !len !h0 =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h0)
+
+foreign import ccall unsafe "djb_hash_offset" c_hashByteArray
+    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
 #endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
-
-------------------------------------------------------------------------
--- * Foreign imports
-
-foreign import ccall unsafe "djb_hash" hashCString
-    :: CString -> CLong -> CLong -> IO CLong
-
-foreign import ccall unsafe "djb_hash_offset" c_hashByteArray
-    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
