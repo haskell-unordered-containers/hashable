@@ -1,3 +1,12 @@
+Version 1.1.0.0
+
+* Added instance for: strict and lazy Texts, ThreadId
+* Added hashPtrWithSalt and hashByteArrayWithSalt.
+* Faster ByteArray# hashing.
+* Fixed a signedness bug that affected ByteString.
+* Fix ByteString hashing to work correctly on both 32 and 64-bit
+  platforms.
+
 Version 1.0.1.1
 
 * Fixed bug in Hashable instance for lazy ByteStrings where
