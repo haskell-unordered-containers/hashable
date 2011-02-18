@@ -23,7 +23,6 @@ Extra-source-files:
   benchmarks/Makefile
 
 Library
-  Default-language:  Haskell98
   Exposed-modules:   Data.Hashable
   Build-depends:     base >= 4.0 && < 5,
                      bytestring >= 0.9 && < 1.0,
@@ -36,7 +35,6 @@ Library
     Ghc-options: -fwarn-tabs
 
 Test-suite tests
-  Default-language:  Haskell98
   Type:              exitcode-stdio-1.0
   Hs-source-dirs:    tests
   Main-is:           Properties.hs
