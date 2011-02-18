@@ -9,9 +9,10 @@ Description:         This package defines a class, 'Hashable', for types that
 Homepage:            http://github.com/tibbe/hashable
 License:             BSD3
 License-file:        LICENSE
-Author:              Milan Straka
-Maintainer:          Milan Straka <fox@ucw.cz>
+Author:              Milan Straka <fox@ucw.cz>
                      Johan Tibell <johan.tibell@gmail.com>
+Maintainer:          johan.tibell@gmail.com
+bug-reports:         https://github.com/tibbe/hashable/issues
 Stability:           Provisional
 Category:            Data
 Build-type:          Simple
