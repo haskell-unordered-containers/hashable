@@ -37,11 +37,11 @@ pHash xs = unsafePerformIO $ withArray xs $ \ p ->
 
 -- | Content equality implies hash equality.
 pText :: T.Text -> T.Text -> Bool
-pText a b = (a == b) == (hash a == hash b)
+pText a b = if (a == b) then (hash a == hash b) else True
 
 -- | Content equality implies hash equality.
 pTextLazy :: L.Text -> L.Text -> Bool
-pTextLazy a b = (a == b) == (hash a == hash b)
+pTextLazy a b = if (a == b) then (hash a == hash b) else True
 
 -- | A small positive integer.
 newtype ChunkSize = ChunkSize { unCS :: Int }
