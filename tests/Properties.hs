@@ -6,7 +6,7 @@
 
 module Main (main) where
 
-import Data.Hashable (hash, hashByteArray, hashPtr)
+import Data.Hashable (Hashable(hash), hashByteArray, hashPtr)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import Foreign (unsafePerformIO)
@@ -17,7 +17,7 @@ import GHC.ST (ST(..), runST)
 import GHC.Word (Word8(..), Word64)
 import GHC.Int (Int64)
 import Data.Bits (Bits(..))
-import Test.QuickCheck
+import Test.QuickCheck hiding ((.&.))
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
@@ -88,8 +88,9 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
             s2# -> go s2# (i + 1) marr# xs
 
 -- | Check that upper bits of 64-bit values affect hash value
+pUpperMatters :: (Data.Hashable.Hashable a, Bits a) => a -> Bool
 pUpperMatters n = upper == 0 || hash n /= hash (n `xor` upper)
-  where upper = n Data.Bits..&. negate 0xffffffff
+  where upper = n .&. negate 0xffffffff
 
 ------------------------------------------------------------------------
 -- Test harness
