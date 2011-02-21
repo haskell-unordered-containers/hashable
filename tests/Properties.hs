@@ -87,11 +87,6 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
         case writeWord8Array# marr# i# x s# of
             s2# -> go s2# (i + 1) marr# xs
 
--- | Check that upper bits of 64-bit values affect hash value
-pUpperMatters :: (Data.Hashable.Hashable a, Bits a) => a -> Bool
-pUpperMatters n = upper == 0 || hash n /= hash (n `xor` upper)
-  where upper = n .&. negate 0xffffffff
-
 ------------------------------------------------------------------------
 -- Test harness
 
@@ -107,6 +102,4 @@ tests =
       , testProperty "rechunk" pRechunk
       , testProperty "text/rechunked" pLazyRechunked
       ]
-    , testProperty "64bit/signed" (pUpperMatters :: Int64 -> Bool)
-    , testProperty "64bit/unsigned" (pUpperMatters :: Word64 -> Bool)
     ]
