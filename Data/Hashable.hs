@@ -98,9 +98,8 @@ instance Hashable Int16 where hash = fromIntegral
 instance Hashable Int32 where hash = fromIntegral
 instance Hashable Int64 where
     hash n
-        | bitSize n == 64 = fromIntegral n
-        | otherwise = fromIntegral (fromIntegral n `xor`
-                                   (fromIntegral n `shiftR` 32 :: Word64))
+        | bitSize (0::Int) == 64 = fromIntegral n
+        | otherwise = fromIntegral n `combine` fromIntegral (n `shiftR` 32)
 
 instance Hashable Word where hash = fromIntegral
 instance Hashable Word8 where hash = fromIntegral
@@ -108,8 +107,8 @@ instance Hashable Word16 where hash = fromIntegral
 instance Hashable Word32 where hash = fromIntegral
 instance Hashable Word64 where
     hash n
-        | bitSize n == 64 = fromIntegral n
-        | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
+        | bitSize (0::Int) == 64 = fromIntegral n
+        | otherwise = fromIntegral n `combine` fromIntegral (n `shiftR` 32)
 
 instance Hashable Char where hash = fromEnum
 

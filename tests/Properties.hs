@@ -14,7 +14,9 @@ import Foreign.Marshal.Array (withArray)
 import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
                  writeWord8Array#)
 import GHC.ST (ST(..), runST)
-import GHC.Word (Word8(..))
+import GHC.Word (Word8(..), Word64)
+import GHC.Int (Int64)
+import Data.Bits (Bits(..))
 import Test.QuickCheck
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -85,6 +87,10 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
         case writeWord8Array# marr# i# x s# of
             s2# -> go s2# (i + 1) marr# xs
 
+-- | Check that upper bits of 64-bit values affect hash value
+pUpperMatters n = upper == 0 || hash n /= hash (n `xor` upper)
+  where upper = n Data.Bits..&. negate 0xffffffff
+
 ------------------------------------------------------------------------
 -- Test harness
 
@@ -100,4 +106,6 @@ tests =
       , testProperty "rechunk" pRechunk
       , testProperty "text/rechunked" pLazyRechunked
       ]
+    , testProperty "64bit/signed" (pUpperMatters :: Int64 -> Bool)
+    , testProperty "64bit/unsigned" (pUpperMatters :: Word64 -> Bool)
     ]
