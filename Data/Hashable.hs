@@ -173,9 +173,13 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
         defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
         `combine` hash a4 `combine` hash a5 `combine` hash a6 `combine` hash a7
 
+-- | Default salt for hashing string like types.
+stringSalt :: Int
+stringSalt = 5381
+
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
-    hash = foldl' hashAndCombine 0
+    hash = foldl' hashAndCombine stringSalt
     hashWithSalt = foldl' hashAndCombine
 
 -- | Compute the hash of a ThreadId.  For GHC, we happen to know a
@@ -206,7 +210,7 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hash = BL.foldlChunks hashWithSalt 5381
+    hash = BL.foldlChunks hashWithSalt stringSalt
     hashWithSalt = BL.foldlChunks hashWithSalt
 
 instance Hashable T.Text where
@@ -218,7 +222,7 @@ instance Hashable T.Text where
         salt
 
 instance Hashable LT.Text where
-    hash = LT.foldlChunks hashWithSalt 5381
+    hash = LT.foldlChunks hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
 
 ------------------------------------------------------------------------
@@ -260,7 +264,7 @@ instance Hashable LT.Text where
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
-hashPtr p len = hashPtrWithSalt p len 5381
+hashPtr p len = hashPtrWithSalt p len stringSalt
 
 -- | Compute a hash value for the content of this pointer, using an
 -- initial salt.
@@ -287,7 +291,7 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
               -> Int         -- ^ hash value
-hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len 5381
+hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len stringSalt
 {-# INLINE hashByteArray #-}
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
