@@ -8,7 +8,7 @@
 --                (c) Johan Tibell 2011
 --                (c) Bryan O'Sullivan 2011
 -- License     :  BSD-style
--- Maintainer  :  fox@ucw.cz
+-- Maintainer  :  johan.tibell@gmail.com
 -- Stability   :  provisional
 -- Portability :  portable
 --
