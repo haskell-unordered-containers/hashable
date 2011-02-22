@@ -143,34 +143,35 @@ instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hash (Right b) = 1 `combine` hash b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
-    hash (a1, a2) = hash a1 `combine` hash a2
+    hash (a1, a2) = defaultSalt `combine` hash a1 `combine` hash a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
-    hash (a1, a2, a3) = hash a1 `combine` hash a2 `combine` hash a3
+    hash (a1, a2, a3) = defaultSalt `combine` hash a1 `combine` hash a2
+                        `combine` hash a3
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
-    hash (a1, a2, a3, a4) = hash a1 `combine` hash a2 `combine` hash a3
-                            `combine` hash a4
+    hash (a1, a2, a3, a4) = defaultSalt `combine` hash a1 `combine` hash a2
+                            `combine` hash a3 `combine` hash a4
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
     hash (a1, a2, a3, a4, a5) =
-        hash a1 `combine` hash a2 `combine` hash a3 `combine` hash a4 `combine`
-        hash a5
+        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
+        `combine` hash a4 `combine` hash a5
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
     hash (a1, a2, a3, a4, a5, a6) =
-        hash a1 `combine` hash a2 `combine` hash a3 `combine` hash a4 `combine`
-        hash a5 `combine` hash a6
+        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
+        `combine` hash a4 `combine` hash a5 `combine` hash a6
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
          Hashable (a1, a2, a3, a4, a5, a6, a7) where
     hash (a1, a2, a3, a4, a5, a6, a7) =
-        hash a1 `combine` hash a2 `combine` hash a3 `combine` hash a4 `combine`
-        hash a5 `combine` hash a6 `combine` hash a7
+        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
+        `combine` hash a4 `combine` hash a5 `combine` hash a6 `combine` hash a7
 
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
