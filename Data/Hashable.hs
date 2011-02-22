@@ -206,7 +206,7 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hash = BL.foldlChunks hashWithSalt 0
+    hash = BL.foldlChunks hashWithSalt 5381
     hashWithSalt = BL.foldlChunks hashWithSalt
 
 instance Hashable T.Text where
@@ -218,7 +218,7 @@ instance Hashable T.Text where
         salt
 
 instance Hashable LT.Text where
-    hash = LT.foldlChunks hashWithSalt 0
+    hash = LT.foldlChunks hashWithSalt 5381
     hashWithSalt = LT.foldlChunks hashWithSalt
 
 ------------------------------------------------------------------------
@@ -260,7 +260,7 @@ instance Hashable LT.Text where
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
-hashPtr p len = hashPtrWithSalt p len 0
+hashPtr p len = hashPtrWithSalt p len 5381
 
 -- | Compute a hash value for the content of this pointer, using an
 -- initial salt.
@@ -287,7 +287,7 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
               -> Int         -- ^ hash value
-hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len 0
+hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len 5381
 {-# INLINE hashByteArray #-}
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
