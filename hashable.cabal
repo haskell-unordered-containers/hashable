@@ -35,20 +35,20 @@ Library
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
 
--- Commented out until cabal-install release.
-Test-suite tests
-  Type:              exitcode-stdio-1.0
-  Hs-source-dirs:    tests
-  Main-is:           Properties.hs
-  Build-depends:     base >= 4.0 && < 5,
-                     hashable,
-                     test-framework >= 0.3.3 && < 0.4,
-                     test-framework-quickcheck2 >= 0.2.9 && < 0.3,
-                     QuickCheck >= 2.4.0.1,
-                     random == 1.0.*,
-                     text >= 0.11.0.5
+-- -- Commented out until cabal-install release.
+-- Test-suite tests
+--   Type:              exitcode-stdio-1.0
+--   Hs-source-dirs:    tests
+--   Main-is:           Properties.hs
+--   Build-depends:     base >= 4.0 && < 5,
+--                      hashable,
+--                      test-framework >= 0.3.3 && < 0.4,
+--                      test-framework-quickcheck2 >= 0.2.9 && < 0.3,
+--                      QuickCheck >= 2.4.0.1,
+--                      random == 1.0.*,
+--                      text >= 0.11.0.5
 
-  Ghc-options:       -Wall
+--   Ghc-options:       -Wall
 
 source-repository head
   type:     git
