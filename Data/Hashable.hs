@@ -65,7 +65,15 @@ import Control.Concurrent (ThreadId)
 ------------------------------------------------------------------------
 -- * Computing hash values
 
+-- | A default salt used in the default implementation of
+-- 'hashWithSalt'.
+defaultSalt :: Int
+defaultSalt = 17
+{-# INLINE defaultSalt #-}
+
 -- | The class of types that can be converted to a hash value.
+--
+-- Minimal implementation: 'hash' or 'hashWithSalt'.
 class Hashable a where
     -- | Return a hash value for the argument.
     --
@@ -87,6 +95,19 @@ class Hashable a where
     --    may improve the performance of hashing-based data
     --    structures.
     hash :: a -> Int
+    hash = hashWithSalt defaultSalt
+
+    -- | Return a hash value for the argument, using the given salt.
+    --
+    -- This method can be used to compute different hash values for
+    -- the same input by providing a different salt in each
+    -- application of the method.
+    --
+    -- The contract for 'hashWithSalt' is the same as for 'hash', with
+    -- the additional requirement that any instance that defines
+    -- 'hashWithSalt' must make use of the salt in its implementation.
+    hashWithSalt :: Int -> a -> Int
+    hashWithSalt salt x = salt `combine` hash x
 
 instance Hashable () where hash _ = 0
 
@@ -178,38 +199,25 @@ instance Hashable B.ByteString where
               B.unsafeUseAsCStringLen bs $ \(p, len) ->
               hashPtr p (fromIntegral len)
 
--- The arguments to this function are flipped to make the function
--- easier to use with a left fold.
-
--- | Compute a hash value for this 'B.ByteString', using an initial
--- salt.
-hashByteStringWithSalt :: Int           -- ^ salt
-                       -> B.ByteString  -- ^ data to hash
-                       -> Int           -- ^ hash value
-hashByteStringWithSalt salt bs =
-    B.inlinePerformIO $ B.unsafeUseAsCStringLen bs $ \(p, len) ->
-    hashPtrWithSalt p (fromIntegral len) salt
+    hashWithSalt salt bs = B.inlinePerformIO $
+                           B.unsafeUseAsCStringLen bs $ \(p, len) ->
+                           hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hash = BL.foldlChunks hashByteStringWithSalt 0
+    hash = BL.foldlChunks hashWithSalt 0
+    hashWithSalt salt = BL.foldlChunks hashWithSalt salt
 
 instance Hashable T.Text where
     hash (T.Text arr off len) = hashByteArray (TA.aBA arr)
                                 (off `shiftL` 1) (len `shiftL` 1)
 
--- The arguments to this function are flipped to make the function
--- easier to use with a left fold.
-
--- | Compute a hash value for this 'B.Text', using an initial
--- salt.
-hashTextWithSalt :: Int     -- ^ salt
-                 -> T.Text  -- ^ data to hash
-                 -> Int     -- ^ hash value
-hashTextWithSalt salt (T.Text arr off len) =
-    hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) salt
+    hashWithSalt salt (T.Text arr off len) =
+        hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
+        salt
 
 instance Hashable LT.Text where
-    hash = LT.foldlChunks hashTextWithSalt 0
+    hash = LT.foldlChunks hashWithSalt 0
+    hashWithSalt salt = LT.foldlChunks hashWithSalt salt
 
 ------------------------------------------------------------------------
 -- * Creating new instances
