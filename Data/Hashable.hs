@@ -175,6 +175,7 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hash = foldl' hashAndCombine 0
+    hashWithSalt = foldl' hashAndCombine
 
 -- | Compute the hash of a ThreadId.  For GHC, we happen to know a
 -- trick to make this fast.
@@ -205,7 +206,7 @@ instance Hashable B.ByteString where
 
 instance Hashable BL.ByteString where
     hash = BL.foldlChunks hashWithSalt 0
-    hashWithSalt salt = BL.foldlChunks hashWithSalt salt
+    hashWithSalt = BL.foldlChunks hashWithSalt
 
 instance Hashable T.Text where
     hash (T.Text arr off len) = hashByteArray (TA.aBA arr)
@@ -217,7 +218,7 @@ instance Hashable T.Text where
 
 instance Hashable LT.Text where
     hash = LT.foldlChunks hashWithSalt 0
-    hashWithSalt salt = LT.foldlChunks hashWithSalt salt
+    hashWithSalt = LT.foldlChunks hashWithSalt
 
 ------------------------------------------------------------------------
 -- * Creating new instances
