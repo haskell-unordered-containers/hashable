@@ -1,9 +1,25 @@
+Version 1.1.1.0
+
+* Added hashWithSalt, which allows the user to create different hash
+  values for the same input by providing different seeds.  This is
+  useful for application like Cuckoo hashing which need a family of
+  hash functions.
+
+* Fixed a bug in the Hashable instance for Int64/Word64 on 32-bit
+  platforms.
+
+* Improved resilience to leading zero in the input being hashed.
+
 Version 1.1.0.0
 
 * Added instance for: strict and lazy Texts, ThreadId
+
 * Added hashPtrWithSalt and hashByteArrayWithSalt.
+
 * Faster ByteArray# hashing.
+
 * Fixed a signedness bug that affected ByteString.
+
 * Fix ByteString hashing to work correctly on both 32 and 64-bit
   platforms.
 
