@@ -62,6 +62,8 @@ import GHC.Prim (ThreadId#)
 import Control.Concurrent (ThreadId)
 #endif
 
+infixl 0 `combine`, `hashWithSalt`
+
 ------------------------------------------------------------------------
 -- * Computing hash values
 
@@ -135,43 +137,43 @@ instance Hashable Word64 where
 instance Hashable Char where hash = fromEnum
 
 instance Hashable a => Hashable (Maybe a) where
-    hash Nothing = 0
-    hash (Just a) = 1 `combine` hash a
+    hashWithSalt s Nothing = s `combine` 0
+    hashWithSalt s (Just a) = s `combine` 1 `hashWithSalt` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
-    hash (Left a)  = 0 `combine` hash a
-    hash (Right b) = 1 `combine` hash b
+    hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
+    hashWithSalt s (Right b) = s `combine` 1 `hashWithSalt` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
-    hash (a1, a2) = defaultSalt `combine` hash a1 `combine` hash a2
+    hashWithSalt s (a1, a2) = s `hashWithSalt` a1 `hashWithSalt` a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
-    hash (a1, a2, a3) = defaultSalt `combine` hash a1 `combine` hash a2
-                        `combine` hash a3
+    hashWithSalt s (a1, a2, a3) = s `hashWithSalt` a1 `hashWithSalt` a2
+                        `hashWithSalt` a3
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
-    hash (a1, a2, a3, a4) = defaultSalt `combine` hash a1 `combine` hash a2
-                            `combine` hash a3 `combine` hash a4
+    hashWithSalt s (a1, a2, a3, a4) = s `hashWithSalt` a1 `hashWithSalt` a2
+                            `hashWithSalt` a3 `hashWithSalt` a4
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
-    hash (a1, a2, a3, a4, a5) =
-        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
-        `combine` hash a4 `combine` hash a5
+    hashWithSalt s (a1, a2, a3, a4, a5) =
+        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
-    hash (a1, a2, a3, a4, a5, a6) =
-        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
-        `combine` hash a4 `combine` hash a5 `combine` hash a6
+    hashWithSalt s (a1, a2, a3, a4, a5, a6) =
+        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
          Hashable (a1, a2, a3, a4, a5, a6, a7) where
-    hash (a1, a2, a3, a4, a5, a6, a7) =
-        defaultSalt `combine` hash a1 `combine` hash a2 `combine` hash a3
-        `combine` hash a4 `combine` hash a5 `combine` hash a6 `combine` hash a7
+    hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
+        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
 
 -- | Default salt for hashing string like types.
 stringSalt :: Int
@@ -179,8 +181,7 @@ stringSalt = 5381
 
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
-    hash = foldl' hashAndCombine stringSalt
-    hashWithSalt = foldl' hashAndCombine
+    hashWithSalt = foldl' hashWithSalt
 
 -- | Compute the hash of a ThreadId.  For GHC, we happen to know a
 -- trick to make this fast.
@@ -197,32 +198,24 @@ instance Hashable ThreadId where
     hash = hashThreadId
     {-# INLINE hash #-}
 
-hashAndCombine :: Hashable h => Int -> h -> Int
-hashAndCombine acc h = acc `combine` hash h
-
 instance Hashable B.ByteString where
-    hash bs = B.inlinePerformIO $
-              B.unsafeUseAsCStringLen bs $ \(p, len) ->
-              hashPtr p (fromIntegral len)
-
+    hash = hashWithSalt stringSalt
     hashWithSalt salt bs = B.inlinePerformIO $
                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hash = BL.foldlChunks hashWithSalt stringSalt
+    hash = hashWithSalt stringSalt
     hashWithSalt = BL.foldlChunks hashWithSalt
 
 instance Hashable T.Text where
-    hash (T.Text arr off len) = hashByteArray (TA.aBA arr)
-                                (off `shiftL` 1) (len `shiftL` 1)
-
+    hash = hashWithSalt stringSalt
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
         salt
 
 instance Hashable LT.Text where
-    hash = LT.foldlChunks hashWithSalt stringSalt
+    hash = hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
 
 ------------------------------------------------------------------------
@@ -231,9 +224,9 @@ instance Hashable LT.Text where
 -- $blocks
 --
 -- The functions below can be used when creating new instances of
--- 'Hashable'.  For example, the 'hash' method for many string-like
--- types can be defined in terms of either 'hashPtr' or
--- 'hashByteArray'.  Here's how you could implement an instance for
+-- 'Hashable'.  For example, the 'hashWithSalt' method for many string-like
+-- types can be defined in terms of either 'hashPtrWithSalt' or
+-- 'hashByteArrayWithSalt'.  Here's how you could implement an instance for
 -- the 'B.ByteString' data type, from the @bytestring@ package:
 --
 -- > import qualified Data.ByteString as B
@@ -243,16 +236,16 @@ instance Hashable LT.Text where
 -- > import Foreign.Ptr (castPtr)
 -- >
 -- > instance Hashable B.ByteString where
--- >     hash bs = B.inlinePerformIO $
--- >               B.unsafeUseAsCStringLen bs $ \ (p, len) ->
--- >               hashPtr p (fromIntegral len)
+-- >     hashWithSalt salt bs = B.inlinePerformIO $
+-- >                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
+-- >                            hashPtrWithSalt p (fromIntegral len) salt
 --
 -- The 'combine' function can be used to implement 'Hashable'
 -- instances for data types with more than one field, using this
 -- recipe:
 --
 -- > instance (Hashable a, Hashable b) => Hashable (Foo a b) where
--- >     hash (Foo a b) = 17 `combine` hash a `combine` hash b
+-- >     hashWithSalt s (Foo a b) = s `hashWithSalt` a `hashWithSalt` b
 --
 -- A nonzero seed is used so the hash value will be affected by
 -- initial fields whose hash value is zero.  If no seed was provided,
