@@ -137,33 +137,47 @@ instance Hashable Word64 where
 instance Hashable Char where hash = fromEnum
 
 instance Hashable a => Hashable (Maybe a) where
+    hash Nothing = 0
+    hash (Just a) = 1 `hashWithSalt` a
     hashWithSalt s Nothing = s `combine` 0
     hashWithSalt s (Just a) = s `combine` 1 `hashWithSalt` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
+    hash (Left a)  = 0 `hashWithSalt` a
+    hash (Right b) = 1 `hashWithSalt` b
     hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
     hashWithSalt s (Right b) = s `combine` 1 `hashWithSalt` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
+    hash (a1, a2) = hash a1 `hashWithSalt` a2
     hashWithSalt s (a1, a2) = s `hashWithSalt` a1 `hashWithSalt` a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
+    hash (a1, a2, a3) = hash a1 `hashWithSalt` a2 `hashWithSalt` a3
     hashWithSalt s (a1, a2, a3) = s `hashWithSalt` a1 `hashWithSalt` a2
                         `hashWithSalt` a3
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
+    hash (a1, a2, a3, a4) = hash a1 `hashWithSalt` a2
+                            `hashWithSalt` a3 `hashWithSalt` a4
     hashWithSalt s (a1, a2, a3, a4) = s `hashWithSalt` a1 `hashWithSalt` a2
                             `hashWithSalt` a3 `hashWithSalt` a4
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
+    hash (a1, a2, a3, a4, a5) =
+        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5
     hashWithSalt s (a1, a2, a3, a4, a5) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
+    hash (a1, a2, a3, a4, a5, a6) =
+        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
     hashWithSalt s (a1, a2, a3, a4, a5, a6) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
@@ -171,6 +185,9 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
          Hashable (a1, a2, a3, a4, a5, a6, a7) where
+    hash (a1, a2, a3, a4, a5, a6, a7) =
+        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
     hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
