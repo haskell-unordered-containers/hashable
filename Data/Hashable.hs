@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             UnliftedFFITypes #-}
+             UnliftedFFITypes, FlexibleInstances, UndecidableInstances,
+             OverlappingInstances #-}
 
 ------------------------------------------------------------------------
 -- |
@@ -52,6 +53,7 @@ import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
 import Foreign.C (CLong, CString)
 import Foreign.Ptr (Ptr, castPtr)
+import Data.Binary (Binary, encode)
 
 #if defined(__GLASGOW_HASKELL__)
 import Foreign.C.Types (CInt)
@@ -224,6 +226,10 @@ instance Hashable T.Text where
 instance Hashable LT.Text where
     hash = LT.foldlChunks hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
+
+instance Binary a => Hashable a where
+    hash = hash . encode
+    hashWithSalt s = hashWithSalt s . encode
 
 ------------------------------------------------------------------------
 -- * Creating new instances
