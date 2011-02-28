@@ -5,7 +5,8 @@ ghc := ghc
 ghc-flags := -Wall -O -hide-all-packages \
 	-package-conf ../dist/package.conf.inplace -package base \
 	-package hashable -package criterion \
-	-package deepseq -package ghc-prim
+	-package deepseq -package ghc-prim   \
+        -package binary
 
 %.o: %.hs
 	$(ghc) $(ghc-flags) -c -o $@ $<
