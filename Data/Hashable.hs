@@ -62,6 +62,10 @@ import GHC.Prim (ThreadId#)
 import Control.Concurrent (ThreadId)
 #endif
 
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
+import System.Mem.StableName
+#endif
+
 infixl 0 `combine`, `hashWithSalt`
 
 ------------------------------------------------------------------------
@@ -191,6 +195,11 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
     hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
+
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
+instance Hashable (StableName a) where
+    hash = hashStableName
+#endif
 
 -- | Default salt for hashing string like types.
 stringSalt :: Int
