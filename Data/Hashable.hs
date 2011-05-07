@@ -37,6 +37,7 @@ module Data.Hashable
     , combine
     ) where
 
+import Control.Exception (assert)
 import Data.Bits (bitSize, shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
@@ -51,7 +52,10 @@ import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
 import Foreign.C (CLong, CString)
+import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
+import Foreign.Storable (alignment, peek, sizeOf)
+import System.IO.Unsafe (unsafePerformIO)
 
 #if defined(__GLASGOW_HASKELL__)
 import Foreign.C.Types (CInt)
@@ -137,6 +141,22 @@ instance Hashable Word64 where
     hash n
         | bitSize (undefined :: Int) == 64 = fromIntegral n
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
+
+instance Hashable Float where
+    hash x
+        | isIEEE x =
+            assert (sizeOf x >= sizeOf (0::Word32) &&
+                    alignment x >= alignment (0::Word32)) $
+            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word32)
+        | otherwise = hash (show x)
+
+instance Hashable Double where
+    hash x
+        | isIEEE x =
+            assert (sizeOf x >= sizeOf (0::Word64) &&
+                    alignment x >= alignment (0::Word64)) $
+            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
+        | otherwise = hash (show x)
 
 instance Hashable Char where hash = fromEnum
 
