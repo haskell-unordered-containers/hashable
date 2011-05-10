@@ -42,6 +42,7 @@ import Data.Bits (bitSize, shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
@@ -141,6 +142,13 @@ instance Hashable Word64 where
     hash n
         | bitSize (undefined :: Int) == 64 = fromIntegral n
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
+
+instance Hashable Integer where hash = fromIntegral
+instance (Integral a, Hashable a) => Hashable (Ratio a) where
+    hash a = hash (numerator a) `hashWithSalt` denominator a
+    {-# SPECIALIZE hash :: Ratio Integer -> Int #-}
+    hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
+    {-# SPECIALIZE hashWithSalt :: Int -> Ratio Integer -> Int #-}
 
 instance Hashable Float where
     hash x
