@@ -71,6 +71,8 @@ import Control.Concurrent (ThreadId)
 import System.Mem.StableName
 #endif
 
+#include "MachDeps.h"
+
 infixl 0 `combine`, `hashWithSalt`
 
 ------------------------------------------------------------------------
@@ -143,12 +145,18 @@ instance Hashable Word64 where
         | bitSize (undefined :: Int) == 64 = fromIntegral n
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
 
-instance Hashable Integer where hash = fromIntegral
+instance Hashable Integer where
+    hash = foldl' hashWithSalt 0 . go
+      where
+        go n | inBounds n = [fromIntegral n :: Int]
+             | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
+        maxInt = fromIntegral (maxBound :: Int)
+        inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
+
 instance (Integral a, Hashable a) => Hashable (Ratio a) where
+    {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
     hash a = hash (numerator a) `hashWithSalt` denominator a
-    {-# SPECIALIZE hash :: Ratio Integer -> Int #-}
     hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
-    {-# SPECIALIZE hashWithSalt :: Int -> Ratio Integer -> Int #-}
 
 instance Hashable Float where
     hash x
