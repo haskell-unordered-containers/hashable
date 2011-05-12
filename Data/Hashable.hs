@@ -42,6 +42,7 @@ import Data.Bits (bitSize, shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
@@ -69,6 +70,8 @@ import Control.Concurrent (ThreadId)
 #if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 import System.Mem.StableName
 #endif
+
+#include "MachDeps.h"
 
 infixl 0 `combine`, `hashWithSalt`
 
@@ -141,6 +144,19 @@ instance Hashable Word64 where
     hash n
         | bitSize (undefined :: Int) == 64 = fromIntegral n
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
+
+instance Hashable Integer where
+    hash = foldl' hashWithSalt 0 . go
+      where
+        go n | inBounds n = [fromIntegral n :: Int]
+             | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
+        maxInt = fromIntegral (maxBound :: Int)
+        inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
+
+instance (Integral a, Hashable a) => Hashable (Ratio a) where
+    {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
+    hash a = hash (numerator a) `hashWithSalt` denominator a
+    hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
 
 instance Hashable Float where
     hash x
