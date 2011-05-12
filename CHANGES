@@ -1,5 +1,11 @@
 Version 1.1.1.0
 
+* Improved instances for tuples and lists.
+
+* Added instances for StableName, Float, Double, Integer, and Ratio.
+
+Version 1.1.1.0
+
 * Added hashWithSalt, which allows the user to create different hash
   values for the same input by providing different seeds.  This is
   useful for application like Cuckoo hashing which need a family of
