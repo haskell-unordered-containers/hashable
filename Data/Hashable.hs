@@ -286,10 +286,11 @@ instance Hashable LT.Text where
 -- $blocks
 --
 -- The functions below can be used when creating new instances of
--- 'Hashable'.  For example, the 'hashWithSalt' method for many string-like
--- types can be defined in terms of either 'hashPtrWithSalt' or
--- 'hashByteArrayWithSalt'.  Here's how you could implement an instance for
--- the 'B.ByteString' data type, from the @bytestring@ package:
+-- 'Hashable'.  For example, for many string-like types the
+-- 'hashWithSalt' method can be defined in terms of either
+-- 'hashPtrWithSalt' or 'hashByteArrayWithSalt'.  Here's how you could
+-- implement an instance for the 'B.ByteString' data type, from the
+-- @bytestring@ package:
 --
 -- > import qualified Data.ByteString as B
 -- > import qualified Data.ByteString.Internal as B
@@ -302,18 +303,25 @@ instance Hashable LT.Text where
 -- >                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
 -- >                            hashPtrWithSalt p (fromIntegral len) salt
 --
--- The 'combine' function can be used to implement 'Hashable'
--- instances for data types with more than one field, using this
+-- Use 'hashWithSalt' to create a hash value from several values,
+-- using this recipe:
+--
+-- > instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
+-- >     hash (a1, a2) = hash a1 `hashWithSalt` a2
+--
+-- You can combine multiple hash values using 'combine', using this
 -- recipe:
 --
--- > instance (Hashable a, Hashable b) => Hashable (Foo a b) where
--- >     hashWithSalt s (Foo a b) = s `hashWithSalt` a `hashWithSalt` b
+-- > combineTwo h1 h2 = 17 `combine` h1 `combine` h2
 --
--- A nonzero seed is used so the hash value will be affected by
--- initial fields whose hash value is zero.  If no seed was provided,
--- the overall hash value would be unaffected by any such initial
--- fields, which could increase collisions.  The value 17 is
+-- As zero is a left identity of 'combine', a nonzero "seed" is used
+-- so that the number of combined hash values affects the final
+-- result, even if the first hash values are zero.  The value 17 is
 -- arbitrary.
+--
+-- When possible, use 'hashWithSalt' to compute a hash value from
+-- multiple values instead of computing separate hashes for each value
+-- and then combining them using 'combine'.
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
