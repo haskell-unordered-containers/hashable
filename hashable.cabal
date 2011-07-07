@@ -1,5 +1,5 @@
 Name:                hashable
-Version:             1.1.2.0
+Version:             1.1.2.1
 Synopsis:            A class for types that can be converted to a hash value
 Description:         This package defines a class, 'Hashable', for types that
                      can be converted to a hash value.  This class
@@ -41,7 +41,7 @@ Test-suite tests
   Main-is:           Properties.hs
   Build-depends:     base >= 4.0 && < 5,
                      hashable,
-                     test-framework >= 0.3.3 && < 0.4,
+                     test-framework >= 0.3.3 && < 0.5,
                      test-framework-quickcheck2 >= 0.2.9 && < 0.3,
                      QuickCheck >= 2.4.0.1,
                      random == 1.0.*,
