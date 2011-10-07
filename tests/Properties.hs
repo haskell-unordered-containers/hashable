@@ -9,7 +9,7 @@ module Main (main) where
 import Data.Hashable (Hashable(hash), hashByteArray, hashPtr)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
-import Foreign (unsafePerformIO)
+import System.IO.Unsafe (unsafePerformIO)
 import Foreign.Marshal.Array (withArray)
 import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
                  writeWord8Array#)
@@ -68,6 +68,7 @@ rechunk t0 (NonEmpty cs0) = L.fromChunks . go t0 . cycle $ cs0
     go t _ | T.null t = []
     go t (c:cs)       = a : go b cs
       where (a,b)     = T.splitAt (unCS c) t
+    go _ []           = error "Properties.rechunk - The 'impossible' happened!"
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
