@@ -4,3 +4,4 @@ dist
 
 # Executables
 benchmarks/bench
+cabal-dev
