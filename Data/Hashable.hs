@@ -52,14 +52,23 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
-import Foreign.C (CLong, CString)
+import Foreign.C (CString)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C (CLong(..))
+#else
+import Foreign.C (CLong)
+#endif
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
 
 #if defined(__GLASGOW_HASKELL__)
+# if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CInt(..))
+# else
 import Foreign.C.Types (CInt)
+# endif
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
