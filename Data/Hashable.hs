@@ -80,6 +80,12 @@ import Control.Concurrent (ThreadId)
 import System.Mem.StableName
 #endif
 
+import Data.Typeable
+#if __GLASGOW_HASKELL__ >= 702
+import GHC.Fingerprint.Type(Fingerprint(..))
+import Data.Typeable.Internal(TypeRep(..))
+#endif
+
 #include "MachDeps.h"
 
 infixl 0 `combine`, `hashWithSalt`
@@ -288,6 +294,24 @@ instance Hashable T.Text where
 instance Hashable LT.Text where
     hash = hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
+
+
+-- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
+hashTypeRep :: TypeRep -> Int
+{-# INLINE hashTypeRep #-}
+#if __GLASGOW_HASKELL__ >= 702
+-- Fingerprint is just the MD5, so taking any Int from it is fine
+hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
+#elif __GLASGOW_HASKELL__ >= 606
+hashTypeRep = B.inlinePerformIO . typeRepKey
+#else
+hashTypeRep = hash . show
+#endif
+
+instance Hashable TypeRep where
+    hash = hashTypeRep
+    {-# INLINE hash #-}
+
 
 ------------------------------------------------------------------------
 -- * Creating new instances
