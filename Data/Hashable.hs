@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             UnliftedFFITypes #-}
+             ScopedTypeVariables, TypeSynonymInstances, UnliftedFFITypes #-}
 
 ------------------------------------------------------------------------
 -- |
@@ -52,12 +52,20 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
+#if defined(__GLASGOW_HASKELL__)
+import qualified Data.Vector as BV
+import qualified Data.Vector.Primitive as PV
+import qualified Data.Vector.Storable as SV
+import qualified Data.Vector.Unboxed as UV
+import qualified Data.Vector.Fusion.Stream as S
+#endif
 import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
 import Foreign.C (CLong(..))
 #else
 import Foreign.C (CLong)
 #endif
+import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
@@ -295,6 +303,42 @@ instance Hashable LT.Text where
     hash = hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
 
+#if defined(__GLASGOW_HASKELL__)
+instance Hashable a => Hashable (BV.Vector a) where
+    {-# INLINE hash #-}
+    hash = hashWithSalt stringSalt
+    {-# INLINE hashWithSalt #-}
+    hashWithSalt = BV.foldl' hashWithSalt
+
+instance (Hashable a, PV.Prim a) => Hashable (PV.Vector a) where
+    {-# INLINE hash #-}
+    hash = hashWithSalt stringSalt
+    {-# INLINE hashWithSalt #-}
+    hashWithSalt = PV.foldl' hashWithSalt
+
+instance (Hashable a, SV.Storable a) => Hashable (SV.Vector a) where
+    {-# INLINE hash #-}
+    hash = hashWithSalt stringSalt
+    {-# INLINE hashWithSalt #-}
+    hashWithSalt salt sv = B.inlinePerformIO $
+                           withForeignPtr fp $ \p ->
+                           hashPtrWithSalt p (fromIntegral len) salt
+        where
+          (fp, n) = SV.unsafeToForeignPtr0 sv
+          len     = n * sizeOf (undefined :: a)
+
+instance (Hashable a, UV.Unbox a) => Hashable (UV.Vector a) where
+    {-# INLINE hash #-}
+    hash = hashWithSalt stringSalt
+    {-# INLINE hashWithSalt #-}
+    hashWithSalt = UV.foldl' hashWithSalt
+
+instance Hashable a => Hashable (S.Stream a) where
+    {-# INLINE hash #-}
+    hash = hashWithSalt stringSalt
+    {-# INLINE hashWithSalt #-}
+    hashWithSalt = S.foldl' hashWithSalt
+#endif
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
