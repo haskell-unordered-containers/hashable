@@ -72,6 +72,10 @@ import Foreign.C.Types (CInt)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
+# ifdef VERSION_integer_gmp
+import GHC.Exts (Int(..))
+import GHC.Integer.GMP.Internals (Integer(..))
+# endif
 #else
 import Control.Concurrent (ThreadId)
 #endif
@@ -161,12 +165,22 @@ instance Hashable Word64 where
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
 
 instance Hashable Integer where
+#if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
+    hash (S# int) = I# int
+    hash n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = fromInteger n
+                               | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) 0
+
+    hashWithSalt salt (S# int) = salt `combine` I# int
+    hashWithSalt salt n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = salt `combine` fromInteger n
+                               | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) salt
+#else
     hash = foldl' hashWithSalt 0 . go
       where
         go n | inBounds n = [fromIntegral n :: Int]
              | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
+#endif
 
 instance (Integral a, Hashable a) => Hashable (Ratio a) where
     {-# SPECIALIZE instance Hashable (Ratio Integer) #-}

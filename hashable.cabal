@@ -23,12 +23,18 @@ Extra-source-files:
   CHANGES, README.md, tests/Properties.hs, benchmarks/Benchmarks.hs
   benchmarks/Makefile
 
+Flag integer-gmp
+  Description: Are we using integer-gmp to provide fast Integer instances?
+  Default: True
+
 Library
   Exposed-modules:   Data.Hashable
   Build-depends:     base >= 4.0 && < 5,
                      bytestring >= 0.9 && < 1.0,
                      ghc-prim < 0.3,
                      text >= 0.11.0.5 && < 0.12
+  if impl(ghc) && flag(integer-gmp)
+    Build-depends:   integer-gmp >= 0.2
 
   C-sources:         cbits/hashByteString.c
   Ghc-options:       -Wall
