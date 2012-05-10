@@ -273,9 +273,9 @@ instance Hashable (StableName a) where
     hash = hashStableName
 #endif
 
--- | Default salt for hashing string like types.
+-- | Default salt for hashing string like types, specified by FNV-1 hash.
 stringSalt :: Int
-stringSalt = 5381
+stringSalt = 2166136261
 
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
@@ -397,10 +397,10 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ salt
                 -> IO Int  -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` hashCString (castPtr p) (fromIntegral len)
+    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
-foreign import ccall unsafe "djb_hash" hashCString
+foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
     :: CString -> CLong -> CLong -> IO CLong
 
 #if defined(__GLASGOW_HASKELL__)
@@ -432,11 +432,11 @@ hashByteArrayWithSalt ba !off !len !h0 =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h0)
 
-foreign import ccall unsafe "djb_hash_offset" c_hashByteArray
+foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
     :: ByteArray# -> CLong -> CLong -> CLong -> CLong
 #endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
 combine :: Int -> Int -> Int
-combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
+combine h1 h2 = (h1 * 16777619) `xor` h2
