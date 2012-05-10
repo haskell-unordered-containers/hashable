@@ -212,17 +212,24 @@ instance Hashable Double where
 
 instance Hashable Char where hash = fromEnum
 
+-- | A value with bit pattern (01)* (or 5* in hexa), for any size of Int.
+-- It is used as data constructor distinguisher. GHC computes its value during
+-- compilation.
+distinguisher :: Int
+distinguisher = fromIntegral $ (maxBound :: Word) `quot` 3
+{-# INLINE distinguisher #-}
+
 instance Hashable a => Hashable (Maybe a) where
     hash Nothing = 0
-    hash (Just a) = 1 `hashWithSalt` a
+    hash (Just a) = distinguisher `hashWithSalt` a
     hashWithSalt s Nothing = s `combine` 0
-    hashWithSalt s (Just a) = s `combine` 1 `hashWithSalt` a
+    hashWithSalt s (Just a) = s `combine` distinguisher `hashWithSalt` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hash (Left a)  = 0 `hashWithSalt` a
-    hash (Right b) = 1 `hashWithSalt` b
+    hash (Right b) = distinguisher `hashWithSalt` b
     hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
-    hashWithSalt s (Right b) = s `combine` 1 `hashWithSalt` b
+    hashWithSalt s (Right b) = s `combine` distinguisher `hashWithSalt` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
