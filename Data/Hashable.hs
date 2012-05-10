@@ -48,10 +48,12 @@ import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BL
+#if defined(__GLASGOW_HASKELL__)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
+#endif
 import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
 import Foreign.C (CLong(..))
@@ -299,6 +301,7 @@ instance Hashable BL.ByteString where
     hash = hashWithSalt stringSalt
     hashWithSalt = BL.foldlChunks hashWithSalt
 
+#if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
     hash = hashWithSalt stringSalt
     hashWithSalt salt (T.Text arr off len) =
@@ -308,7 +311,7 @@ instance Hashable T.Text where
 instance Hashable LT.Text where
     hash = hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
-
+#endif
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
