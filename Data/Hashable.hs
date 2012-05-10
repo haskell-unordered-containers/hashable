@@ -65,18 +65,23 @@ import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
 
+-- Byte arrays and Integers.
 #if defined(__GLASGOW_HASKELL__)
+import GHC.Base (ByteArray#)
+# ifdef VERSION_integer_gmp
+import GHC.Exts (Int(..))
+import GHC.Integer.GMP.Internals (Integer(..))
+# endif
+#endif
+
+-- ThreadId
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Conc (ThreadId(..))
+import GHC.Prim (ThreadId#)
 # if __GLASGOW_HASKELL__ >= 703
 import Foreign.C.Types (CInt(..))
 # else
 import Foreign.C.Types (CInt)
-# endif
-import GHC.Base (ByteArray#)
-import GHC.Conc (ThreadId(..))
-import GHC.Prim (ThreadId#)
-# ifdef VERSION_integer_gmp
-import GHC.Exts (Int(..))
-import GHC.Integer.GMP.Internals (Integer(..))
 # endif
 #else
 import Control.Concurrent (ThreadId)
@@ -276,21 +281,6 @@ instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hashWithSalt = foldl' hashWithSalt
 
--- | Compute the hash of a ThreadId.  For GHC, we happen to know a
--- trick to make this fast.
-hashThreadId :: ThreadId -> Int
-{-# INLINE hashThreadId #-}
-#if defined(__GLASGOW_HASKELL__)
-hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
-foreign import ccall unsafe "rts_getThreadId" getThreadId :: ThreadId# -> CInt
-#else
-hashThreadId = hash . show
-#endif
-
-instance Hashable ThreadId where
-    hash = hashThreadId
-    {-# INLINE hash #-}
-
 instance Hashable B.ByteString where
     hash = hashWithSalt stringSalt
     hashWithSalt salt bs = B.inlinePerformIO $
@@ -312,6 +302,23 @@ instance Hashable LT.Text where
     hash = hashWithSalt stringSalt
     hashWithSalt = LT.foldlChunks hashWithSalt
 #endif
+
+
+-- | Compute the hash of a ThreadId.  For GHC, we happen to know a
+-- trick to make this fast.
+hashThreadId :: ThreadId -> Int
+{-# INLINE hashThreadId #-}
+#if defined(__GLASGOW_HASKELL__)
+hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
+foreign import ccall unsafe "rts_getThreadId" getThreadId :: ThreadId# -> CInt
+#else
+hashThreadId = hash . show
+#endif
+
+instance Hashable ThreadId where
+    hash = hashThreadId
+    {-# INLINE hash #-}
+
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
