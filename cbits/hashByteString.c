@@ -31,7 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* FNV-1 hash */
+/* FNV-1 hash
+ *
+ * The FNV-1 hash description: http://isthe.com/chongo/tech/comp/fnv/
+ * The FNV-1 hash is public domain: http://isthe.com/chongo/tech/comp/fnv/#public_domain
+ */
 long hashable_fnv_hash(const unsigned char* str, long len, long hash) {
 
   while (len--) {
