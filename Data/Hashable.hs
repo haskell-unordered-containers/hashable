@@ -281,33 +281,25 @@ instance Hashable (StableName a) where
     hash = hashStableName
 #endif
 
--- | Default salt for hashing string like types, specified by FNV-1 hash.
-stringSalt :: Int
-stringSalt = 2166136261
-
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hashWithSalt = foldl' hashWithSalt
 
 instance Hashable B.ByteString where
-    hash = hashWithSalt stringSalt
     hashWithSalt salt bs = B.inlinePerformIO $
                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hash = hashWithSalt stringSalt
     hashWithSalt salt = BL.foldlChunks hashWithSalt salt
 
 #if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
-    hash = hashWithSalt stringSalt
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
         salt
 
 instance Hashable LT.Text where
-    hash = hashWithSalt stringSalt
     hashWithSalt salt = LT.foldlChunks hashWithSalt salt
 #endif
 
