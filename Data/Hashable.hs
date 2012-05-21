@@ -180,9 +180,9 @@ instance Hashable Integer where
 
     hashWithSalt salt (S# int) = salt `combine` I# int
     hashWithSalt salt n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = salt `combine` fromInteger n
-                               | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) salt
+                                            | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) salt
 #else
-    hash = foldl' hashWithSalt 0 . go
+    hashWithSalt salt = foldl' hashWithSalt salt . go
       where
         go n | inBounds n = [fromIntegral n :: Int]
              | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
