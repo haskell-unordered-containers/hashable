@@ -104,10 +104,11 @@ infixl 0 `combine`, `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
--- | A default salt used in the default implementation of
--- 'hashWithSalt'.
+-- | A default salt used in the default implementation of 'hashWithSalt'.
+-- It is specified by FNV-1 hash as a default salt for hashing string like
+-- types.
 defaultSalt :: Int
-defaultSalt = 17
+defaultSalt = 2166136261
 {-# INLINE defaultSalt #-}
 
 -- | The class of types that can be converted to a hash value.
