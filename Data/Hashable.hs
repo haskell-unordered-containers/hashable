@@ -48,10 +48,12 @@ import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Internal as BL
+#if defined(__GLASGOW_HASKELL__)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
+#endif
 import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
 import Foreign.C (CLong(..))
@@ -63,15 +65,24 @@ import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
 
+-- Byte arrays and Integers.
 #if defined(__GLASGOW_HASKELL__)
+import GHC.Base (ByteArray#)
+# ifdef VERSION_integer_gmp
+import GHC.Exts (Int(..))
+import GHC.Integer.GMP.Internals (Integer(..))
+# endif
+#endif
+
+-- ThreadId
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Conc (ThreadId(..))
+import GHC.Prim (ThreadId#)
 # if __GLASGOW_HASKELL__ >= 703
 import Foreign.C.Types (CInt(..))
 # else
 import Foreign.C.Types (CInt)
 # endif
-import GHC.Base (ByteArray#)
-import GHC.Conc (ThreadId(..))
-import GHC.Prim (ThreadId#)
 #else
 import Control.Concurrent (ThreadId)
 #endif
@@ -93,10 +104,11 @@ infixl 0 `combine`, `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
--- | A default salt used in the default implementation of
--- 'hashWithSalt'.
+-- | A default salt used in the default implementation of 'hashWithSalt'.
+-- It is specified by FNV-1 hash as a default salt for hashing string like
+-- types.
 defaultSalt :: Int
-defaultSalt = 17
+defaultSalt = 2166136261
 {-# INLINE defaultSalt #-}
 
 -- | The class of types that can be converted to a hash value.
@@ -161,12 +173,22 @@ instance Hashable Word64 where
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
 
 instance Hashable Integer where
-    hash = foldl' hashWithSalt 0 . go
+#if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
+    hash (S# int) = I# int
+    hash n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = fromInteger n
+                               | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) 0
+
+    hashWithSalt salt (S# int) = salt `combine` I# int
+    hashWithSalt salt n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = salt `combine` fromInteger n
+                                            | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) salt
+#else
+    hashWithSalt salt = foldl' hashWithSalt salt . go
       where
         go n | inBounds n = [fromIntegral n :: Int]
              | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
+#endif
 
 instance (Integral a, Hashable a) => Hashable (Ratio a) where
     {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
@@ -191,17 +213,24 @@ instance Hashable Double where
 
 instance Hashable Char where hash = fromEnum
 
+-- | A value with bit pattern (01)* (or 5* in hexa), for any size of Int.
+-- It is used as data constructor distinguisher. GHC computes its value during
+-- compilation.
+distinguisher :: Int
+distinguisher = fromIntegral $ (maxBound :: Word) `quot` 3
+{-# INLINE distinguisher #-}
+
 instance Hashable a => Hashable (Maybe a) where
     hash Nothing = 0
-    hash (Just a) = 1 `hashWithSalt` a
+    hash (Just a) = distinguisher `hashWithSalt` a
     hashWithSalt s Nothing = s `combine` 0
-    hashWithSalt s (Just a) = s `combine` 1 `hashWithSalt` a
+    hashWithSalt s (Just a) = s `combine` distinguisher `hashWithSalt` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hash (Left a)  = 0 `hashWithSalt` a
-    hash (Right b) = 1 `hashWithSalt` b
+    hash (Right b) = distinguisher `hashWithSalt` b
     hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
-    hashWithSalt s (Right b) = s `combine` 1 `hashWithSalt` b
+    hashWithSalt s (Right b) = s `combine` distinguisher `hashWithSalt` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
@@ -252,13 +281,28 @@ instance Hashable (StableName a) where
     hash = hashStableName
 #endif
 
--- | Default salt for hashing string like types.
-stringSalt :: Int
-stringSalt = 5381
-
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
     hashWithSalt = foldl' hashWithSalt
+
+instance Hashable B.ByteString where
+    hashWithSalt salt bs = B.inlinePerformIO $
+                           B.unsafeUseAsCStringLen bs $ \(p, len) ->
+                           hashPtrWithSalt p (fromIntegral len) salt
+
+instance Hashable BL.ByteString where
+    hashWithSalt salt = BL.foldlChunks hashWithSalt salt
+
+#if defined(__GLASGOW_HASKELL__)
+instance Hashable T.Text where
+    hashWithSalt salt (T.Text arr off len) =
+        hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
+        salt
+
+instance Hashable LT.Text where
+    hashWithSalt salt = LT.foldlChunks hashWithSalt salt
+#endif
+
 
 -- | Compute the hash of a ThreadId.  For GHC, we happen to know a
 -- trick to make this fast.
@@ -274,26 +318,6 @@ hashThreadId = hash . show
 instance Hashable ThreadId where
     hash = hashThreadId
     {-# INLINE hash #-}
-
-instance Hashable B.ByteString where
-    hash = hashWithSalt stringSalt
-    hashWithSalt salt bs = B.inlinePerformIO $
-                           B.unsafeUseAsCStringLen bs $ \(p, len) ->
-                           hashPtrWithSalt p (fromIntegral len) salt
-
-instance Hashable BL.ByteString where
-    hash = hashWithSalt stringSalt
-    hashWithSalt = BL.foldlChunks hashWithSalt
-
-instance Hashable T.Text where
-    hash = hashWithSalt stringSalt
-    hashWithSalt salt (T.Text arr off len) =
-        hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
-        salt
-
-instance Hashable LT.Text where
-    hash = hashWithSalt stringSalt
-    hashWithSalt = LT.foldlChunks hashWithSalt
 
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
@@ -373,10 +397,10 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ salt
                 -> IO Int  -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` hashCString (castPtr p) (fromIntegral len)
+    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
-foreign import ccall unsafe "djb_hash" hashCString
+foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
     :: CString -> CLong -> CLong -> IO CLong
 
 #if defined(__GLASGOW_HASKELL__)
@@ -408,11 +432,11 @@ hashByteArrayWithSalt ba !off !len !h0 =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h0)
 
-foreign import ccall unsafe "djb_hash_offset" c_hashByteArray
+foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
     :: ByteArray# -> CLong -> CLong -> CLong -> CLong
 #endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
 combine :: Int -> Int -> Int
-combine h1 h2 = (h1 + h1 `shiftL` 5) `xor` h2
+combine h1 h2 = (h1 * 16777619) `xor` h2
