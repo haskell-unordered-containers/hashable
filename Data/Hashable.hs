@@ -384,7 +384,7 @@ instance Hashable TypeRep where
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
         -> IO Int     -- ^ hash value
-hashPtr p len = hashPtrWithSalt p len stringSalt
+hashPtr p len = hashPtrWithSalt p len defaultSalt
 
 -- | Compute a hash value for the content of this pointer, using an
 -- initial salt.
@@ -411,7 +411,7 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
               -> Int         -- ^ hash value
-hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len stringSalt
+hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 {-# INLINE hashByteArray #-}
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
