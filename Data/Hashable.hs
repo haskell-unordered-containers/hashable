@@ -296,7 +296,7 @@ instance Hashable B.ByteString where
 
 instance Hashable BL.ByteString where
     hash = hashWithSalt stringSalt
-    hashWithSalt = BL.foldlChunks hashWithSalt
+    hashWithSalt salt = BL.foldlChunks hashWithSalt salt
 
 #if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
@@ -307,7 +307,7 @@ instance Hashable T.Text where
 
 instance Hashable LT.Text where
     hash = hashWithSalt stringSalt
-    hashWithSalt = LT.foldlChunks hashWithSalt
+    hashWithSalt salt = LT.foldlChunks hashWithSalt salt
 #endif
 
 
