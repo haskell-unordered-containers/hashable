@@ -28,7 +28,7 @@ Flag integer-gmp
   Default: True
 
 Library
-  Exposed-modules:   Data.Hashable
+  Exposed-modules:   Data.Hashable, Data.Hashable.Class
   Build-depends:     base >= 4.0 && < 5,
                      bytestring >= 0.9 && < 1.0
   if impl(ghc)
