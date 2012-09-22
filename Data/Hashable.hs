@@ -153,6 +153,11 @@ class Hashable a where
 
 instance Hashable () where hash _ = 0
 
+instance Hashable Ordering where
+    hash LT = 0xd035ce52b17a94b4
+    hash EQ = 0x65886b5361a4db93
+    hash GT = 0x731e59547a3d470d
+
 instance Hashable Bool where hash x = case x of { True -> 1; False -> 0 }
 
 instance Hashable Int where hash = id
