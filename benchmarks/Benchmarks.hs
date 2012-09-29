@@ -8,6 +8,7 @@ import Data.Hashable
 import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
+import qualified Data.ByteString as B
 
 -- Benchmark English words (5 and 8), base64 encoded integers (11),
 -- SHA1 hashes as hex (40), and large blobs (1 Mb).
@@ -20,14 +21,20 @@ main = do
     fp40 <- mallocForeignPtrBytes 40
     let !mb = 2^(20 :: Int)  -- 1 Mb
     fp1Mb <- mallocForeignPtrBytes mb
-    
+
     -- We don't care about the contents of these either.
     let !ba5 = new 5
         !ba8 = new 8
         !ba11 = new 11
         !ba40 = new 40
         !ba1Mb = new mb
-    
+
+    let !bs5 = B.pack [0..4]
+        !bs8 = B.pack [0..7]
+        !bs11 = B.pack [0..10]
+        !bs40 = B.pack [0..39]
+        !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
+
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
         withForeignPtr fp11 $ \ p11 ->
@@ -47,6 +54,15 @@ main = do
           , bench "11" $ whnf (hashByteArray ba11 0) 11
           , bench "40" $ whnf (hashByteArray ba40 0) 40
           , bench "2^20" $ whnf (hashByteArray ba1Mb 0) mb
+          ]
+        , bgroup "hash"
+          [ bgroup "ByteString"
+            [ bench "5" $ whnf hash bs5
+            , bench "8" $ whnf hash bs8
+            , bench "11" $ whnf hash bs11
+            , bench "40" $ whnf hash bs40
+            , bench "2^20" $ whnf hash bs1Mb
+            ]
           ]
         ]
 
