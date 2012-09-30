@@ -103,19 +103,25 @@ hashByteString !c !d k0 k1 (PS fp off len) =
         scant = len .&. 7
         endBlocks = ptr0 `plusPtr` (len - scant)
         go !ptr !v0 !v1 !v2 !v3
-            | ptr == endBlocks = readLast ptr 0 0
+            | ptr == endBlocks = readLast ptr
             | otherwise = do
                 m <- peekLE64 ptr
                 fullBlock c m (go (ptr `plusPtr` 8)) v0 v1 v2 v3
           where
-            readLast p !s !m
-                | p == end = lastBlock c len (LE64 m)
-                             (finalize d return)
-                             v0 v1 v2 v3
-                | otherwise = do
-                    b <- fromIntegral `fmap` peekByte p
-                    readLast (p `plusPtr` 1) (s+8) (m .|. (b `unsafeShiftL` s))
-              where end = ptr0 `plusPtr` len
+            zero !m _ _ = lastBlock c len (LE64 m) (finalize d return) v0 v1 v2 v3
+            one k m p s = do
+              w <- fromIntegral `fmap` peekByte p
+              k (m .|. (w `unsafeShiftL` s)) (p `plusPtr` 1) (s+8)
+            readLast p =
+              case scant of
+                0 -> zero 0 p (0::Int)
+                1 -> one zero 0 p 0
+                2 -> one (one zero) 0 p 0
+                3 -> one (one (one zero)) 0 p 0
+                4 -> one (one (one (one zero))) 0 p 0
+                5 -> one (one (one (one (one zero)))) 0 p 0
+                6 -> one (one (one (one (one (one zero))))) 0 p 0
+                _ -> one (one (one (one (one (one (one zero)))))) 0 p 0
     in initState (go ptr0) k0 k1
 
 peekByte :: Ptr Word8 -> IO Word8
