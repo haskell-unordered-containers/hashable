@@ -6,7 +6,9 @@ cabal-version: >=1.2
 
 executable hashable-benchmarks
   ghc-options: -Wall -O2
-  c-sources: ../cbits/hashByteString.c
+  c-sources:
+    ../cbits/hashByteString.c
+    cbits/siphash.c
   hs-source-dirs: .. .
   main-is: Benchmarks.hs
   other-modules:

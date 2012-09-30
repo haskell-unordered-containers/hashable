@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns, MagicHash, UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MagicHash,
+    UnboxedTuples #-}
 
 module Main (main) where
 
@@ -9,6 +10,10 @@ import Data.Hashable.SipHash
 import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
+import Data.Word
+import Foreign.C.Types (CSize(..))
+import Foreign.Ptr
+import Data.ByteString.Internal
 import qualified Data.ByteString as B
 import qualified Crypto.MAC.SipHash as HS
 
@@ -43,8 +48,13 @@ main = do
         !bs512 = B.pack . map fromIntegral $ [0..511::Int]
         !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
 
-    let sipHash = hashByteString 2 4 0x4a7330fae70f52e8 0x919ea5953a9a1ec9
-        hsSipHash = HS.hash (HS.SipKey 0x4a7330fae70f52e8 0x919ea5953a9a1ec9)
+    let k0 = 0x4a7330fae70f52e8
+        k1 = 0x919ea5953a9a1ec9
+        sipHash = hashByteString 2 4 k0 k1
+        hsSipHash = HS.hash (HS.SipKey k0 k1)
+        cSipHash (PS fp off len) =
+            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            return $! c_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
 
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
@@ -92,6 +102,15 @@ main = do
           , bench "512" $ whnf sipHash bs512
           , bench "2^20" $ whnf sipHash bs1Mb
           ]
+        , bgroup "cSipHash"
+          [ bench "5" $ whnf cSipHash bs5
+          , bench "8" $ whnf cSipHash bs8
+          , bench "11" $ whnf cSipHash bs11
+          , bench "40" $ whnf cSipHash bs40
+          , bench "128" $ whnf cSipHash bs128
+          , bench "512" $ whnf cSipHash bs512
+          , bench "2^20" $ whnf cSipHash bs1Mb
+          ]
         , bgroup "pkgSipHash"
           [ bench "5" $ whnf hsSipHash bs5
           , bench "8" $ whnf hsSipHash bs8
@@ -110,3 +129,6 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
     case newByteArray# n# s1 of
         (# s2, ary #) -> case unsafeFreezeByteArray# ary s2 of
             (# s3, ba #) -> (# s3, BA ba #))
+
+foreign import ccall unsafe "siphash" c_siphash
+    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
