@@ -3,6 +3,7 @@
 module Data.Hashable.SipHash
     (
       LE64
+    , Sip
     , fromWord64
     , fullBlock
     , lastBlock
