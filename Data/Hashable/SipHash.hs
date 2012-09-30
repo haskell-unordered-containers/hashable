@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, RecordWildCards #-}
 
 module Data.Hashable.SipHash
     (
@@ -27,6 +27,11 @@ instance Show LE64 where
     show (LE64 !v) = let s = showHex v ""
                      in "0x" ++ replicate (16 - length s) '0' ++ s
 
+data Sip = Sip {
+      v0 :: {-# UNPACK #-} !Word64, v1 :: {-# UNPACK #-} !Word64
+    , v2 :: {-# UNPACK #-} !Word64, v3 :: {-# UNPACK #-} !Word64
+    }
+
 fromWord64 :: Word64 -> LE64
 #ifndef WORDS_BIGENDIAN
 fromWord64 = LE64
@@ -34,66 +39,55 @@ fromWord64 = LE64
 #error big endian support TBD
 #endif
 
-initState :: (Word64 -> Word64 -> Word64 -> Word64 -> r)
-          -> Word64 -> Word64
-          -> r
-initState k k0 k1 = k v0 v1 v2 v3
-    where !v0 = (k0 `xor` 0x736f6d6570736575)
-          !v1 = (k1 `xor` 0x646f72616e646f6d)
-          !v2 = (k0 `xor` 0x6c7967656e657261)
-          !v3 = (k1 `xor` 0x7465646279746573)
+initState :: (Sip -> r) -> Word64 -> Word64 -> r
+initState k k0 k1 = k (Sip s0 s1 s2 s3)
+    where !s0 = (k0 `xor` 0x736f6d6570736575)
+          !s1 = (k1 `xor` 0x646f72616e646f6d)
+          !s2 = (k0 `xor` 0x6c7967656e657261)
+          !s3 = (k1 `xor` 0x7465646279746573)
 
-sipRound :: (Word64 -> Word64 -> Word64 -> Word64 -> r)
-         ->  Word64 -> Word64 -> Word64 -> Word64 -> r
-sipRound k !v0 !v1 !v2 !v3 = k v0_c v1_d v2_c v3_d
-  where v0_a  = v0 + v1
-        v2_a  = v2 + v3
-        v1_a  = v1 `rotateL` 13
-        v3_a  = v3 `rotateL` 16
-        v1_b  = v1_a `xor` v0_a
-        v3_b  = v3_a `xor` v2_a
-        v0_b  = v0_a `rotateL` 32
-        v2_b  = v2_a + v1_b
-        !v0_c = v0_b + v3_b
-        v1_c  = v1_b `rotateL` 17
-        v3_c  = v3_b `rotateL` 21
-        !v1_d = v1_c `xor` v2_b
-        !v3_d = v3_c `xor` v0_c
-        !v2_c = v2_b `rotateL` 32
+sipRound :: (Sip -> r) -> Sip -> r
+sipRound k Sip{..} = k (Sip v0_c v1_d v2_c v3_d)
+  where v0_a = v0 + v1
+        v2_a = v2 + v3
+        v1_a = v1 `rotateL` 13
+        v3_a = v3 `rotateL` 16
+        v1_b = v1_a `xor` v0_a
+        v3_b = v3_a `xor` v2_a
+        v0_b = v0_a `rotateL` 32
+        v2_b = v2_a + v1_b
+        v0_c = v0_b + v3_b
+        v1_c = v1_b `rotateL` 17
+        v3_c = v3_b `rotateL` 21
+        v1_d = v1_c `xor` v2_b
+        v3_d = v3_c `xor` v0_c
+        v2_c = v2_b `rotateL` 32
 
-fullBlock :: Int -> LE64
-          -> (Word64 -> Word64 -> Word64 -> Word64 -> r)
-          ->  Word64 -> Word64 -> Word64 -> Word64 -> r
-fullBlock c m k v0 v1 v2 v3 = runRounds c k' v0 v1 v2 (v3 `xor` fromLE64 m)
-  where k' w0 = k $! (w0 `xor` fromLE64 m)
+fullBlock :: Int -> LE64 -> (Sip -> r) -> Sip -> r
+fullBlock c m k st@Sip{..} = runRounds c k' st{ v3 = v3 `xor` fromLE64 m }
+  where k' st@Sip{..} = k st{ v0 = v0 `xor` fromLE64 m }
 {-# INLINE fullBlock #-}
 
-runRounds :: Int
-          -> (Word64 -> Word64 -> Word64 -> Word64 -> r)
-          ->  Word64 -> Word64 -> Word64 -> Word64 -> r
+runRounds :: Int -> (Sip -> r) -> Sip -> r
 runRounds !c k = go 0
-  where go i !v0 !v1 !v2 !v3
-            | i < c     = sipRound (go (i+1)) v0 v1 v2 v3
-            | otherwise = k v0 v1 v2 v3
+  where go i st
+            | i < c     = sipRound (go (i+1)) st
+            | otherwise = k st
 {-# INLINE runRounds #-}
 
-lastBlock :: Int -> Int -> LE64
-          -> (Word64 -> Word64 -> Word64 -> Word64 -> r)
-          ->  Word64 -> Word64 -> Word64 -> Word64 -> r
-lastBlock !c !len !m k !v0 !v1 !v2 !v3 =
+lastBlock :: Int -> Int -> LE64 -> (Sip -> r) -> Sip -> r
+lastBlock !c !len !m k st =
 #ifndef WORDS_BIGENDIAN
-    fullBlock c (LE64 m') k v0 v1 v2 v3
+    fullBlock c (LE64 m') k st
 #else
 #error big endian support TBD
 #endif
   where m' = fromLE64 m .|. ((fromIntegral len .&. 0xff) `shiftL` 56)
 {-# INLINE lastBlock #-}
 
-finalize ::  Int
-         -> (Word64 -> r)
-         ->  Word64 -> Word64 -> Word64 -> Word64 -> r
-finalize d k v0 v1 v2 v3 = runRounds d k' v0 v1 (v2 `xor` 0xff) v3
-  where k' w0 w1 w2 w3 = k $! w0 `xor` w1 `xor` w2 `xor` w3
+finalize :: Int -> (Word64 -> r) -> Sip -> r
+finalize d k st@Sip{..} = runRounds d k' st{ v2 = v2 `xor` 0xff }
+  where k' Sip{..} = k $! v0 `xor` v1 `xor` v2 `xor` v3
 {-# INLINE finalize #-}
 
 hashByteString :: Int -> Int -> Word64 -> Word64 -> ByteString -> Word64
@@ -102,13 +96,13 @@ hashByteString !c !d k0 k1 (PS fp off len) =
     let ptr0 = basePtr `plusPtr` off
         scant = len .&. 7
         endBlocks = ptr0 `plusPtr` (len - scant)
-        go !ptr !v0 !v1 !v2 !v3
+        go !ptr st
             | ptr == endBlocks = readLast ptr
             | otherwise = do
                 m <- peekLE64 ptr
-                fullBlock c m (go (ptr `plusPtr` 8)) v0 v1 v2 v3
+                fullBlock c m (go (ptr `plusPtr` 8)) st
           where
-            zero !m _ _ = lastBlock c len (LE64 m) (finalize d return) v0 v1 v2 v3
+            zero !m _ _ = lastBlock c len (LE64 m) (finalize d return) st
             one k m p s = do
               w <- fromIntegral `fmap` peekByte p
               k (m .|. (w `unsafeShiftL` s)) (p `plusPtr` 1) (s+8)
