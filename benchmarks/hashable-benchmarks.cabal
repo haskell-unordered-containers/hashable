@@ -17,4 +17,5 @@ executable hashable-benchmarks
     bytestring,
     criterion,
     ghc-prim,
+    siphash,
     text

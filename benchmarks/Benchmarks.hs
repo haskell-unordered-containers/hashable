@@ -10,6 +10,7 @@ import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
 import qualified Data.ByteString as B
+import qualified Crypto.MAC.SipHash as HS
 
 -- Benchmark English words (5 and 8), base64 encoded integers (11),
 -- SHA1 hashes as hex (40), and large blobs (1 Mb).
@@ -37,6 +38,7 @@ main = do
         !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
 
     let sipHash = hashByteString 2 4 0x4a7330fae70f52e8 0x919ea5953a9a1ec9
+        hsSipHash = HS.hash (HS.SipKey 0x4a7330fae70f52e8 0x919ea5953a9a1ec9)
 
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
@@ -73,6 +75,13 @@ main = do
           , bench "11" $ whnf sipHash bs11
           , bench "40" $ whnf sipHash bs40
           , bench "2^20" $ whnf sipHash bs1Mb
+          ]
+        , bgroup "pkgSipHash"
+          [ bench "5" $ whnf hsSipHash bs5
+          , bench "8" $ whnf hsSipHash bs8
+          , bench "11" $ whnf hsSipHash bs11
+          , bench "40" $ whnf hsSipHash bs40
+          , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
         ]
 
