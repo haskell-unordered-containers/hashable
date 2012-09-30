@@ -1,3 +1,5 @@
+/* Almost a verbatim copy of the reference implementation. */
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -7,12 +9,12 @@ typedef uint8_t u8;
 #define ROTL(x,b) (u64)(((x) << (b)) | ((x) >> (64 - (b))))
 
 #define SIPROUND \
-  do { \
-    v0 += v1; v1=ROTL(v1,13); v1 ^= v0; v0=ROTL(v0,32); \
-    v2 += v3; v3=ROTL(v3,16); v3 ^= v2; \
-    v0 += v3; v3=ROTL(v3,21); v3 ^= v0; \
-    v2 += v1; v1=ROTL(v1,17); v1 ^= v2; v2=ROTL(v2,32); \
-  } while(0)
+    do { \
+	v0 += v1; v1=ROTL(v1,13); v1 ^= v0; v0=ROTL(v0,32); \
+	v2 += v3; v3=ROTL(v3,16); v3 ^= v2; \
+	v0 += v3; v3=ROTL(v3,21); v3 ^= v0; \
+	v2 += v1; v1=ROTL(v1,17); v1 ^= v2; v2=ROTL(v2,32); \
+    } while(0)
 
 u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 {
@@ -59,10 +61,10 @@ u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 
     v2 ^= 0xff;
     if (d == 4) {
-    SIPROUND;
-    SIPROUND;
-    SIPROUND;
-    SIPROUND;
+	SIPROUND;
+	SIPROUND;
+	SIPROUND;
+	SIPROUND;
     } else {
 	for (i = 0; i < d; i++)
 	    SIPROUND;
