@@ -69,7 +69,9 @@ fullBlock c m k st@Sip{..} = runRounds c k' st{ v3 = v3 `xor` fromLE64 m }
 {-# INLINE fullBlock #-}
 
 runRounds :: Int -> (Sip -> r) -> Sip -> r
-runRounds !c k = go 0
+runRounds 2 k = sipRound (sipRound k)
+runRounds 4 k = sipRound (sipRound (sipRound (sipRound k)))
+runRounds c k = go 0
   where go i st
             | i < c     = sipRound (go (i+1)) st
             | otherwise = k st
