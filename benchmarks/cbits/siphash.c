@@ -14,7 +14,7 @@ typedef uint8_t u8;
     v2 += v1; v1=ROTL(v1,17); v1 ^= v2; v2=ROTL(v2,32); \
   } while(0)
 
-u64 siphash(u64 k0, u64 k1, const u8 *str, size_t len)
+u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 {
     u64 v0 = 0x736f6d6570736575ull ^ k0;
     u64 v1 = 0x646f72616e646f6dull ^ k1;
@@ -22,12 +22,18 @@ u64 siphash(u64 k0, u64 k1, const u8 *str, size_t len)
     u64 v3 = 0x7465646279746573ull ^ k1;
     u64 b = ((u64) len) << 56;
     const u8 *end, *p;
+    int i;
 
     for (p = str, end = str + (len & ~7); p < end; p += 8) {
 	u64 m = *(u64 *) p;
 	v3 ^= m;
-	SIPROUND;
-	SIPROUND;
+	if (c == 2) {
+	    SIPROUND;
+	    SIPROUND;
+	} else {
+	    for (i = 0; i < c; i++)
+		SIPROUND;
+	}
 	v0 ^= m;
     }
 
@@ -42,15 +48,25 @@ u64 siphash(u64 k0, u64 k1, const u8 *str, size_t len)
     }
 
     v3 ^= b;
-    SIPROUND;
-    SIPROUND;
+    if (c == 2) {
+	SIPROUND;
+	SIPROUND;
+    } else {
+	for (i = 0; i < c; i++)
+	    SIPROUND;
+    }
     v0 ^= b;
 
     v2 ^= 0xff;
+    if (d == 4) {
     SIPROUND;
     SIPROUND;
     SIPROUND;
     SIPROUND;
+    } else {
+	for (i = 0; i < d; i++)
+	    SIPROUND;
+    }
     b = v0 ^ v1 ^ v2  ^ v3;
     return b;
 }

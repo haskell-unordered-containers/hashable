@@ -11,7 +11,7 @@ import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
 import Data.Word
-import Foreign.C.Types (CSize(..))
+import Foreign.C.Types (CInt(..), CSize(..))
 import Foreign.Ptr
 import Data.ByteString.Internal
 import qualified Data.ByteString as B
@@ -54,7 +54,7 @@ main = do
         hsSipHash = HS.hash (HS.SipKey k0 k1)
         cSipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
-            return $! c_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+            return $! c_siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
 
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
@@ -131,4 +131,4 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
             (# s3, ba #) -> (# s3, BA ba #))
 
 foreign import ccall unsafe "siphash" c_siphash
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+    :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
