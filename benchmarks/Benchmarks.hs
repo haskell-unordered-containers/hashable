@@ -21,6 +21,8 @@ main = do
     fp8 <- mallocForeignPtrBytes 8
     fp11 <- mallocForeignPtrBytes 11
     fp40 <- mallocForeignPtrBytes 40
+    fp128 <- mallocForeignPtrBytes 128
+    fp512 <- mallocForeignPtrBytes 512
     let !mb = 2^(20 :: Int)  -- 1 Mb
     fp1Mb <- mallocForeignPtrBytes mb
 
@@ -29,12 +31,16 @@ main = do
         !ba8 = new 8
         !ba11 = new 11
         !ba40 = new 40
+        !ba128 = new 128
+        !ba512 = new 512
         !ba1Mb = new mb
 
     let !bs5 = B.pack [0..4]
         !bs8 = B.pack [0..7]
         !bs11 = B.pack [0..10]
         !bs40 = B.pack [0..39]
+        !bs128 = B.pack [0..127]
+        !bs512 = B.pack . map fromIntegral $ [0..511::Int]
         !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
 
     let sipHash = hashByteString 2 4 0x4a7330fae70f52e8 0x919ea5953a9a1ec9
@@ -44,6 +50,8 @@ main = do
         withForeignPtr fp8 $ \ p8 ->
         withForeignPtr fp11 $ \ p11 ->
         withForeignPtr fp40 $ \ p40 ->
+        withForeignPtr fp128 $ \ p128 ->
+        withForeignPtr fp512 $ \ p512 ->
         withForeignPtr fp1Mb $ \ p1Mb ->
         defaultMain
         [ bgroup "hashPtr"
@@ -51,6 +59,8 @@ main = do
           , bench "8" $ hashPtr p8 8
           , bench "11" $ hashPtr p11 11
           , bench "40" $ hashPtr p40 40
+          , bench "128" $ hashPtr p128 128
+          , bench "512" $ hashPtr p512 512
           , bench "2^20" $ hashPtr p1Mb mb
           ]
         , bgroup "hashByteArray"
@@ -58,6 +68,8 @@ main = do
           , bench "8" $ whnf (hashByteArray ba8 0) 8
           , bench "11" $ whnf (hashByteArray ba11 0) 11
           , bench "40" $ whnf (hashByteArray ba40 0) 40
+          , bench "128" $ whnf (hashByteArray ba128 0) 128
+          , bench "512" $ whnf (hashByteArray ba512 0) 512
           , bench "2^20" $ whnf (hashByteArray ba1Mb 0) mb
           ]
         , bgroup "hash"
@@ -66,6 +78,8 @@ main = do
             , bench "8" $ whnf hash bs8
             , bench "11" $ whnf hash bs11
             , bench "40" $ whnf hash bs40
+            , bench "128" $ whnf hash bs128
+            , bench "512" $ whnf hash bs512
             , bench "2^20" $ whnf hash bs1Mb
             ]
           ]
@@ -74,6 +88,8 @@ main = do
           , bench "8" $ whnf sipHash bs8
           , bench "11" $ whnf sipHash bs11
           , bench "40" $ whnf sipHash bs40
+          , bench "128" $ whnf sipHash bs128
+          , bench "512" $ whnf sipHash bs512
           , bench "2^20" $ whnf sipHash bs1Mb
           ]
         , bgroup "pkgSipHash"
@@ -81,6 +97,8 @@ main = do
           , bench "8" $ whnf hsSipHash bs8
           , bench "11" $ whnf hsSipHash bs11
           , bench "40" $ whnf hsSipHash bs40
+          , bench "128" $ whnf hsSipHash bs128
+          , bench "512" $ whnf hsSipHash bs512
           , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
         ]
