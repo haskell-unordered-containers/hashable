@@ -5,6 +5,7 @@ module Main (main) where
 import Control.Monad.ST
 import Criterion.Main
 import Data.Hashable
+import Data.Hashable.SipHash
 import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
@@ -35,6 +36,8 @@ main = do
         !bs40 = B.pack [0..39]
         !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
 
+    let sipHash = hashByteString 2 4 0x4a7330fae70f52e8 0x919ea5953a9a1ec9
+
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
         withForeignPtr fp11 $ \ p11 ->
@@ -63,6 +66,13 @@ main = do
             , bench "40" $ whnf hash bs40
             , bench "2^20" $ whnf hash bs1Mb
             ]
+          ]
+        , bgroup "sipHash"
+          [ bench "5" $ whnf sipHash bs5
+          , bench "8" $ whnf sipHash bs8
+          , bench "11" $ whnf sipHash bs11
+          , bench "40" $ whnf sipHash bs40
+          , bench "2^20" $ whnf sipHash bs1Mb
           ]
         ]
 
