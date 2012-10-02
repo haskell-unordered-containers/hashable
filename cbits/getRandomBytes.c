@@ -33,14 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "MachDeps.h"
 
-int hashable_getRandomBytes(int nbytes, unsigned char *dest);
+int hashable_getRandomBytes(unsigned char *dest, int nbytes);
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__) 
 
 #include <windows.h>
 #include <wincrypt.h>
 
-int hashable_getRandomBytes(int nbytes, unsigned char *dest)
+int hashable_getRandomBytes(unsigned char *dest, int nbytes)
 {
   HCRYPTPROV hCryptProv;
   int ret;
@@ -66,7 +66,7 @@ int hashable_getRandomBytes(int nbytes, unsigned char *dest)
 /* Assumptions: /dev/urandom exists and does something sane, and does
    not block. */
 
-int hashable_getRandomBytes(int nbytes, unsigned char *dest)
+int hashable_getRandomBytes(unsigned char *dest, int nbytes)
 {
   ssize_t off, nread;
   int fd;
