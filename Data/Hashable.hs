@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             UnliftedFFITypes #-}
+             ScopedTypeVariables, UnliftedFFITypes #-}
 
 ------------------------------------------------------------------------
 -- |
@@ -99,6 +99,11 @@ import GHC.Fingerprint.Type(Fingerprint(..))
 import Data.Typeable.Internal(TypeRep(..))
 #endif
 
+#ifndef FIXED_SALT
+import Data.Hashable.RandomSource (getRandomBytes_)
+import Foreign.Marshal.Alloc (alloca)
+#endif
+
 #include "MachDeps.h"
 
 infixl 0 `combine`, `hashWithSalt`
@@ -109,9 +114,25 @@ infixl 0 `combine`, `hashWithSalt`
 -- | A default salt used in the default implementation of 'hashWithSalt'.
 -- It is specified by FNV-1 hash as a default salt for hashing string like
 -- types.
+--
+-- To reduce the probability of hash collisions, the value of the
+-- default salt will vary from one program invocation to the next
+-- unless this package was compiled with the @fixed-salt@ flag set.
 defaultSalt :: Int
+
+#ifdef FIXED_SALT
+
 defaultSalt = 2166136261
 {-# INLINE defaultSalt #-}
+
+#else
+
+defaultSalt = unsafePerformIO . alloca $ \(p :: Ptr Int) -> do
+                getRandomBytes_ "defaultSalt" p (sizeOf (undefined :: Int))
+                peek p
+{-# NOINLINE defaultSalt #-}
+
+#endif
 
 -- | The class of types that can be converted to a hash value.
 --
