@@ -30,6 +30,7 @@ Flag integer-gmp
 Library
   Exposed-modules:   Data.Hashable
                      Data.Hashable.SipHash
+  Other-modules:     Data.Hashable.RandomSource
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9
   if impl(ghc)
@@ -39,6 +40,7 @@ Library
     Build-depends:   integer-gmp >= 0.2
 
   C-sources:         cbits/hashByteString.c
+                     cbits/getRandomBytes.c
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
