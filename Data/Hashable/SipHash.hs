@@ -144,3 +144,8 @@ peekLE64 p = do
            (b1 `shiftL` 8) .|. b0
   return (fromWord64 w)
 #endif
+
+#if !MIN_VERSION_base(4,5,0)
+unsafeShiftL :: Word64 -> Int -> Word64
+unsafeShiftL = shiftL
+#endif
