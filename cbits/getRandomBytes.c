@@ -4,19 +4,19 @@ int hashable_getRandomBytes(int nbytes, unsigned char *dest);
 
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__) 
 
-#include "wincrypt.h"
+#include <windows.h>
+#include <wincrypt.h>
 
 int hashable_getRandomBytes(int nbytes, unsigned char *dest)
 {
   HCRYPTPROV hCryptProv;
   int ret;
 
-  if (CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL,
-			  CRYPT_VERIFYCONTEXT))
+  if (!CryptAcquireContextA(&hCryptProv, NULL, NULL, PROV_RSA_FULL,
+			    CRYPT_VERIFYCONTEXT)) 
     return -1;
   
-  if (!CryptGenRandom(hCryptProv, (DWOORD) nbytes, (BYTE *) dest))
-    ret = -1;
+  ret = CryptGenRandom(hCryptProv, (DWORD) nbytes, (BYTE *) dest) ? nbytes : -1;
 
   CryptReleaseContext(hCryptProv, 0);
 

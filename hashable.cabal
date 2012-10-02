@@ -44,6 +44,8 @@ Library
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
+  if os(windows)
+    extra-libraries: advapi32
 
 Test-suite tests
   Type:              exitcode-stdio-1.0
