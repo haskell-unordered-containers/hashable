@@ -25,6 +25,7 @@ module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
+    , Hash
 
       -- * Creating new instances
       -- $blocks
@@ -113,6 +114,9 @@ defaultSalt :: Int
 defaultSalt = 2166136261
 {-# INLINE defaultSalt #-}
 
+-- | Type for representing hash values
+type Hash = Int
+
 -- | The class of types that can be converted to a hash value.
 --
 -- Minimal implementation: 'hash' or 'hashWithSalt'.
@@ -136,7 +140,7 @@ class Hashable a where
     --    that producing distinct integer results for unequal values
     --    may improve the performance of hashing-based data
     --    structures.
-    hash :: a -> Int
+    hash :: a -> Hash
     hash = hashWithSalt defaultSalt
 
     -- | Return a hash value for the argument, using the given salt.
@@ -148,7 +152,7 @@ class Hashable a where
     -- The contract for 'hashWithSalt' is the same as for 'hash', with
     -- the additional requirement that any instance that defines
     -- 'hashWithSalt' must make use of the salt in its implementation.
-    hashWithSalt :: Int -> a -> Int
+    hashWithSalt :: Int -> a -> Hash
     hashWithSalt salt x = salt `combine` hash x
 
 instance Hashable () where hash _ = 0
@@ -390,7 +394,7 @@ instance Hashable TypeRep where
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> Int        -- ^ length, in bytes
-        -> IO Int     -- ^ hash value
+        -> IO Hash    -- ^ hash value
 hashPtr p len = hashPtrWithSalt p len defaultSalt
 
 -- | Compute a hash value for the content of this pointer, using an
@@ -402,7 +406,7 @@ hashPtr p len = hashPtrWithSalt p len defaultSalt
 hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ length, in bytes
                 -> Int     -- ^ salt
-                -> IO Int  -- ^ hash value
+                -> IO Hash -- ^ hash value
 hashPtrWithSalt p len salt =
     fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
@@ -417,7 +421,7 @@ foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
 hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
-              -> Int         -- ^ hash value
+              -> Hash        -- ^ hash value
 hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 {-# INLINE hashByteArray #-}
 
@@ -434,7 +438,7 @@ hashByteArrayWithSalt
     -> Int         -- ^ offset, in bytes
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
-    -> Int         -- ^ hash value
+    -> Hash        -- ^ hash value
 hashByteArrayWithSalt ba !off !len !h0 =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h0)
@@ -445,5 +449,5 @@ foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
-combine :: Int -> Int -> Int
+combine :: Hash -> Hash -> Hash
 combine h1 h2 = (h1 * 16777619) `xor` h2
