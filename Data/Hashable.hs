@@ -56,11 +56,10 @@ import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
 #endif
-import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
-import Foreign.C (CSize(..), CLong(..))
+import Foreign.C (CSize(..))
 #else
-import Foreign.C (CSize, CLong)
+import Foreign.C (CSize)
 #endif
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
