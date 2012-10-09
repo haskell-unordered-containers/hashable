@@ -58,9 +58,9 @@ import qualified Data.Text.Lazy as LT
 #endif
 import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
-import Foreign.C (CLong(..))
+import Foreign.C (CSize(..), CLong(..))
 #else
-import Foreign.C (CLong)
+import Foreign.C (CSize, CLong)
 #endif
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
@@ -425,11 +425,26 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ salt
                 -> IO Int  -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
-    (fromIntegral salt)
+    fromIntegral `fmap` c_siphash24 k0 (fromSalt salt) (castPtr p)
+                        (fromIntegral len)
 
-foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
-    :: CString -> CLong -> CLong -> IO CLong
+k0 :: Word64
+k0 = 0x56e2b8a0aee1721a
+{-# INLINE k0 #-}
+
+k1 :: Word64
+k1 = 0x7654954208bdfef9
+{-# INLINE k1 #-}
+
+fromSalt :: Int -> Word64
+#if WORD_SIZE_IN_BITS == 64
+fromSalt = fromIntegral
+#else
+fromSalt v = fromIntegral v `xor` k1
+#endif
+
+foreign import ccall unsafe "hashable_siphash24" c_siphash24
+    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> IO Word64
 
 #if defined(__GLASGOW_HASKELL__)
 -- | Compute a hash value for the content of this 'ByteArray#',
