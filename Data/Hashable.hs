@@ -471,12 +471,12 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h0 =
-    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
-    (fromIntegral h0)
+hashByteArrayWithSalt ba !off !len !h =
+    fromIntegral $
+    c_siphash24_offset k0 (fromSalt h) ba (fromIntegral off) (fromIntegral len)
 
-foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
-    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
+foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
+    :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
 #endif
 
 -- | Combine two given hash values.  'combine' has zero as a left

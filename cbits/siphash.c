@@ -83,3 +83,12 @@ u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 {
     return _siphash(2, 4, k0, k1, str, len);
 }
+
+/* Used for ByteArray#s. We can't treat them like pointers in
+   native Haskell, but we can in unsafe FFI calls.
+ */
+u64 hashable_siphash24_offset(u64 k0, u64 k1,
+			      const u8 *str, size_t off, size_t len)
+{
+    return _siphash(2, 4, k0, k1, str + off, len);
+}
