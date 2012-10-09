@@ -16,7 +16,8 @@ typedef uint8_t u8;
 	v2 += v1; v1=ROTL(v1,17); v1 ^= v2; v2=ROTL(v2,32); \
     } while(0)
 
-u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
+static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
+			   const u8 *str, size_t len)
 {
     u64 v0 = 0x736f6d6570736575ull ^ k0;
     u64 v1 = 0x646f72616e646f6dull ^ k1;
@@ -71,4 +72,14 @@ u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
     }
     b = v0 ^ v1 ^ v2  ^ v3;
     return b;
+}
+
+u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
+{
+    return _siphash(c, d, k0, k1, str, len);
+}
+
+u64 siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
+{
+    return _siphash(2, 4, k0, k1, str, len);
 }

@@ -55,6 +55,9 @@ main = do
         cSipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! c_siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+        cSipHash24 (PS fp off len) =
+            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
         sse41SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
@@ -114,6 +117,15 @@ main = do
           , bench "512" $ whnf cSipHash bs512
           , bench "2^20" $ whnf cSipHash bs1Mb
           ]
+        , bgroup "cSipHash24"
+          [ bench "5" $ whnf cSipHash24 bs5
+          , bench "8" $ whnf cSipHash24 bs8
+          , bench "11" $ whnf cSipHash24 bs11
+          , bench "40" $ whnf cSipHash24 bs40
+          , bench "128" $ whnf cSipHash24 bs128
+          , bench "512" $ whnf cSipHash24 bs512
+          , bench "2^20" $ whnf cSipHash24 bs1Mb
+          ]
         , bgroup "sse41SipHash"
           [ bench "5" $ whnf sse41SipHash bs5
           , bench "8" $ whnf sse41SipHash bs8
@@ -144,5 +156,7 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
 
 foreign import ccall unsafe "siphash" c_siphash
     :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+foreign import ccall unsafe "siphash24" c_siphash24
+    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 foreign import ccall unsafe "siphash_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
