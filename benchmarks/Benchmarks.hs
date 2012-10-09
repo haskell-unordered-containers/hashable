@@ -154,9 +154,9 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
         (# s2, ary #) -> case unsafeFreezeByteArray# ary s2 of
             (# s3, ba #) -> (# s3, BA ba #))
 
-foreign import ccall unsafe "siphash" c_siphash
+foreign import ccall unsafe "hashable_siphash" c_siphash
     :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-foreign import ccall unsafe "siphash24" c_siphash24
+foreign import ccall unsafe "hashable_siphash24" c_siphash24
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 foreign import ccall unsafe "siphash_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64

@@ -74,12 +74,12 @@ static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
     return b;
 }
 
-u64 siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
+u64 hashable_siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 {
     return _siphash(c, d, k0, k1, str, len);
 }
 
-u64 siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
+u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 {
     return _siphash(2, 4, k0, k1, str, len);
 }
