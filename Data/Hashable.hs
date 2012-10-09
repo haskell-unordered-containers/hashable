@@ -127,7 +127,7 @@ defaultSalt = 2166136261
 
 #else
 
-defaultSalt = unsafePerformIO . alloca $ \(p :: Ptr Int) -> do
+defaultSalt = unsafePerformIO . alloca $ \p -> do
                 getRandomBytes_ "defaultSalt" p (sizeOf (undefined :: Int))
                 peek p
 {-# NOINLINE defaultSalt #-}
