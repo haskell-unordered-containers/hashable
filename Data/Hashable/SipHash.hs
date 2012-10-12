@@ -65,13 +65,14 @@ sipRound k Sip{..} = k (Sip v0_c v1_d v2_c v3_d)
         v2_c = v2_b `rotateL` 32
 
 fullBlock :: Int -> LE64 -> (Sip -> r) -> Sip -> r
-fullBlock c m k st@Sip{..} = runRounds c k' st{ v3 = v3 `xor` fromLE64 m }
+fullBlock c m k st@Sip{..}
+    | c == 2    = sipRound (sipRound k') st'
+    | otherwise = runRounds c k' st'
   where k' st@Sip{..} = k st{ v0 = v0 `xor` fromLE64 m }
+        st'           = st{ v3 = v3 `xor` fromLE64 m }
 {-# INLINE fullBlock #-}
 
 runRounds :: Int -> (Sip -> r) -> Sip -> r
-runRounds 2 k = sipRound (sipRound k)
-runRounds 4 k = sipRound (sipRound (sipRound (sipRound k)))
 runRounds c k = go 0
   where go i st
             | i < c     = sipRound (go (i+1)) st
@@ -89,8 +90,11 @@ lastBlock !c !len !m k st =
 {-# INLINE lastBlock #-}
 
 finalize :: Int -> (Word64 -> r) -> Sip -> r
-finalize d k st@Sip{..} = runRounds d k' st{ v2 = v2 `xor` 0xff }
+finalize d k st@Sip{..}
+    | d == 4    = sipRound (sipRound (sipRound (sipRound k'))) st'
+    | otherwise = runRounds d k' st'
   where k' Sip{..} = k $! v0 `xor` v1 `xor` v2 `xor` v3
+        st'        = st{ v2 = v2 `xor` 0xff }
 {-# INLINE finalize #-}
 
 hashByteString :: Int -> Int -> Word64 -> Word64 -> ByteString -> Word64
