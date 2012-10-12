@@ -121,7 +121,7 @@ defaultSalt :: Int
 
 #ifdef FIXED_SALT
 
-defaultSalt = 2166136261
+defaultSalt = 0xdc36d1615b7400a4
 {-# INLINE defaultSalt #-}
 
 #else
@@ -135,13 +135,18 @@ defaultSalt = unsafePerformIO . alloca $ \p -> do
 
 -- | The class of types that can be converted to a hash value.
 --
--- Minimal implementation: 'hash' or 'hashWithSalt'.
+-- Minimal implementation: 'hashWithSalt' (preferred) or
+-- 'hash'.
+--
+-- When writing an instance, it is better to implement 'hashWithSalt'
+-- than 'hash', as 'hashWithSalt' can more efficiently (and perhaps
+-- more thoroughly) \"mix\" the provided salt into the resulting hash.
 class Hashable a where
     -- | Return a hash value for the argument.
     --
     -- The general contract of 'hash' is:
     --
-    --  * This integer need not remain consistent from one execution
+    --  * The result need not remain consistent from one execution
     --    of an application to another execution of the same
     --    application.
     --
