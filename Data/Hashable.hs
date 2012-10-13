@@ -38,7 +38,7 @@ module Data.Hashable
     ) where
 
 import Control.Exception (assert)
-import Data.Bits (bitSize, shiftL, shiftR, xor)
+import Data.Bits (shiftL, shiftR, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
@@ -185,24 +185,29 @@ instance Hashable Ordering where
 
 instance Hashable Bool where hash x = case x of { True -> 1; False -> 0 }
 
-instance Hashable Int where hash = id
-instance Hashable Int8 where hash = fromIntegral
-instance Hashable Int16 where hash = fromIntegral
-instance Hashable Int32 where hash = fromIntegral
-instance Hashable Int64 where
-    hash n
-        | bitSize (undefined :: Int) == 64 = fromIntegral n
-        | otherwise = fromIntegral (fromIntegral n `xor`
-                                   (fromIntegral n `shiftR` 32 :: Word64))
+instance Hashable Int where hashWithSalt = hashNative
+instance Hashable Int8 where hashWithSalt = hashNative
+instance Hashable Int16 where hashWithSalt = hashNative
+instance Hashable Int32 where hashWithSalt = hashNative
+instance Hashable Int64 where hashWithSalt = hash64
 
-instance Hashable Word where hash = fromIntegral
-instance Hashable Word8 where hash = fromIntegral
-instance Hashable Word16 where hash = fromIntegral
-instance Hashable Word32 where hash = fromIntegral
-instance Hashable Word64 where
-    hash n
-        | bitSize (undefined :: Int) == 64 = fromIntegral n
-        | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
+instance Hashable Word where hashWithSalt = hashNative
+instance Hashable Word8 where hashWithSalt = hashNative
+instance Hashable Word16 where hashWithSalt = hashNative
+instance Hashable Word32 where hashWithSalt = hashNative
+instance Hashable Word64 where hashWithSalt = hash64
+
+hashNative :: (Integral a) => Int -> a -> Int
+hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
+  where
+#if WORD_SIZE_IN_BITS == 32
+    go = c_wang32
+#else
+    go = c_wang64
+#endif
+
+hash64 :: (Integral a) => Int -> a -> Int
+hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
 
 instance Hashable Integer where
 #if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
@@ -487,3 +492,11 @@ foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
 -- identity.
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 * 16777619) `xor` h2
+
+#if WORD_SIZE_IN_BITS == 32
+foreign import ccall unsafe "hashable_wang_32" c_wang32
+    :: Word32 -> Word32
+#endif
+
+foreign import ccall unsafe "hashable_wang_64" c_wang64
+    :: Word64 -> Word64
