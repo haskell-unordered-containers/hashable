@@ -7,6 +7,7 @@ import Control.Monad.ST
 import Criterion.Main
 import Data.Hashable
 import Data.Hashable.SipHash
+import Data.Int
 import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
@@ -61,6 +62,10 @@ main = do
         sse41SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+        cSipHash8 v = c_siphash24_u8 k0 k1 (fromIntegral v)
+        cSipHash16 v = c_siphash24_u16 k0 k1 (fromIntegral v)
+        cSipHash32 v = c_siphash24_u32 k0 k1 (fromIntegral v)
+        cSipHash64 v = c_siphash24_u64 k0 k1 (fromIntegral v)
 
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
@@ -98,6 +103,11 @@ main = do
             , bench "512" $ whnf hash bs512
             , bench "2^20" $ whnf hash bs1Mb
             ]
+          , bench "Int8" $ whnf hash (0xef :: Int8)
+          , bench "Int16" $ whnf hash (0x7eef :: Int16)
+          , bench "Int32" $ whnf hash (0x7eadbeef :: Int32)
+          , bench "Int" $ whnf hash (0x7eadbeefdeadbeef :: Int)
+          , bench "Int64" $ whnf hash (0x7eadbeefdeadbeef :: Int64)
           ]
         , bgroup "sipHash"
           [ bench "5" $ whnf sipHash bs5
@@ -118,13 +128,19 @@ main = do
           , bench "2^20" $ whnf cSipHash bs1Mb
           ]
         , bgroup "cSipHash24"
-          [ bench "5" $ whnf cSipHash24 bs5
-          , bench "8" $ whnf cSipHash24 bs8
-          , bench "11" $ whnf cSipHash24 bs11
-          , bench "40" $ whnf cSipHash24 bs40
-          , bench "128" $ whnf cSipHash24 bs128
-          , bench "512" $ whnf cSipHash24 bs512
-          , bench "2^20" $ whnf cSipHash24 bs1Mb
+          [ bgroup "ByteString"
+            [ bench "5" $ whnf cSipHash24 bs5
+            , bench "8" $ whnf cSipHash24 bs8
+            , bench "11" $ whnf cSipHash24 bs11
+            , bench "40" $ whnf cSipHash24 bs40
+            , bench "128" $ whnf cSipHash24 bs128
+            , bench "512" $ whnf cSipHash24 bs512
+            , bench "2^20" $ whnf cSipHash24 bs1Mb
+            ]
+          , bench "Int8" $ whnf cSipHash8 (0x5a :: Int8)
+          , bench "Int16" $ whnf cSipHash16 (0x5a5a :: Int16)
+          , bench "Int32" $ whnf cSipHash32 (0x5a5a5a5a :: Int32)
+          , bench "Int64" $ whnf cSipHash64 (0x5a5a5a5a5a5a5a5a :: Int64)
           ]
         , bgroup "sse41SipHash"
           [ bench "5" $ whnf sse41SipHash bs5
@@ -144,6 +160,12 @@ main = do
           , bench "512" $ whnf hsSipHash bs512
           , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
+        , bgroup "Int"
+          [ bench "wang32" $ whnf hash_wang_32 0xdeadbeef
+          , bench "wang64" $ whnf hash_wang_64 0xdeadbeefdeadbeef
+          , bench "jenkins32a" $ whnf hash_jenkins_32a 0xdeadbeef
+          , bench "jenkins32b" $ whnf hash_jenkins_32b 0xdeadbeef
+          ]
         ]
 
 data ByteArray = BA { unBA :: !ByteArray# }
@@ -158,5 +180,22 @@ foreign import ccall unsafe "hashable_siphash" c_siphash
     :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 foreign import ccall unsafe "hashable_siphash24" c_siphash24
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+foreign import ccall unsafe "hashable_siphash24_u64" c_siphash24_u64
+    :: Word64 -> Word64 -> Word64 -> Word64
+foreign import ccall unsafe "hashable_siphash24_u32" c_siphash24_u32
+    :: Word64 -> Word64 -> Word32 -> Word64
+foreign import ccall unsafe "hashable_siphash24_u16" c_siphash24_u16
+    :: Word64 -> Word64 -> Word16 -> Word64
+foreign import ccall unsafe "hashable_siphash24_u8" c_siphash24_u8
+    :: Word64 -> Word64 -> Word8 -> Word64
 foreign import ccall unsafe "siphash_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+
+foreign import ccall unsafe "hash_wang_32" hash_wang_32
+    :: Word32 -> Word32
+foreign import ccall unsafe "hash_wang_64" hash_wang_64
+    :: Word64 -> Word64
+foreign import ccall unsafe "hash_jenkins_32a" hash_jenkins_32a
+    :: Word32 -> Word32
+foreign import ccall unsafe "hash_jenkins_32b" hash_jenkins_32b
+    :: Word32 -> Word32

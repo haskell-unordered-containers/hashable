@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
 typedef uint8_t u8;
 
 #define ROTL(x,b) (u64)(((x) << (b)) | ((x) >> (64 - (b))))
@@ -91,4 +93,24 @@ u64 hashable_siphash24_offset(u64 k0, u64 k1,
 			      const u8 *str, size_t off, size_t len)
 {
     return _siphash(2, 4, k0, k1, str + off, len);
+}
+
+u64 hashable_siphash24_u8(u64 k0, u64 k1, u8 key)
+{
+    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u8));
+}
+
+u16 hashable_siphash24_u16(u64 k0, u64 k1, u16 key)
+{
+    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u16));
+}
+
+u16 hashable_siphash24_u32(u64 k0, u64 k1, u32 key)
+{
+    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u32));
+}
+
+u64 hashable_siphash24_u64(u64 k0, u64 k1, u64 key)
+{
+    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u64));
 }
