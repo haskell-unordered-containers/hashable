@@ -161,7 +161,9 @@ main = do
           , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
         , bgroup "Int"
-          [ bench "wang32" $ whnf hash_wang_32 0xdeadbeef
+          [ bench "id32"   $ whnf id           (0x7eadbeef :: Int32)
+          , bench "id64"   $ whnf id           (0x7eadbeefdeadbeef :: Int64)
+          , bench "wang32" $ whnf hash_wang_32 0xdeadbeef
           , bench "wang64" $ whnf hash_wang_64 0xdeadbeefdeadbeef
           , bench "jenkins32a" $ whnf hash_jenkins_32a 0xdeadbeef
           , bench "jenkins32b" $ whnf hash_jenkins_32b 0xdeadbeef
