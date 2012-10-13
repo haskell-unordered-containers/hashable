@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+/*
+ * 32- and 64-bit hashes by Thomas Wang.
+ */
+
 uint32_t hash_wang_32(uint32_t a)
 {
     a = (a ^ 61) ^ (a >> 16);
@@ -21,6 +25,10 @@ uint64_t hash_wang_64(uint64_t key)
     key = key + (key << 31);
     return key;
 }
+
+/*
+ * 32-bit hashes by Bob Jenkins.
+ */
 
 uint32_t hash_jenkins_32a(uint32_t a)
 {
