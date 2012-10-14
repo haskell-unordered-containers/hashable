@@ -252,16 +252,12 @@ distinguisher = fromIntegral $ (maxBound :: Word) `quot` 3
 {-# INLINE distinguisher #-}
 
 instance Hashable a => Hashable (Maybe a) where
-    hash Nothing = 0
-    hash (Just a) = distinguisher `hashWithSalt` a
-    hashWithSalt s Nothing = s `combine` 0
-    hashWithSalt s (Just a) = s `combine` distinguisher `hashWithSalt` a
+    hashWithSalt s Nothing = hashWithSalt s (0::Int)
+    hashWithSalt s (Just a) = hashWithSalt s a `hashWithSalt` distinguisher
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
-    hash (Left a)  = 0 `hashWithSalt` a
-    hash (Right b) = distinguisher `hashWithSalt` b
-    hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
-    hashWithSalt s (Right b) = s `combine` distinguisher `hashWithSalt` b
+    hashWithSalt s (Left a)  = hashWithSalt s a
+    hashWithSalt s (Right b) = hashWithSalt s b `hashWithSalt` distinguisher
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
