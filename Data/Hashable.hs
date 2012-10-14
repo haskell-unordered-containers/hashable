@@ -176,15 +176,6 @@ class Hashable a where
     hashWithSalt :: Int -> a -> Int
     hashWithSalt salt x = salt `combine` hash x
 
-instance Hashable () where hash _ = 0
-
-instance Hashable Ordering where
-    hash LT = 0xd035ce52b17a94b4
-    hash EQ = 0x65886b5361a4db93
-    hash GT = 0x731e59547a3d470d
-
-instance Hashable Bool where hash x = case x of { True -> 1; False -> 0 }
-
 instance Hashable Int where hashWithSalt = hashNative
 instance Hashable Int8 where hashWithSalt = hashNative
 instance Hashable Int16 where hashWithSalt = hashNative
@@ -196,6 +187,11 @@ instance Hashable Word8 where hashWithSalt = hashNative
 instance Hashable Word16 where hashWithSalt = hashNative
 instance Hashable Word32 where hashWithSalt = hashNative
 instance Hashable Word64 where hashWithSalt = hash64
+
+instance Hashable () where hash = hash . fromEnum
+instance Hashable Bool where hash = hash . fromEnum
+instance Hashable Ordering where hash = hash . fromEnum
+instance Hashable Char where hash = hash . fromEnum
 
 hashNative :: (Integral a) => Int -> a -> Int
 hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
@@ -211,11 +207,11 @@ hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
 
 instance Hashable Integer where
 #if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
-    hash (S# int) = I# int
+    hash (S# int) = hash (I# int)
     hash n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = fromInteger n
                                | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) 0
 
-    hashWithSalt salt (S# int) = salt `combine` I# int
+    hashWithSalt salt (S# int) = hashWithSalt salt (I# int)
     hashWithSalt salt n@(J# size byteArray) | n >= fromIntegral (minBound :: Int) && n <= fromIntegral (maxBound :: Int) = salt `combine` fromInteger n
                                             | otherwise = hashByteArrayWithSalt byteArray 0 (SIZEOF_HSWORD * (I# size)) salt
 #else
@@ -247,8 +243,6 @@ instance Hashable Double where
                     alignment x >= alignment (0::Word64)) $
             hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
         | otherwise = hash (show x)
-
-instance Hashable Char where hash = fromEnum
 
 -- | A value with bit pattern (01)* (or 5* in hexa), for any size of Int.
 -- It is used as data constructor distinguisher. GHC computes its value during
