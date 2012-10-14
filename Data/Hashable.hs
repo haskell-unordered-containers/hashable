@@ -38,7 +38,7 @@ module Data.Hashable
     ) where
 
 import Control.Exception (assert)
-import Data.Bits (shiftL, shiftR, xor)
+import Data.Bits (shiftL, xor)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Data.List (foldl')
@@ -431,15 +431,15 @@ k0 :: Word64
 k0 = 0x56e2b8a0aee1721a
 {-# INLINE k0 #-}
 
-k1 :: Word64
-k1 = 0x7654954208bdfef9
-{-# INLINE k1 #-}
-
 fromSalt :: Int -> Word64
 #if WORD_SIZE_IN_BITS == 64
 fromSalt = fromIntegral
 #else
 fromSalt v = fromIntegral v `xor` k1
+
+k1 :: Word64
+k1 = 0x7654954208bdfef9
+{-# INLINE k1 #-}
 #endif
 
 foreign import ccall unsafe "hashable_siphash24" c_siphash24
