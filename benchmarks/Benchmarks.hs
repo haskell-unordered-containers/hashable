@@ -190,7 +190,7 @@ foreign import ccall unsafe "hashable_siphash24_u16" c_siphash24_u16
     :: Word64 -> Word64 -> Word16 -> Word64
 foreign import ccall unsafe "hashable_siphash24_u8" c_siphash24_u8
     :: Word64 -> Word64 -> Word8 -> Word64
-foreign import ccall unsafe "siphash_sse41" sse41_siphash
+foreign import ccall unsafe "hashable_siphash24_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 
 foreign import ccall unsafe "hash_wang_32" hash_wang_32

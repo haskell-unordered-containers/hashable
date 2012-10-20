@@ -18,6 +18,10 @@ typedef uint8_t u8;
 	v2 += v1; v1=ROTL(v1,17); v1 ^= v2; v2=ROTL(v2,32); \
     } while(0)
 
+#if defined(__i386)
+# define _siphash24 plain_siphash24
+#endif
+
 static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
 			   const u8 *str, size_t len)
 {
@@ -76,6 +80,42 @@ static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
     return b;
 }
 
+
+static inline u64 _siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
+{
+    return _siphash(2, 4, k0, k1, str, len);
+}
+
+#if defined(__i386)
+# undef _siphash24
+
+static u64 (*_siphash24)(u64 k0, u64 k1, const u8 *, size_t);
+
+u64 hashable_siphash24_sse41(u64 k0, u64 k1, const u8 *, size_t);
+
+static void maybe_use_sse41()
+    __attribute__((constructor));
+
+static void maybe_use_sse41()
+{
+    uint32_t eax = 1, ebx, ecx, edx;
+
+    __asm volatile
+	("mov %%ebx, %%edi;" /* 32bit PIC: don't clobber ebx */
+	 "cpuid;"
+	 "mov %%ebx, %%esi;"
+	 "mov %%edi, %%ebx;"
+	 :"+a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)
+	 : :"edi");
+
+    if (ecx & (1 << 19))
+	_siphash24 = hashable_siphash24_sse41;
+    else
+	_siphash24 = plain_siphash24;
+}
+
+#endif
+
 u64 hashable_siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 {
     return _siphash(c, d, k0, k1, str, len);
@@ -83,7 +123,7 @@ u64 hashable_siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 
 u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 {
-    return _siphash(2, 4, k0, k1, str, len);
+    return _siphash24(k0, k1, str, len);
 }
 
 /* Used for ByteArray#s. We can't treat them like pointers in
@@ -92,25 +132,25 @@ u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 u64 hashable_siphash24_offset(u64 k0, u64 k1,
 			      const u8 *str, size_t off, size_t len)
 {
-    return _siphash(2, 4, k0, k1, str + off, len);
+    return _siphash24(k0, k1, str + off, len);
 }
 
 u64 hashable_siphash24_u8(u64 k0, u64 k1, u8 key)
 {
-    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u8));
+    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u8));
 }
 
 u16 hashable_siphash24_u16(u64 k0, u64 k1, u16 key)
 {
-    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u16));
+    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u16));
 }
 
 u16 hashable_siphash24_u32(u64 k0, u64 k1, u32 key)
 {
-    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u32));
+    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u32));
 }
 
 u64 hashable_siphash24_u64(u64 k0, u64 k1, u64 key)
 {
-    return _siphash(2, 4, k0, k1, (const u8 *) &key, sizeof(u64));
+    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u64));
 }

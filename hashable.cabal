@@ -46,6 +46,10 @@ Library
   C-sources:         cbits/getRandomBytes.c
                      cbits/inthash.c
                      cbits/siphash.c
+  if arch(i386)
+    C-sources:       cbits/siphash-sse41.c
+    CC-options:      -msse4.1
+
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
