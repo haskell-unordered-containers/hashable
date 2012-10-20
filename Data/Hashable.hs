@@ -72,6 +72,8 @@ import GHC.Base (ByteArray#)
 # ifdef VERSION_integer_gmp
 import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
+# else
+import Data.Bits (shiftR)
 # endif
 #endif
 

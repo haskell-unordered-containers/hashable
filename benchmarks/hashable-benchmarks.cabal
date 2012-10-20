@@ -10,6 +10,7 @@ executable hashable-benchmarks
   c-sources:
     ../cbits/hashByteString.c
     ../cbits/getRandomBytes.c
+    ../cbits/inthash.c
     ../cbits/siphash.c
     cbits/inthash.c
     cbits/siphash-sse41.c
@@ -24,5 +25,6 @@ executable hashable-benchmarks
     bytestring,
     criterion,
     ghc-prim,
+    integer-gmp,
     siphash,
     text
