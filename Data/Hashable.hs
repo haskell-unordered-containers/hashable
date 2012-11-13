@@ -16,15 +16,14 @@
 -- converted to a hash value.  This class exists for the benefit of
 -- hashing-based data structures.  The module provides instances for
 -- most standard types.
---
--- The 'hash' function should be as collision-free as possible, which
--- means that the 'hash' function must map the inputs to the hash
--- values as evenly as possible.
 
 module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
+
+      -- ** Avalanche
+      -- $avalanche
 
       -- * Creating new instances
       -- $blocks
@@ -35,6 +34,8 @@ module Data.Hashable
     , hashByteArrayWithSalt
 #endif
     , combine
+      -- * Hashing types with multiple constructors
+      -- $ctors
     ) where
 
 import Control.Exception (assert)
@@ -139,10 +140,6 @@ defaultSalt = unsafePerformIO . alloca $ \p -> do
 --
 -- Minimal implementation: 'hashWithSalt' (preferred) or
 -- 'hash'.
---
--- When writing an instance, it is better to implement 'hashWithSalt'
--- than 'hash', as 'hashWithSalt' can more efficiently (and perhaps
--- more thoroughly) \"mix\" the provided salt into the resulting hash.
 class Hashable a where
     -- | Return a hash value for the argument.
     --
@@ -153,16 +150,19 @@ class Hashable a where
     --    application.
     --
     --  * If two values are equal according to the '==' method, then
-    --    applying the 'hash' method on each of the two values must
+    --    applying the 'hash' method on each of the two values /must/
     --    produce the same integer result.
     --
     --  * It is /not/ required that if two values are unequal
     --    according to the '==' method, then applying the 'hash'
     --    method on each of the two values must produce distinct
-    --    integer results.  However, the programmer should be aware
+    --    integer results.  (Every programmer will be aware
     --    that producing distinct integer results for unequal values
-    --    may improve the performance of hashing-based data
-    --    structures.
+    --    will improve the performance of hashing-based data
+    --    structures.)
+    --
+    -- The computation of 'hash' /should/ use an existing hash
+    -- function provided by this module.
     hash :: a -> Int
     hash = hashWithSalt defaultSalt
 
@@ -174,7 +174,7 @@ class Hashable a where
     --
     -- The contract for 'hashWithSalt' is the same as for 'hash', with
     -- the additional requirement that any instance that defines
-    -- 'hashWithSalt' must make use of the salt in its implementation.
+    -- 'hashWithSalt' /must/ make use of the salt in its implementation.
     hashWithSalt :: Int -> a -> Int
     hashWithSalt salt x = salt `combine` hash x
 
@@ -370,12 +370,29 @@ instance Hashable TypeRep where
 
 
 ------------------------------------------------------------------------
+-- * Avalanche
+
+-- $avalanche
+--
+-- A good hash function has a 50% probability of flipping every bit of
+-- its result in response to a change of just one bit in its
+-- input. This property is called /avalanche/. To be truly general
+-- purpose, hash functions must have strong avalanche behavior.
+--
+-- All of the 'Hashable' instances provided by this module have
+-- excellent avalanche properties.
+
+------------------------------------------------------------------------
 -- * Creating new instances
 
 -- $blocks
 --
+-- To maintain high quality hashes, new 'Hashable' instances should be
+-- built using existing 'Hashable' instances, combinators, and hash
+-- functions.
+--
 -- The functions below can be used when creating new instances of
--- 'Hashable'.  For example, for many string-like types the
+-- 'Hashable'.  For many string-like types the
 -- 'hashWithSalt' method can be defined in terms of either
 -- 'hashPtrWithSalt' or 'hashByteArrayWithSalt'.  Here's how you could
 -- implement an instance for the 'B.ByteString' data type, from the
@@ -402,6 +419,69 @@ instance Hashable TypeRep where
 -- this recipe:
 --
 -- > combineTwo h1 h2 = h1 `hashWithSalt` h2
+
+-- $ctors
+--
+-- For a type with several value constructors, there are a few
+-- possible approaches to writing a 'Hashable' instance.
+--
+-- If the type is an instance of 'Enum', the easiest (and safest) path
+-- is to convert it to an 'Int', and use the existing 'Hashable'
+-- instance for 'Int'.
+--
+-- > data Color = Red | Green | Blue
+-- >              deriving (Enum)
+-- >
+-- > instance Hashable Color where
+-- >     hash = hash . fromEnum
+--
+-- This instance benefits from the fact that the 'Hashable' instance
+-- for 'Int' has excellent avalanche properties.
+--
+-- In contrast, a very weak hash function would be:
+--
+-- > terribleHash :: Color -> Int
+-- > terribleHash = fromEnum
+--
+-- This has terrible avalanche properties, as every input is mapped to
+-- a small integer.
+--
+-- If the type's constructors accept parameters, it can be important
+-- to distinguish the constructors.
+--
+-- > data Time = Days Int
+-- >           | Weeks Int
+-- >           | Months Int
+--
+-- This weak hash function guarantees a high probability of days,
+-- weeks, and months all colliding when hashed.
+--
+-- > veryBadHash :: Time -> Int
+-- > veryBadHash (Days  d)  = hash d
+-- > veryBadHash (Weeks w)  = hash w
+-- > veryBadHash (Months m) = hash m
+--
+-- It is easy to distinguish the constructors using the `hashWithSalt`
+-- function.
+--
+-- > instance Hashable Time where
+-- >     hashWithSalt s (Days n)   = s `hashWithSalt`
+-- >                                 (0::Int) `hashWithSalt` n
+-- >     hashWithSalt s (Weeks n)  = s `hashWithSalt`
+-- >                                 (1::Int) `hashWithSalt` n
+-- >     hashWithSalt s (Months n) = s `hashWithSalt`
+-- >                                 (2::Int) `hashWithSalt` n
+--
+-- If a constructor accepts multiple parameters, their hashes can be
+-- chained.
+--
+-- > data Date = Date Int Int Int
+-- >
+-- > instance Hashable Date where
+-- >     hashWithSalt s (Date yr mo dy) =
+-- >         s `hashWithSalt`
+-- >         yr `hashWithSalt`
+-- >         mo `hashWithSalt` dy
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
@@ -474,14 +554,17 @@ foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
     :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
 #endif
 
--- | /DEPRECATED/ Combine two given hash values.  'combine' has zero
--- as a left identity.
+-- | Combine two given hash values.  'combine' has zero as a left
+-- identity.
 --
 -- Since 'combine' does a poor job of mixing its inputs, it is
 -- recommended to blend hashes using 'hashWithSalt' instead.
 --
--- > combine a b
--- > hashWithSalt a b
+-- > -- OLD BADNESS
+-- > combine h1 h2
+-- >
+-- > -- NEW HOTNESS
+-- > hashWithSalt h1 h2
 
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 * 16777619) `xor` h2
