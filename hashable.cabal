@@ -33,7 +33,6 @@ Flag fixed-salt
 
 Library
   Exposed-modules:   Data.Hashable
-                     Data.Hashable.SipHash
   Other-modules:     Data.Hashable.RandomSource
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9

@@ -15,7 +15,7 @@
 -- This module defines a class, 'Hashable', for types that can be
 -- converted to a hash value.  This class exists for the benefit of
 -- hashing-based data structures.  The module provides instances for
--- basic types and a way to combine hash values.
+-- most standard types.
 --
 -- The 'hash' function should be as collision-free as possible, which
 -- means that the 'hash' function must map the inputs to the hash
@@ -195,6 +195,8 @@ instance Hashable Bool where hash = hash . fromEnum
 instance Hashable Ordering where hash = hash . fromEnum
 instance Hashable Char where hash = hash . fromEnum
 
+-- | Hash an integer of at most the native width supported by the
+-- machine.
 hashNative :: (Integral a) => Int -> a -> Int
 hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
   where
@@ -204,6 +206,7 @@ hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
     go = c_wang64
 #endif
 
+-- | Hash a 64-bit integer.
 hash64 :: (Integral a) => Int -> a -> Int
 hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
 
@@ -389,25 +392,16 @@ instance Hashable TypeRep where
 -- >                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
 -- >                            hashPtrWithSalt p (fromIntegral len) salt
 --
--- Use 'hashWithSalt' to create a hash value from several values,
--- using this recipe:
+-- Use 'hashWithSalt' to compute a hash from several values, using
+-- this recipe:
 --
 -- > instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
 -- >     hash (a1, a2) = hash a1 `hashWithSalt` a2
 --
--- You can combine multiple hash values using 'combine', using this
--- recipe:
+-- You can chain hashes together using 'hashWithSalt', by following
+-- this recipe:
 --
--- > combineTwo h1 h2 = 17 `combine` h1 `combine` h2
---
--- As zero is a left identity of 'combine', a nonzero "seed" is used
--- so that the number of combined hash values affects the final
--- result, even if the first hash values are zero.  The value 17 is
--- arbitrary.
---
--- When possible, use 'hashWithSalt' to compute a hash value from
--- multiple values instead of computing separate hashes for each value
--- and then combining them using 'combine'.
+-- > combineTwo h1 h2 = h1 `hashWithSalt` h2
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
@@ -480,10 +474,18 @@ foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
     :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
 #endif
 
--- | Combine two given hash values.  'combine' has zero as a left
--- identity.
+-- | /DEPRECATED/ Combine two given hash values.  'combine' has zero
+-- as a left identity.
+--
+-- Since 'combine' does a poor job of mixing its inputs, it is
+-- recommended to blend hashes using 'hashWithSalt' instead.
+--
+-- > combine a b
+-- > hashWithSalt a b
+
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 * 16777619) `xor` h2
+{-# DEPRECATED combine "use hashWithSalt instead" #-}
 
 #if WORD_SIZE_IN_BITS == 32
 foreign import ccall unsafe "hashable_wang_32" c_wang32
