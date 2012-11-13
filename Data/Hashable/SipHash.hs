@@ -68,7 +68,7 @@ fullBlock :: Int -> LE64 -> (Sip -> r) -> Sip -> r
 fullBlock c m k st@Sip{..}
     | c == 2    = sipRound (sipRound k') st'
     | otherwise = runRounds c k' st'
-  where k' st@Sip{..} = k st{ v0 = v0 `xor` fromLE64 m }
+  where k' st1@Sip{..} = k st1{ v0 = v0 `xor` fromLE64 m }
         st'           = st{ v3 = v3 `xor` fromLE64 m }
 {-# INLINE fullBlock #-}
 
