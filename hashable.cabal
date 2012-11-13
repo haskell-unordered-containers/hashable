@@ -34,6 +34,7 @@ Flag fixed-salt
 Library
   Exposed-modules:   Data.Hashable
   Other-modules:     Data.Hashable.RandomSource
+                     Data.Hashable.SipHash
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9
   if impl(ghc)
