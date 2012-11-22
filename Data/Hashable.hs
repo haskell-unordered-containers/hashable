@@ -113,13 +113,11 @@ infixl 0 `combine`, `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
--- | A default salt used in the default implementation of 'hashWithSalt'.
--- It is specified by FNV-1 hash as a default salt for hashing string like
--- types.
+-- | A default salt used in the default implementation of 'hash'.
 --
 -- To reduce the probability of hash collisions, the value of the
 -- default salt will vary from one program invocation to the next
--- unless this package was compiled with the @fixed-salt@ flag set.
+-- unless this package is compiled with the @fixed-salt@ flag set.
 defaultSalt :: Int
 
 #ifdef FIXED_SALT
