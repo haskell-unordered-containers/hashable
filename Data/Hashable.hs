@@ -35,7 +35,6 @@ module Data.Hashable
     , hashByteArray
     , hashByteArrayWithSalt
 #endif
-    , combine
       -- * Hashing types with multiple constructors
       -- $ctors
     ) where
@@ -110,7 +109,7 @@ import Foreign.Marshal.Alloc (alloca)
 
 #include "MachDeps.h"
 
-infixl 0 `combine`, `hashWithSalt`
+infixl 0 `hashWithSalt`
 
 ------------------------------------------------------------------------
 -- * Computing hash values
@@ -551,22 +550,6 @@ hashByteArrayWithSalt ba !off !len !h =
 foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
     :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
 #endif
-
--- | Combine two given hash values.  'combine' has zero as a left
--- identity.
---
--- Since 'combine' does a poor job of mixing its inputs, it is
--- recommended to blend hashes using 'hashWithSalt' instead.
---
--- > -- OLD BADNESS
--- > combine h1 h2
--- >
--- > -- NEW HOTNESS
--- > hashWithSalt h1 h2
-
-combine :: Int -> Int -> Int
-combine h1 h2 = (h1 * 16777619) `xor` h2
-{-# DEPRECATED combine "use hashWithSalt instead" #-}
 
 #if WORD_SIZE_IN_BITS == 32
 foreign import ccall unsafe "hashable_wang_32" c_wang32
