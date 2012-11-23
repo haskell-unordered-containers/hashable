@@ -13,13 +13,13 @@ module Data.Hashable.SipHash
 
 #include "MachDeps.h"
 
-import Data.Bits
-import Data.Word
-import Foreign.ForeignPtr
-import Foreign.Ptr
-import Data.ByteString.Internal
-import Foreign.Storable
-import Numeric
+import Data.Bits ((.|.), (.&.), rotateL, shiftL, unsafeShiftL, xor)
+import Data.Word (Word8, Word64)
+import Foreign.ForeignPtr (withForeignPtr)
+import Foreign.Ptr (Ptr, castPtr, plusPtr)
+import Data.ByteString.Internal (ByteString(PS), inlinePerformIO)
+import Foreign.Storable (peek)
+import Numeric (showHex)
 
 newtype LE64 = LE64 { fromLE64 :: Word64 }
     deriving (Eq)
