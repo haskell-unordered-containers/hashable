@@ -43,6 +43,9 @@ Library
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
+
   C-sources:         cbits/getRandomBytes.c
                      cbits/inthash.c
                      cbits/siphash.c

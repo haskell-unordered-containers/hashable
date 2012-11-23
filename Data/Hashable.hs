@@ -1,12 +1,16 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
              ScopedTypeVariables, UnliftedFFITypes #-}
+#ifdef GENERICS
+{-# LANGUAGE DefaultSignatures, FlexibleContexts, FlexibleInstances,
+             KindSignatures, TypeOperators, TypeSynonymInstances #-}
+#endif
 
 ------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Hash
 -- Copyright   :  (c) Milan Straka 2010
 --                (c) Johan Tibell 2011
---                (c) Bryan O'Sullivan 2011
+--                (c) Bryan O'Sullivan 2011, 2012
 -- License     :  BSD-style
 -- Maintainer  :  johan.tibell@gmail.com
 -- Stability   :  provisional
@@ -21,6 +25,10 @@ module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
+#ifdef GENERICS
+      -- ** Support for generics
+    , GHashable(..)
+#endif
     , hash
 
       -- ** Avalanche
@@ -57,6 +65,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as LT
+# ifdef GENERICS
+import Data.Bits (Bits, shiftR)
+import GHC.Generics
+# endif
 #endif
 #if __GLASGOW_HASKELL__ >= 703
 import Foreign.C (CSize(..))
@@ -162,6 +174,15 @@ class Hashable a where
     -- defines 'hashWithSalt' /must/ make use of the salt in its
     -- implementation.
     hashWithSalt :: Int -> a -> Int
+
+#ifdef GENERICS
+    default hashWithSalt :: (Generic a, GHashable (Rep a)) => Int -> a -> Int
+    hashWithSalt salt = ghashWithSalt salt . from
+
+-- | The class of types that can be generically hashed.
+class GHashable f where
+    ghashWithSalt :: Int -> f a -> Int
+#endif
 
 hash :: Hashable a => a -> Int
 hash = hashWithSalt defaultSalt
@@ -546,6 +567,57 @@ hashByteArrayWithSalt
 hashByteArrayWithSalt ba !off !len !h =
     fromIntegral $
     c_siphash24_offset k0 (fromSalt h) ba (fromIntegral off) (fromIntegral len)
+
+#ifdef GENERICS
+
+-- Type without constructors
+instance GHashable V1 where
+    ghashWithSalt salt _ = hashWithSalt salt ()
+
+-- Constructor without arguments
+instance GHashable U1 where
+    ghashWithSalt salt U1 = hashWithSalt salt ()
+
+instance (GHashable a, GHashable b) => GHashable (a :*: b) where
+    ghashWithSalt salt (x :*: y) = salt `ghashWithSalt` x `ghashWithSalt` y
+
+-- Metadata (constructor name, etc)
+instance GHashable a => GHashable (M1 i c a) where
+    ghashWithSalt salt = ghashWithSalt salt . unM1
+
+-- Constants, additional parameters, and rank-1 recursion
+instance Hashable a => GHashable (K1 i a) where
+    ghashWithSalt = hashUsing unK1
+
+class GSum f where
+    hashSum :: Int -> Int -> Int -> f a -> Int
+
+instance (GSum a, GSum b, GHashable a, GHashable b) => GSum (a :+: b) where
+    hashSum !salt !code !size s = case s of
+                                    L1 x -> hashSum salt code           sizeL x
+                                    R1 x -> hashSum salt (code + sizeL) sizeR x
+        where
+          sizeL = size `shiftR` 1
+          sizeR = size - sizeL
+    {-# INLINE hashSum #-}
+
+instance GHashable a => GSum (C1 c a) where
+    hashSum !salt !code _ x = salt `hashWithSalt` code `ghashWithSalt` x
+    {-# INLINE hashSum #-}
+
+class SumSize f where
+    sumSize :: Tagged f Int
+
+newtype Tagged (s :: * -> *) b = Tagged {unTagged :: b}
+
+instance (SumSize a, SumSize b) => SumSize (a :+: b) where
+    sumSize = Tagged $ unTagged (sumSize :: Tagged a Int) +
+                       unTagged (sumSize :: Tagged b Int)
+
+instance SumSize (C1 c a) where
+    sumSize = Tagged 1
+
+#endif
 
 foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
     :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
