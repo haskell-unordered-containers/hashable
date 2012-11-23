@@ -21,12 +21,14 @@ module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
+    , hash
 
       -- ** Avalanche
       -- $avalanche
 
       -- * Creating new instances
       -- $blocks
+    , hashUsing
     , hashPtr
     , hashPtrWithSalt
 #if defined(__GLASGOW_HASKELL__)
@@ -113,7 +115,7 @@ infixl 0 `combine`, `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
--- | A default salt used in the default implementation of 'hash'.
+-- | A default salt used in the implementation of 'hash'.
 --
 -- To reduce the probability of hash collisions, the value of the
 -- default salt will vary from one program invocation to the next
@@ -135,46 +137,54 @@ defaultSalt = unsafePerformIO . alloca $ \p -> do
 #endif
 
 -- | The class of types that can be converted to a hash value.
---
--- Minimal implementation: 'hashWithSalt' (preferred) or
--- 'hash'.
 class Hashable a where
-    -- | Return a hash value for the argument.
+    -- | Return a hash value for the argument, using the given salt.
     --
-    -- The general contract of 'hash' is:
+    -- The general contract of 'hashWithSalt' is:
     --
-    --  * The result need not remain consistent from one execution
-    --    of an application to another execution of the same
-    --    application.
+    --  * The result need not remain consistent from one execution of
+    --    an application to another execution of the same application.
     --
     --  * If two values are equal according to the '==' method, then
-    --    applying the 'hash' method on each of the two values /must/
-    --    produce the same integer result.
+    --    applying the 'hashWithSalt' method on each of the two values
+    --    /must/ produce the same integer result.
     --
     --  * It is /not/ required that if two values are unequal
-    --    according to the '==' method, then applying the 'hash'
-    --    method on each of the two values must produce distinct
-    --    integer results.  (Every programmer will be aware
+    --    according to the '==' method, then applying the
+    --    'hashWithSalt' method on each of the two values must produce
+    --    distinct integer results.  (Every programmer will be aware
     --    that producing distinct integer results for unequal values
     --    will improve the performance of hashing-based data
     --    structures.)
     --
-    -- The computation of 'hash' /should/ use an existing hash
-    -- function provided by this module.
-    hash :: a -> Int
-    hash = hashWithSalt defaultSalt
-
-    -- | Return a hash value for the argument, using the given salt.
-    --
     -- This method can be used to compute different hash values for
     -- the same input by providing a different salt in each
-    -- application of the method.
-    --
-    -- The contract for 'hashWithSalt' is the same as for 'hash', with
-    -- the additional requirement that any instance that defines
-    -- 'hashWithSalt' /must/ make use of the salt in its implementation.
+    -- application of the method. This implies that any instance that
+    -- defines 'hashWithSalt' /must/ make use of the salt in its
+    -- implementation.
     hashWithSalt :: Int -> a -> Int
-    hashWithSalt salt x = salt `combine` hash x
+
+hash :: Hashable a => a -> Int
+hash = hashWithSalt defaultSalt
+
+-- | Transform a value into a 'Hashable' value, then hash the
+-- transformed value using the given salt.
+--
+-- This is a useful shorthand in cases where a type can easily be
+-- mapped to another type that is already an instance of 'Hashable'.
+--
+-- > data Foo = Foo | Bar
+-- >          deriving (Enum)
+-- >
+-- > instance Hashable Foo where
+-- >     hashWithSalt = hashUsing fromEnum
+hashUsing :: (Hashable b) =>
+             (a -> b)           -- ^ Transformation function.
+          -> Int                -- ^ Salt.
+          -> a                  -- ^ Value to transform.
+          -> Int
+hashUsing f salt x = hashWithSalt salt (f x)
+{-# INLINE hashUsing #-}
 
 instance Hashable Int where hashWithSalt = hashNative
 instance Hashable Int8 where hashWithSalt = hashNative
@@ -188,10 +198,10 @@ instance Hashable Word16 where hashWithSalt = hashNative
 instance Hashable Word32 where hashWithSalt = hashNative
 instance Hashable Word64 where hashWithSalt = hash64
 
-instance Hashable () where hash = hash . fromEnum
-instance Hashable Bool where hash = hash . fromEnum
-instance Hashable Ordering where hash = hash . fromEnum
-instance Hashable Char where hash = hash . fromEnum
+instance Hashable () where hashWithSalt = hashUsing fromEnum
+instance Hashable Bool where hashWithSalt = hashUsing fromEnum
+instance Hashable Ordering where hashWithSalt = hashUsing fromEnum
+instance Hashable Char where hashWithSalt = hashUsing fromEnum
 
 -- | Hash an integer of at most the native width supported by the
 -- machine.
@@ -228,24 +238,25 @@ instance Hashable Integer where
 
 instance (Integral a, Hashable a) => Hashable (Ratio a) where
     {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
-    hash a = hash (numerator a) `hashWithSalt` denominator a
     hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
 
 instance Hashable Float where
-    hash x
+    hashWithSalt salt x
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word32)
-        | otherwise = hash (show x)
+            hashWithSalt salt
+              ((unsafePerformIO $ with x $ peek . castPtr) :: Word32)
+        | otherwise = hashWithSalt salt (show x)
 
 instance Hashable Double where
-    hash x
+    hashWithSalt salt x
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
-        | otherwise = hash (show x)
+            hashWithSalt salt
+              ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
+        | otherwise = hashWithSalt salt (show x)
 
 -- | A value with bit pattern (01)* (or 5* in hexa), for any size of Int.
 -- It is used as data constructor distinguisher. GHC computes its value during
@@ -263,35 +274,25 @@ instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hashWithSalt s (Right b) = hashWithSalt s b `hashWithSalt` distinguisher
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
-    hash (a1, a2) = hash a1 `hashWithSalt` a2
     hashWithSalt s (a1, a2) = s `hashWithSalt` a1 `hashWithSalt` a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
-    hash (a1, a2, a3) = hash a1 `hashWithSalt` a2 `hashWithSalt` a3
     hashWithSalt s (a1, a2, a3) = s `hashWithSalt` a1 `hashWithSalt` a2
                         `hashWithSalt` a3
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
-    hash (a1, a2, a3, a4) = hash a1 `hashWithSalt` a2
-                            `hashWithSalt` a3 `hashWithSalt` a4
     hashWithSalt s (a1, a2, a3, a4) = s `hashWithSalt` a1 `hashWithSalt` a2
                             `hashWithSalt` a3 `hashWithSalt` a4
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
-    hash (a1, a2, a3, a4, a5) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5
     hashWithSalt s (a1, a2, a3, a4, a5) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
-    hash (a1, a2, a3, a4, a5, a6) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
     hashWithSalt s (a1, a2, a3, a4, a5, a6) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
@@ -299,16 +300,13 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
          Hashable (a1, a2, a3, a4, a5, a6, a7) where
-    hash (a1, a2, a3, a4, a5, a6, a7) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
     hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
 
 #if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 instance Hashable (StableName a) where
-    hash = hashStableName
+    hashWithSalt = hashUsing hashStableName
 #endif
 
 instance Hashable a => Hashable [a] where
@@ -346,25 +344,25 @@ hashThreadId = hash . show
 #endif
 
 instance Hashable ThreadId where
-    hash = hashThreadId
-    {-# INLINE hash #-}
+    hashWithSalt = hashUsing hashThreadId
+    {-# INLINE hashWithSalt #-}
 
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
-hashTypeRep :: TypeRep -> Int
+hashTypeRep :: Int -> TypeRep -> Int
 {-# INLINE hashTypeRep #-}
 #if __GLASGOW_HASKELL__ >= 702
 -- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
+hashTypeRep salt (TypeRep (Fingerprint x _) _ _) = hashWithSalt salt x
 #elif __GLASGOW_HASKELL__ >= 606
-hashTypeRep = B.inlinePerformIO . typeRepKey
+hashTypeRep salt = hashUsing (B.inlinePerformIO . typeRepKey)
 #else
-hashTypeRep = hash . show
+hashTypeRep = hashUsing show
 #endif
 
 instance Hashable TypeRep where
-    hash = hashTypeRep
-    {-# INLINE hash #-}
+    hashWithSalt = hashTypeRep
+    {-# INLINE hashWithSalt #-}
 
 
 ------------------------------------------------------------------------
@@ -410,8 +408,10 @@ instance Hashable TypeRep where
 -- Use 'hashWithSalt' to compute a hash from several values, using
 -- this recipe:
 --
--- > instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
--- >     hash (a1, a2) = hash a1 `hashWithSalt` a2
+-- > data Product a b = P a b
+-- >
+-- > instance (Hashable a, Hashable b) => Hashable (Product a b) where
+-- >     hashWithSalt s (P a b) = s `hashWithSalt` a `hashWithSalt` b
 --
 -- You can chain hashes together using 'hashWithSalt', by following
 -- this recipe:
@@ -431,7 +431,7 @@ instance Hashable TypeRep where
 -- >              deriving (Enum)
 -- >
 -- > instance Hashable Color where
--- >     hash = hash . fromEnum
+-- >     hashWithSalt = hashUsing fromEnum
 --
 -- This instance benefits from the fact that the 'Hashable' instance
 -- for 'Int' has excellent avalanche properties.
@@ -439,10 +439,10 @@ instance Hashable TypeRep where
 -- In contrast, a very weak hash function would be:
 --
 -- > terribleHash :: Color -> Int
--- > terribleHash = fromEnum
+-- > terribleHash salt = fromEnum
 --
--- This has terrible avalanche properties, as every input is mapped to
--- a small integer.
+-- This has terrible avalanche properties, as the salt is ignored, and
+-- every input is mapped to a small integer.
 --
 -- If the type's constructors accept parameters, it can be important
 -- to distinguish the constructors.
@@ -451,7 +451,7 @@ instance Hashable TypeRep where
 -- >           | Weeks Int
 -- >           | Months Int
 --
--- This weak hash function guarantees a high probability of days,
+-- The weak hash function below guarantees a high probability of days,
 -- weeks, and months all colliding when hashed.
 --
 -- > veryBadHash :: Time -> Int

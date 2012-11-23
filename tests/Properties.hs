@@ -6,7 +6,7 @@
 
 module Main (main) where
 
-import Data.Hashable (Hashable(hash), hashByteArray, hashPtr)
+import Data.Hashable (hash, hashByteArray, hashPtr)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import System.IO.Unsafe (unsafePerformIO)
