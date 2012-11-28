@@ -12,6 +12,7 @@ module Main (main) where
 import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import Data.List (nub)
 import Control.Monad (ap, liftM)
 import System.IO.Unsafe (unsafePerformIO)
 import Foreign.Marshal.Array (withArray)
@@ -114,13 +115,38 @@ instance (Arbitrary a, Arbitrary b, Arbitrary c) =>
 
 instance (Hashable a, Hashable b, Hashable c) => Hashable (Product3 a b c)
 
--- Hashes of all product types should be the same.
+-- Hashes of all product types of the same shapes should be the same.
 
 pProduct2 :: Int -> String -> Bool
 pProduct2 x y = hash (x, y) == hash (Product2 x y)
 
 pProduct3 :: Double -> Maybe Bool -> (Int, String) -> Bool
 pProduct3 x y z = hash (x, y, z) == hash (Product3 x y z)
+
+data Sum2 a b = S2a a | S2b b
+                deriving (Eq, Ord, Show, Generic)
+
+instance (Hashable a, Hashable b) => Hashable (Sum2 a b)
+
+data Sum3 a b c = S3a a | S3b b | S3c c
+                  deriving (Eq, Ord, Show, Generic)
+
+instance (Hashable a, Hashable b, Hashable c) => Hashable (Sum3 a b c)
+
+-- Hashes of the same parameter, but with different sum constructors,
+-- should differ. (They might legitimately collide, but that's
+-- vanishingly unlikely.)
+
+pSum2_differ :: Int -> Bool
+pSum2_differ x = nub hs == hs
+  where hs = [ hash (S2a x :: Sum2 Int Int)
+             , hash (S2b x :: Sum2 Int Int) ]
+
+pSum3_differ :: Int -> Bool
+pSum3_differ x = nub hs == hs
+  where hs = [ hash (S3a x :: Sum3 Int Int Int)
+             , hash (S3b x :: Sum3 Int Int Int)
+             , hash (S3c x :: Sum3 Int Int Int) ]
 
 #endif
 
@@ -144,6 +170,8 @@ tests =
       [
         testProperty "product2" pProduct2
       , testProperty "product3" pProduct3
+      , testProperty "sum2_differ" pSum2_differ
+      , testProperty "sum3_differ" pSum3_differ
       ]
 #endif
     ]

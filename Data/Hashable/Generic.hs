@@ -43,6 +43,11 @@ instance Hashable a => GHashable (K1 i a) where
 class GSum f where
     hashSum :: Int -> Int -> Int -> f a -> Int
 
+instance (GSum a, GSum b, GHashable a, GHashable b,
+          SumSize a, SumSize b) => GHashable (a :+: b) where
+    ghashWithSalt salt = hashSum salt 0 size
+        where size = unTagged (sumSize :: Tagged (a :+: b))
+
 instance (GSum a, GSum b, GHashable a, GHashable b) => GSum (a :+: b) where
     hashSum !salt !code !size s = case s of
                                     L1 x -> hashSum salt code           sizeL x
@@ -57,13 +62,13 @@ instance GHashable a => GSum (C1 c a) where
     {-# INLINE hashSum #-}
 
 class SumSize f where
-    sumSize :: Tagged f Int
+    sumSize :: Tagged f
 
-newtype Tagged (s :: * -> *) b = Tagged {unTagged :: b}
+newtype Tagged (s :: * -> *) = Tagged {unTagged :: Int}
 
 instance (SumSize a, SumSize b) => SumSize (a :+: b) where
-    sumSize = Tagged $ unTagged (sumSize :: Tagged a Int) +
-                       unTagged (sumSize :: Tagged b Int)
+    sumSize = Tagged $ unTagged (sumSize :: Tagged a) +
+                       unTagged (sumSize :: Tagged b)
 
 instance SumSize (C1 c a) where
     sumSize = Tagged 1

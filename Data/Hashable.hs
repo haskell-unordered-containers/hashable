@@ -74,7 +74,7 @@ import Data.Hashable.Generic ()
 -- > import Data.Hashable
 -- >
 -- > data Foo a = Foo a String
--- >          deriving (Eq, Generic)
+-- >              deriving (Eq, Generic)
 -- >
 -- > instance (Hashable a) => Hashable (Foo a)
 --
