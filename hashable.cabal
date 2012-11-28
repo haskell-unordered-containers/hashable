@@ -45,6 +45,8 @@ Library
 
   if impl(ghc >= 7.2.1)
     CPP-Options:     -DGENERICS
+    Other-modules:   Data.Hashable.Class
+                     Data.Hashable.Generic
 
   C-sources:         cbits/getRandomBytes.c
                      cbits/inthash.c
@@ -74,6 +76,8 @@ Test-suite tests
                      text >= 0.11.0.5
 
   Ghc-options:       -Wall -fno-warn-orphans
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
 
 source-repository head
   type:     git

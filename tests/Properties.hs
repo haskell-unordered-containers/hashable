@@ -1,14 +1,18 @@
-{-# LANGUAGE BangPatterns, GeneralizedNewtypeDeriving, MagicHash, Rank2Types,
-    UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, MagicHash,
+    Rank2Types, UnboxedTuples #-}
+#ifdef GENERICS
+{-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
+#endif
 
 -- | Tests for the 'Data.Hashable' module.  We test functions by
 -- comparing the C and Haskell implementations.
 
 module Main (main) where
 
-import Data.Hashable (hash, hashByteArray, hashPtr)
+import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import Control.Monad (ap, liftM)
 import System.IO.Unsafe (unsafePerformIO)
 import Foreign.Marshal.Array (withArray)
 import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
@@ -18,6 +22,9 @@ import GHC.Word (Word8(..))
 import Test.QuickCheck hiding ((.&.))
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
+#ifdef GENERICS
+import GHC.Generics
+#endif
 
 ------------------------------------------------------------------------
 -- * Properties
@@ -86,6 +93,37 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
         case writeWord8Array# marr# i# x s# of
             s2# -> go s2# (i + 1) marr# xs
 
+-- Generics
+
+#ifdef GENERICS
+
+data Product2 a b = Product2 a b
+                    deriving (Generic)
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (Product2 a b) where
+    arbitrary = Product2 `liftM` arbitrary `ap` arbitrary
+
+instance (Hashable a, Hashable b) => Hashable (Product2 a b)
+
+data Product3 a b c = Product3 a b c
+                    deriving (Generic)
+
+instance (Arbitrary a, Arbitrary b, Arbitrary c) =>
+    Arbitrary (Product3 a b c) where
+    arbitrary = Product3 `liftM` arbitrary `ap` arbitrary `ap` arbitrary
+
+instance (Hashable a, Hashable b, Hashable c) => Hashable (Product3 a b c)
+
+-- Hashes of all product types should be the same.
+
+pProduct2 :: Int -> String -> Bool
+pProduct2 x y = hash (x, y) == hash (Product2 x y)
+
+pProduct3 :: Double -> Maybe Bool -> (Int, String) -> Bool
+pProduct3 x y z = hash (x, y, z) == hash (Product3 x y z)
+
+#endif
+
 ------------------------------------------------------------------------
 -- Test harness
 
@@ -101,4 +139,11 @@ tests =
       , testProperty "rechunk" pRechunk
       , testProperty "text/rechunked" pLazyRechunked
       ]
+#ifdef GENERICS
+    , testGroup "generics"
+      [
+        testProperty "product2" pProduct2
+      , testProperty "product3" pProduct3
+      ]
+#endif
     ]
