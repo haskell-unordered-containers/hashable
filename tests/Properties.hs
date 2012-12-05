@@ -10,8 +10,10 @@
 module Main (main) where
 
 import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy as TL
 import Data.List (nub)
 import Control.Monad (ap, liftM)
 import System.IO.Unsafe (unsafePerformIO)
@@ -33,8 +35,16 @@ import GHC.Generics
 instance Arbitrary T.Text where
     arbitrary = T.pack `fmap` arbitrary
 
-instance Arbitrary L.Text where
-    arbitrary = L.pack `fmap` arbitrary
+instance Arbitrary TL.Text where
+    arbitrary = TL.pack `fmap` arbitrary
+
+instance Arbitrary B.ByteString where
+    arbitrary   = B.pack `fmap` arbitrary
+
+instance Arbitrary BL.ByteString where
+    arbitrary   = sized $ \n -> resize (round (sqrt (toEnum n :: Double)))
+                  ((BL.fromChunks . map (B.pack . nonEmpty)) `fmap` arbitrary)
+      where nonEmpty (NonEmpty a) = a
 
 -- | Validate the implementation by comparing the C and Haskell
 -- versions.
@@ -48,12 +58,14 @@ pText :: T.Text -> T.Text -> Bool
 pText a b = if (a == b) then (hash a == hash b) else True
 
 -- | Content equality implies hash equality.
-pTextLazy :: L.Text -> L.Text -> Bool
+pTextLazy :: TL.Text -> TL.Text -> Bool
 pTextLazy a b = if (a == b) then (hash a == hash b) else True
 
 -- | A small positive integer.
 newtype ChunkSize = ChunkSize { unCS :: Int }
-    deriving (Eq, Ord, Num, Integral, Real, Enum, Show)
+    deriving (Eq, Ord, Num, Integral, Real, Enum)
+
+instance Show ChunkSize where show = show . unCS
 
 instance Arbitrary ChunkSize where
     arbitrary = (ChunkSize . (`mod` maxChunkSize)) `fmap`
@@ -62,21 +74,52 @@ instance Arbitrary ChunkSize where
 
 -- | Ensure that the rechunk function causes a rechunked string to
 -- still match its original form.
-pRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
-pRechunk t cs = L.fromStrict t == rechunk t cs
+pTextRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
+pTextRechunk t cs = TL.fromStrict t == rechunkText t cs
 
--- | Content equality implies hash equality.
-pLazyRechunked :: T.Text -> NonEmptyList ChunkSize -> Bool
-pLazyRechunked t cs = hash (L.fromStrict t) == hash (rechunk t cs)
+-- | Lazy strings must hash to the same value no matter how they are
+-- chunked.
+pTextLazyRechunked :: T.Text
+                   -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
+pTextLazyRechunked t cs0 cs1 =
+    hash (rechunkText t cs0) == hash (rechunkText t cs1)
 
 -- | Break up a string into chunks of different sizes.
-rechunk :: T.Text -> NonEmptyList ChunkSize -> L.Text
-rechunk t0 (NonEmpty cs0) = L.fromChunks . go t0 . cycle $ cs0
+rechunkText :: T.Text -> NonEmptyList ChunkSize -> TL.Text
+rechunkText t0 (NonEmpty cs0) = TL.fromChunks . go t0 . cycle $ cs0
   where
     go t _ | T.null t = []
     go t (c:cs)       = a : go b cs
       where (a,b)     = T.splitAt (unCS c) t
     go _ []           = error "Properties.rechunk - The 'impossible' happened!"
+
+-- | Content equality implies hash equality.
+pBS :: B.ByteString -> B.ByteString -> Bool
+pBS a b = if (a == b) then (hash a == hash b) else True
+
+-- | Content equality implies hash equality.
+pBSLazy :: BL.ByteString -> BL.ByteString -> Bool
+pBSLazy a b = if (a == b) then (hash a == hash b) else True
+
+-- | Break up a string into chunks of different sizes.
+rechunkBS :: B.ByteString -> NonEmptyList ChunkSize -> BL.ByteString
+rechunkBS t0 (NonEmpty cs0) = BL.fromChunks . go t0 . cycle $ cs0
+  where
+    go t _ | B.null t = []
+    go t (c:cs)       = a : go b cs
+      where (a,b)     = B.splitAt (unCS c) t
+    go _ []           = error "Properties.rechunkBS - The 'impossible' happened!"
+
+-- | Ensure that the rechunk function causes a rechunked string to
+-- still match its original form.
+pBSRechunk :: B.ByteString -> NonEmptyList ChunkSize -> Bool
+pBSRechunk t cs = BL.fromStrict t == rechunkBS t cs
+
+-- | Lazy bytestrings must hash to the same value no matter how they
+-- are chunked.
+pBSLazyRechunked :: B.ByteString
+                 -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
+pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -162,8 +205,14 @@ tests =
     , testGroup "text"
       [ testProperty "text/strict" pText
       , testProperty "text/lazy" pTextLazy
-      , testProperty "rechunk" pRechunk
-      , testProperty "text/rechunked" pLazyRechunked
+      , testProperty "text/rechunk" pTextRechunk
+      , testProperty "text/rechunked" pTextLazyRechunked
+      ]
+    , testGroup "bytestring"
+      [ testProperty "bytestring/strict" pBS
+      , testProperty "bytestring/lazy" pBSLazy
+      , testProperty "bytestring/rechunk" pBSRechunk
+      , testProperty "bytestring/rechunked" pBSLazyRechunked
       ]
 #ifdef GENERICS
     , testGroup "generics"
