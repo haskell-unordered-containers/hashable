@@ -50,9 +50,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
-#if !MIN_VERSION_bytestring(0,10,0)
-import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
-#endif
+import qualified Data.ByteString.Lazy.Internal as BL
 #if defined(__GLASGOW_HASKELL__)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
@@ -68,9 +66,10 @@ import Foreign.C (CSize(..))
 import Foreign.C (CSize)
 #endif
 import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr, castPtr)
+import Foreign.Ptr (Ptr, castPtr, nullPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
+import Foreign.Marshal.Array (advancePtr, allocaArray)
 
 -- Byte arrays and Integers.
 #if defined(__GLASGOW_HASKELL__)
@@ -331,7 +330,7 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hashWithSalt salt = BL.foldlChunks hashWithSalt salt
+    hashWithSalt = hashLazyByteStringWithSalt
 
 #if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
@@ -400,6 +399,19 @@ k0 :: Word64
 k0 = 0x56e2b8a0aee1721a
 {-# INLINE k0 #-}
 
+hashLazyByteStringWithSalt :: Int -> BL.ByteString -> Int
+hashLazyByteStringWithSalt salt cs0 = unsafePerformIO . allocaArray 5 $ \v -> do
+  c_siphash_init k0 (fromSalt salt) v
+  let go !buffered !totallen (BL.Chunk c cs) =
+        B.unsafeUseAsCStringLen c $ \(ptr, len) -> do
+          let len' = fromIntegral len
+          buffered' <- c_siphash24_chunk buffered v (castPtr ptr) len' (-1)
+          go buffered' (totallen + len') cs
+      go buffered totallen _ = do
+        _ <- c_siphash24_chunk buffered v nullPtr 0 totallen
+        fromIntegral `fmap` peek (v `advancePtr` 4)
+  go 0 0 cs0
+
 fromSalt :: Int -> Word64
 #if WORD_SIZE_IN_BITS == 64
 fromSalt = fromIntegral
@@ -454,3 +466,9 @@ foreign import ccall unsafe "hashable_wang_32" c_wang32
 
 foreign import ccall unsafe "hashable_wang_64" c_wang64
     :: Word64 -> Word64
+
+foreign import ccall unsafe "hashable_siphash_init" c_siphash_init
+    :: Word64 -> Word64 -> Ptr Word64 -> IO ()
+
+foreign import ccall unsafe "hashable_siphash24_chunk" c_siphash24_chunk
+    :: CSize -> Ptr Word64 -> Ptr Word8 -> CSize -> CSize -> IO CSize
