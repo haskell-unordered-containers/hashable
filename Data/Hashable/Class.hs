@@ -471,4 +471,4 @@ foreign import ccall unsafe "hashable_siphash_init" c_siphash_init
     :: Word64 -> Word64 -> Ptr Word64 -> IO ()
 
 foreign import ccall unsafe "hashable_siphash24_chunk" c_siphash24_chunk
-    :: CSize -> Ptr Word64 -> Ptr Word8 -> CSize -> CSize -> IO CSize
+    :: CInt -> Ptr Word64 -> Ptr Word8 -> CSize -> CSize -> IO CInt

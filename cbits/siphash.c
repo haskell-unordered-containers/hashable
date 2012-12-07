@@ -155,27 +155,38 @@ u64 hashable_siphash24_u64(u64 k0, u64 k1, u64 key)
     return _siphash24(k0, k1, (const u8 *) &key, sizeof(u64));
 }
 
-static size_t _siphash_chunk(int c, int d, size_t buffered, u64 v[5],
-			     const u8 *str, size_t len, size_t totallen)
+static int _siphash_chunk(int c, int d, int buffered, u64 v[5],
+			  const u8 *str, size_t len, size_t totallen)
 {
     u64 v0 = v[0], v1 = v[1], v2 = v[2], v3 = v[3], m, b;
     const u8 *p, *end;
+    u64 carry = 0;
     int i;
 
     if (buffered > 0) {
-	size_t unbuffered = 8 - buffered;
-	size_t lastbuffer = unbuffered > len ? len : unbuffered;
-	size_t k;
+	int unbuffered = 8 - buffered;
+	int tobuffer = unbuffered > len ? len : unbuffered;
+	int shift = buffered << 3;
 
 	m = v[4];
 
-	for (k = 0; k < lastbuffer; k++)
-	    m |= ((u64) str[k]) << ((k + buffered) << 3);
+	switch (tobuffer) {
+	case 7: m |= ((u64)str[6]) << (shift + 48);
+	case 6: m |= ((u64)str[5]) << (shift + 40);
+	case 5: m |= ((u64)str[4]) << (shift + 32);
+	case 4: m |= ((u64)str[3]) << (shift + 24);
+	case 3: m |= ((u64)str[2]) << (shift + 16);
+	case 2: m |= ((u64)str[1]) << (shift + 8);
+	case 1: m |= ((u64)str[0]) << shift;
+	}
 
-	str += k;
-	len -= k;
+	str += tobuffer;
+	buffered += tobuffer;
+	len -= tobuffer;
 
-	if (k + buffered == 8) {
+	if (buffered < 8)
+	    carry = m;
+	else {
 	    v3 ^= m;
 	    if (c == 2) {
 		SIPROUND;
@@ -185,6 +196,8 @@ static size_t _siphash_chunk(int c, int d, size_t buffered, u64 v[5],
 		    SIPROUND;
 	    }
 	    v0 ^= m;
+	    buffered = 0;
+	    m = 0;
 	}
     }
 
@@ -218,9 +231,9 @@ static size_t _siphash_chunk(int c, int d, size_t buffered, u64 v[5],
 	v[1] = v1;
 	v[2] = v2;
 	v[3] = v3;
-	v[4] = b;
+	v[4] = b | carry;
 
-	return len & 7;
+	return buffered + (len & 7);
     }
 
     b |= ((u64) totallen) << 56;
@@ -258,8 +271,8 @@ void hashable_siphash_init(u64 k0, u64 k1, u64 *v)
     v[4] = 0;
 }
 
-size_t hashable_siphash24_chunk(size_t buffered, u64 v[5], const u8 *str,
-				size_t len, size_t totallen)
+int hashable_siphash24_chunk(int buffered, u64 v[5], const u8 *str,
+			     size_t len, size_t totallen)
 {
     return _siphash_chunk(2, 4, buffered, v, str, len, totallen);
 }
@@ -267,8 +280,8 @@ size_t hashable_siphash24_chunk(size_t buffered, u64 v[5], const u8 *str,
 /*
  * Used for ByteArray#.
  */
-size_t hashable_siphash24_chunk_offset(size_t buffered, u64 v[5], const u8 *str,
-				       size_t off, size_t len, size_t totallen)
+int hashable_siphash24_chunk_offset(int buffered, u64 v[5], const u8 *str,
+				    size_t off, size_t len, size_t totallen)
 {
     return _siphash_chunk(2, 4, buffered, v, str + off, len, totallen);
 }
