@@ -55,7 +55,8 @@ import qualified Data.ByteString.Lazy.Internal as BL
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
-import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Internal as TL
 # ifdef GENERICS
 import GHC.Generics
 # endif
@@ -338,8 +339,8 @@ instance Hashable T.Text where
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
         salt
 
-instance Hashable LT.Text where
-    hashWithSalt salt = LT.foldlChunks hashWithSalt salt
+instance Hashable TL.Text where
+    hashWithSalt = hashLazyTextWithSalt
 #endif
 
 
@@ -412,6 +413,21 @@ hashLazyByteStringWithSalt salt cs0 = unsafePerformIO . allocaArray 5 $ \v -> do
         fromIntegral `fmap` peek (v `advancePtr` 4)
   go 0 0 cs0
 
+#if defined(__GLASGOW_HASKELL__)
+hashLazyTextWithSalt :: Int -> TL.Text -> Int
+hashLazyTextWithSalt salt cs0 = unsafePerformIO . allocaArray 5 $ \v -> do
+  c_siphash_init k0 (fromSalt salt) v
+  let go !buffered !totallen (TL.Chunk (T.Text arr off len) cs) = do
+        let len' = fromIntegral (len `shiftL` 1)
+        buffered' <- c_siphash24_chunk_offset buffered v (TA.aBA arr)
+                     (fromIntegral (off `shiftL` 1)) len' (-1)
+        go buffered' (totallen + len') cs
+      go buffered totallen _ = do
+        _ <- c_siphash24_chunk buffered v nullPtr 0 totallen
+        fromIntegral `fmap` peek (v `advancePtr` 4)
+  go 0 0 cs0
+#endif
+
 fromSalt :: Int -> Word64
 #if WORD_SIZE_IN_BITS == 64
 fromSalt = fromIntegral
@@ -457,6 +473,10 @@ hashByteArrayWithSalt ba !off !len !h =
 
 foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
     :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
+
+foreign import ccall unsafe "hashable_siphash24_chunk_offset"
+        c_siphash24_chunk_offset
+    :: CInt -> Ptr Word64 -> ByteArray# -> CSize -> CSize -> CSize -> IO CInt
 #endif
 
 #if WORD_SIZE_IN_BITS == 32
