@@ -22,6 +22,20 @@ typedef uint8_t u8;
 # define _siphash24 plain_siphash24
 #endif
 
+static inline u64 odd_read(const u8 *p, int count, u64 val, int shift)
+{
+    switch (count) {
+    case 7: val |= ((u64)p[6]) << (shift + 48);
+    case 6: val |= ((u64)p[5]) << (shift + 40);
+    case 5: val |= ((u64)p[4]) << (shift + 32);
+    case 4: val |= ((u64)p[3]) << (shift + 24);
+    case 3: val |= ((u64)p[2]) << (shift + 16);
+    case 2: val |= ((u64)p[1]) << (shift + 8);
+    case 1: val |= ((u64)p[0]) << shift;
+    }
+    return val;
+}
+
 static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
 			   const u8 *str, size_t len)
 {
@@ -29,8 +43,8 @@ static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
     u64 v1 = 0x646f72616e646f6dull ^ k1;
     u64 v2 = 0x6c7967656e657261ull ^ k0;
     u64 v3 = 0x7465646279746573ull ^ k1;
-    u64 b = ((u64) len) << 56;
     const u8 *end, *p;
+    u64 b;
     int i;
 
     for (p = str, end = str + (len & ~7); p < end; p += 8) {
@@ -46,15 +60,7 @@ static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
 	v0 ^= m;
     }
 
-    switch (len & 7) {
-    case 7: b |= ((u64)p[6]) << 48;
-    case 6: b |= ((u64)p[5]) << 40;
-    case 5: b |= ((u64)p[4]) << 32;
-    case 4: b |= ((u64)p[3]) << 24;
-    case 3: b |= ((u64)p[2]) << 16;
-    case 2: b |= ((u64)p[1]) <<  8;
-    case 1: b |= ((u64)p[0]);
-    }
+    b = odd_read(p, len & 7, ((u64) len) << 56, 0);
 
     v3 ^= b;
     if (c == 2) {
@@ -168,18 +174,7 @@ static int _siphash_chunk(int c, int d, int buffered, u64 v[5],
 	int tobuffer = unbuffered > len ? len : unbuffered;
 	int shift = buffered << 3;
 
-	m = v[4];
-
-	switch (tobuffer) {
-	case 7: m |= ((u64)str[6]) << (shift + 48);
-	case 6: m |= ((u64)str[5]) << (shift + 40);
-	case 5: m |= ((u64)str[4]) << (shift + 32);
-	case 4: m |= ((u64)str[3]) << (shift + 24);
-	case 3: m |= ((u64)str[2]) << (shift + 16);
-	case 2: m |= ((u64)str[1]) << (shift + 8);
-	case 1: m |= ((u64)str[0]) << shift;
-	}
-
+	m = odd_read(str, tobuffer, v[4], shift);
 	str += tobuffer;
 	buffered += tobuffer;
 	len -= tobuffer;
@@ -214,17 +209,7 @@ static int _siphash_chunk(int c, int d, int buffered, u64 v[5],
 	v0 ^= m;
     }
 
-    b = 0;
-
-    switch (len & 7) {
-    case 7: b |= ((u64)p[6]) << 48;
-    case 6: b |= ((u64)p[5]) << 40;
-    case 5: b |= ((u64)p[4]) << 32;
-    case 4: b |= ((u64)p[3]) << 24;
-    case 3: b |= ((u64)p[2]) << 16;
-    case 2: b |= ((u64)p[1]) <<  8;
-    case 1: b |= ((u64)p[0]);
-    }
+    b = odd_read(p, len & 7, 0, 0);
 
     if (totallen == -1) {
 	v[0] = v0;
