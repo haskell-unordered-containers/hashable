@@ -13,7 +13,10 @@ module Data.Hashable.SipHash
 
 #include "MachDeps.h"
 
-import Data.Bits ((.|.), (.&.), rotateL, shiftL, unsafeShiftL, xor)
+import Data.Bits ((.|.), (.&.), rotateL, shiftL, xor)
+#if MIN_VERSION_base(4,5,0)
+import Data.Bits (unsafeShiftL)
+#endif
 import Data.Word (Word8, Word64)
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
