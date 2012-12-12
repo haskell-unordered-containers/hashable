@@ -14,7 +14,18 @@
 -- This module defines a class, 'Hashable', for types that can be
 -- converted to a hash value.  This class exists for the benefit of
 -- hashing-based data structures.  The module provides instances for
--- most standard types.
+-- most standard types.  Efficient instances for other types can be
+-- generated automatically and effortlessly using the generics support
+-- in GHC 7.2 and above.
+--
+-- The easiest way to get started is to use the 'hash' function. Here
+-- is an example session with @ghci@.
+--
+-- @
+-- Prelude> import Data.Hashable
+-- Prelude> 'hash' \"foo\"
+-- 60853164
+-- @
 
 module Data.Hashable
     (
