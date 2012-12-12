@@ -145,12 +145,15 @@ class Hashable a where
     --
     -- The general contract of 'hashWithSalt' is:
     --
-    --  * The result need not remain consistent from one execution of
-    --    an application to another execution of the same application.
+    --  * If a value is hashed using the same salt during distinct
+    --    runs of an application, the result must remain the
+    --    same. (This is necessary to make it possible to store hashes
+    --    on persistent media.)
     --
     --  * If two values are equal according to the '==' method, then
     --    applying the 'hashWithSalt' method on each of the two values
-    --    /must/ produce the same integer result.
+    --    /must/ produce the same integer result if the same salt is
+    --    used in each case.
     --
     --  * It is /not/ required that if two values are unequal
     --    according to the '==' method, then applying the
@@ -178,6 +181,17 @@ class GHashable f where
 
 -- | Return a hash value for the argument. Defined in terms of
 -- 'hashWithSalt' and a default salt.
+--
+-- At application startup time, the default salt is initialized with a
+-- new value from the system's cryptographic pseudo-random number
+-- generator. This means that the result of 'hash' will vary from one
+-- application run to the next.
+--
+-- If you need hashes that do not vary from run to run, use
+-- 'hashWithSalt' instead, and supply a salt of your choosing. (Be
+-- aware that if you hash untrusted, uncontrolled input data using a
+-- fixed salt, you may expose your application to hash collision
+-- attacks.)
 hash :: Hashable a => a -> Int
 hash = hashWithSalt defaultSalt
 
@@ -325,8 +339,13 @@ instance Hashable (StableName a) where
 #endif
 
 instance Hashable a => Hashable [a] where
-    {-# SPECIALIZE instance Hashable [Char] #-}
     hashWithSalt = foldl' hashWithSalt
+
+{-# RULES "hashWithSalt/String"
+    forall s v. hashWithSalt s (v::[Char]) = hashWithSalt s (T.pack v) #-}
+
+{-# RULES "hash/String"
+    forall v. hash (v::[Char]) = hash (T.pack v) #-}
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $

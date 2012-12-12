@@ -141,26 +141,6 @@ u64 hashable_siphash24_offset(u64 k0, u64 k1,
     return _siphash24(k0, k1, str + off, len);
 }
 
-u64 hashable_siphash24_u8(u64 k0, u64 k1, u8 key)
-{
-    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u8));
-}
-
-u16 hashable_siphash24_u16(u64 k0, u64 k1, u16 key)
-{
-    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u16));
-}
-
-u16 hashable_siphash24_u32(u64 k0, u64 k1, u32 key)
-{
-    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u32));
-}
-
-u64 hashable_siphash24_u64(u64 k0, u64 k1, u64 key)
-{
-    return _siphash24(k0, k1, (const u8 *) &key, sizeof(u64));
-}
-
 static int _siphash_chunk(int c, int d, int buffered, u64 v[5],
 			  const u8 *str, size_t len, size_t totallen)
 {

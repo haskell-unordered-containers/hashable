@@ -14,18 +14,24 @@
 -- This module defines a class, 'Hashable', for types that can be
 -- converted to a hash value.  This class exists for the benefit of
 -- hashing-based data structures.  The module provides instances for
--- most standard types.
+-- most standard types.  Efficient instances for other types can be
+-- generated automatically and effortlessly using the generics support
+-- in GHC 7.2 and above.
+--
+-- The easiest way to get started is to use the 'hash' function. Here
+-- is an example session with @ghci@.
+--
+-- @
+-- Prelude> import Data.Hashable
+-- Prelude> 'hash' \"foo\"
+-- 60853164
+-- @
 
 module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
     , hash
-
-#ifdef GENERICS
-      -- ** Support for generics
-    , GHashable(..)
-#endif
 
       -- ** Avalanche
       -- $avalanche
@@ -34,6 +40,9 @@ module Data.Hashable
 
       -- ** Generic instances
       -- $generics
+
+      -- *** Understanding a compiler error
+      -- $generic_err
 
       -- ** Writing instances by hand
       -- $blocks
@@ -78,10 +87,37 @@ import Data.Hashable.Generic ()
 -- >              deriving (Eq, Generic)
 -- >
 -- > instance (Hashable a) => Hashable (Foo a)
+-- >
+-- > data Colour = Red | Green | Blue
+-- >               deriving (Generic)
+-- >
+-- > instance Hashable Colour
 --
 -- If you omit a body for the instance declaration, GHC will generate
 -- a default instance that correctly and efficiently hashes every
 -- constructor and parameter.
+
+-- $generic_err
+--
+-- Suppose you intend to use the generic machinery to automatically
+-- generate a 'Hashable' instance.
+--
+-- > data Oops = Oops
+-- >      -- forgot to add "deriving (Generic)" here!
+-- >
+-- > instance Hashable Oops
+--
+-- And imagine that, as in the example above, you forget to add a
+-- \"@deriving 'Generic'@\" clause to your data type. At compile time,
+-- you will get an error message from GHC that begins roughly as
+-- follows:
+--
+-- > No instance for (GHashable (Rep Oops))
+--
+-- This error can be confusing, as 'GHashable' is not exported (it is
+-- an internal typeclass used by this library's generics machinery).
+-- The correct fix is simply to add the missing \"@deriving
+-- 'Generic'@\".
 
 -- $blocks
 --
