@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module Data.Hashable.SipHash
     (
