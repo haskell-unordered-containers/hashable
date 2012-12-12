@@ -9,7 +9,11 @@ module Data.Hashable.RandomSource
 import Data.ByteString as B
 import Data.ByteString.Internal (create)
 import Foreign.C.Error (throwErrnoIfMinus1_)
-import Foreign.C.Types (CInt(..))
+#if MIN_VERSION_base(4,5,0)
+import Foreign.C.Types (CInt(CInt))
+#else
+import Foreign.C.Types (CInt)
+#endif
 import Foreign.Ptr (Ptr)
 
 getRandomBytes :: Int -> IO ByteString
