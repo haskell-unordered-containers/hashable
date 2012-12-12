@@ -339,8 +339,13 @@ instance Hashable (StableName a) where
 #endif
 
 instance Hashable a => Hashable [a] where
-    {-# SPECIALIZE instance Hashable [Char] #-}
     hashWithSalt = foldl' hashWithSalt
+
+{-# RULES "hashWithSalt/String"
+    forall s v. hashWithSalt s (v::[Char]) = hashWithSalt s (T.pack v) #-}
+
+{-# RULES "hash/String"
+    forall v. hash (v::[Char]) = hash (T.pack v) #-}
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $
