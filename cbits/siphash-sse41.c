@@ -1,3 +1,7 @@
+/*
+ * The original code was developed by Samuel Neves, and has been
+ * only lightly modified.
+ */
 #include <smmintrin.h>
 
 #include <stdint.h>
