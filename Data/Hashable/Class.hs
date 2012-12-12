@@ -176,9 +176,8 @@ class GHashable f where
     ghashWithSalt :: Int -> f a -> Int
 #endif
 
--- | Return a hash value for the argument. Defined as:
---
--- > hash = hashWithSalt defaultSalt
+-- | Return a hash value for the argument. Defined in terms of
+-- 'hashWithSalt' and a default salt.
 hash :: Hashable a => a -> Int
 hash = hashWithSalt defaultSalt
 
