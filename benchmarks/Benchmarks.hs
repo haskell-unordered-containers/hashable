@@ -15,6 +15,7 @@ import Data.Word
 import Foreign.C.Types (CInt(..), CSize(..))
 import Foreign.Ptr
 import Data.ByteString.Internal
+import qualified Data.Text as T
 import qualified Data.ByteString as B
 import qualified Crypto.MAC.SipHash as HS
 
@@ -48,6 +49,22 @@ main = do
         !bs128 = B.pack [0..127]
         !bs512 = B.pack . map fromIntegral $ [0..511::Int]
         !bs1Mb = B.pack . map fromIntegral $ [0..999999::Int]
+
+        s5 = ['\0'..'\4']
+        s8 = ['\0'..'\7']
+        s11 = ['\0'..'\10']
+        s40 = ['\0'..'\39']
+        s128 = ['\0'..'\127']
+        s512 = ['\0'..'\511']
+        s1Mb = ['\0'..'\999999']
+
+        !t5 = T.pack s5
+        !t8 = T.pack s8
+        !t11 = T.pack s11
+        !t40 = T.pack s40
+        !t128 = T.pack s128
+        !t512 = T.pack s512
+        !t1Mb = T.pack s1Mb
 
     let k0 = 0x4a7330fae70f52e8
         k1 = 0x919ea5953a9a1ec9
@@ -101,11 +118,30 @@ main = do
             , bench "512" $ whnf hash bs512
             , bench "2^20" $ whnf hash bs1Mb
             ]
+          , bgroup "String"
+            [ bench "5" $ whnf hash s5
+            , bench "8" $ whnf hash s8
+            , bench "11" $ whnf hash s11
+            , bench "40" $ whnf hash s40
+            , bench "128" $ whnf hash s128
+            , bench "512" $ whnf hash s512
+            , bench "2^20" $ whnf hash s1Mb
+            ]
+          , bgroup "Text"
+            [ bench "5" $ whnf hash t5
+            , bench "8" $ whnf hash t8
+            , bench "11" $ whnf hash t11
+            , bench "40" $ whnf hash t40
+            , bench "128" $ whnf hash t128
+            , bench "512" $ whnf hash t512
+            , bench "2^20" $ whnf hash t1Mb
+            ]
           , bench "Int8" $ whnf hash (0xef :: Int8)
           , bench "Int16" $ whnf hash (0x7eef :: Int16)
           , bench "Int32" $ whnf hash (0x7eadbeef :: Int32)
           , bench "Int" $ whnf hash (0x7eadbeefdeadbeef :: Int)
           , bench "Int64" $ whnf hash (0x7eadbeefdeadbeef :: Int64)
+          , bench "Double" $ whnf hash (0.3780675796601578 :: Double)
           ]
         , bgroup "sipHash"
           [ bench "5" $ whnf sipHash bs5
