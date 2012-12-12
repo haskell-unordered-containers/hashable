@@ -26,8 +26,14 @@ Flag integer-gmp
   Description: Are we using integer-gmp to provide fast Integer instances?
   Default: True
 
+Flag fixed-salt
+  Description: Do we use a single fixed salt every time the program runs?
+  Default: False
+
 Library
   Exposed-modules:   Data.Hashable
+  Other-modules:     Data.Hashable.RandomSource
+                     Data.Hashable.SipHash
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9
   if impl(ghc)
@@ -36,16 +42,32 @@ Library
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
-  C-sources:         cbits/hashByteString.c
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
+    Other-modules:   Data.Hashable.Class
+                     Data.Hashable.Generic
+
+  C-sources:         cbits/getRandomBytes.c
+                     cbits/inthash.c
+                     cbits/siphash.c
+  if arch(i386)
+    C-sources:       cbits/siphash-sse41.c
+    CC-options:      -msse4.1
+
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
+  if flag(fixed-salt)
+    Cpp-options: -DFIXED_SALT
+  if os(windows)
+    extra-libraries: advapi32
 
 Test-suite tests
   Type:              exitcode-stdio-1.0
   Hs-source-dirs:    tests
   Main-is:           Properties.hs
   Build-depends:     base >= 4.0 && < 5.0,
+                     bytestring,
                      hashable,
                      test-framework >= 0.3.3,
                      test-framework-quickcheck2 >= 0.2.9,
@@ -54,6 +76,8 @@ Test-suite tests
                      text >= 0.11.0.5
 
   Ghc-options:       -Wall -fno-warn-orphans
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
 
 benchmark benchmarks
   -- We cannot depend on the hashable library directly as that creates

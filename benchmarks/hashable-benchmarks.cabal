@@ -1,0 +1,30 @@
+name:       hashable-benchmarks
+version:    0
+build-type: Simple
+
+cabal-version: >=1.2
+
+executable hashable-benchmarks
+  ghc-options: -Wall -O2
+  cc-options: -msse4.1
+  c-sources:
+    ../cbits/hashByteString.c
+    ../cbits/getRandomBytes.c
+    ../cbits/inthash.c
+    ../cbits/siphash.c
+    ../cbits/siphash-sse41.c
+    cbits/inthash.c
+  hs-source-dirs: .. .
+  main-is: Benchmarks.hs
+  other-modules:
+    Data.Hashable
+    Data.Hashable.RandomSource
+    Data.Hashable.SipHash
+  build-depends:
+    base,
+    bytestring,
+    criterion,
+    ghc-prim,
+    integer-gmp,
+    siphash,
+    text

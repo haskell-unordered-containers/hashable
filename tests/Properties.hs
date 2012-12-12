@@ -1,14 +1,21 @@
-{-# LANGUAGE BangPatterns, GeneralizedNewtypeDeriving, MagicHash, Rank2Types,
-    UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, MagicHash,
+    Rank2Types, UnboxedTuples #-}
+#ifdef GENERICS
+{-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
+#endif
 
 -- | Tests for the 'Data.Hashable' module.  We test functions by
 -- comparing the C and Haskell implementations.
 
 module Main (main) where
 
-import Data.Hashable (Hashable(hash), hashByteArray, hashPtr)
+import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy as TL
+import Data.List (nub)
+import Control.Monad (ap, liftM)
 import System.IO.Unsafe (unsafePerformIO)
 import Foreign.Marshal.Array (withArray)
 import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
@@ -18,6 +25,9 @@ import GHC.Word (Word8(..))
 import Test.QuickCheck hiding ((.&.))
 import Test.Framework (Test, defaultMain, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
+#ifdef GENERICS
+import GHC.Generics
+#endif
 
 ------------------------------------------------------------------------
 -- * Properties
@@ -25,8 +35,16 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 instance Arbitrary T.Text where
     arbitrary = T.pack `fmap` arbitrary
 
-instance Arbitrary L.Text where
-    arbitrary = L.pack `fmap` arbitrary
+instance Arbitrary TL.Text where
+    arbitrary = TL.pack `fmap` arbitrary
+
+instance Arbitrary B.ByteString where
+    arbitrary   = B.pack `fmap` arbitrary
+
+instance Arbitrary BL.ByteString where
+    arbitrary   = sized $ \n -> resize (round (sqrt (toEnum n :: Double)))
+                  ((BL.fromChunks . map (B.pack . nonEmpty)) `fmap` arbitrary)
+      where nonEmpty (NonEmpty a) = a
 
 -- | Validate the implementation by comparing the C and Haskell
 -- versions.
@@ -40,12 +58,14 @@ pText :: T.Text -> T.Text -> Bool
 pText a b = if (a == b) then (hash a == hash b) else True
 
 -- | Content equality implies hash equality.
-pTextLazy :: L.Text -> L.Text -> Bool
+pTextLazy :: TL.Text -> TL.Text -> Bool
 pTextLazy a b = if (a == b) then (hash a == hash b) else True
 
 -- | A small positive integer.
 newtype ChunkSize = ChunkSize { unCS :: Int }
-    deriving (Eq, Ord, Num, Integral, Real, Enum, Show)
+    deriving (Eq, Ord, Num, Integral, Real, Enum)
+
+instance Show ChunkSize where show = show . unCS
 
 instance Arbitrary ChunkSize where
     arbitrary = (ChunkSize . (`mod` maxChunkSize)) `fmap`
@@ -54,21 +74,52 @@ instance Arbitrary ChunkSize where
 
 -- | Ensure that the rechunk function causes a rechunked string to
 -- still match its original form.
-pRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
-pRechunk t cs = L.fromStrict t == rechunk t cs
+pTextRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
+pTextRechunk t cs = TL.fromStrict t == rechunkText t cs
 
--- | Content equality implies hash equality.
-pLazyRechunked :: T.Text -> NonEmptyList ChunkSize -> Bool
-pLazyRechunked t cs = hash (L.fromStrict t) == hash (rechunk t cs)
+-- | Lazy strings must hash to the same value no matter how they are
+-- chunked.
+pTextLazyRechunked :: T.Text
+                   -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
+pTextLazyRechunked t cs0 cs1 =
+    hash (rechunkText t cs0) == hash (rechunkText t cs1)
 
 -- | Break up a string into chunks of different sizes.
-rechunk :: T.Text -> NonEmptyList ChunkSize -> L.Text
-rechunk t0 (NonEmpty cs0) = L.fromChunks . go t0 . cycle $ cs0
+rechunkText :: T.Text -> NonEmptyList ChunkSize -> TL.Text
+rechunkText t0 (NonEmpty cs0) = TL.fromChunks . go t0 . cycle $ cs0
   where
     go t _ | T.null t = []
     go t (c:cs)       = a : go b cs
       where (a,b)     = T.splitAt (unCS c) t
     go _ []           = error "Properties.rechunk - The 'impossible' happened!"
+
+-- | Content equality implies hash equality.
+pBS :: B.ByteString -> B.ByteString -> Bool
+pBS a b = if (a == b) then (hash a == hash b) else True
+
+-- | Content equality implies hash equality.
+pBSLazy :: BL.ByteString -> BL.ByteString -> Bool
+pBSLazy a b = if (a == b) then (hash a == hash b) else True
+
+-- | Break up a string into chunks of different sizes.
+rechunkBS :: B.ByteString -> NonEmptyList ChunkSize -> BL.ByteString
+rechunkBS t0 (NonEmpty cs0) = BL.fromChunks . go t0 . cycle $ cs0
+  where
+    go t _ | B.null t = []
+    go t (c:cs)       = a : go b cs
+      where (a,b)     = B.splitAt (unCS c) t
+    go _ []           = error "Properties.rechunkBS - The 'impossible' happened!"
+
+-- | Ensure that the rechunk function causes a rechunked string to
+-- still match its original form.
+pBSRechunk :: B.ByteString -> NonEmptyList ChunkSize -> Bool
+pBSRechunk t cs = BL.fromStrict t == rechunkBS t cs
+
+-- | Lazy bytestrings must hash to the same value no matter how they
+-- are chunked.
+pBSLazyRechunked :: B.ByteString
+                 -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
+pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -86,6 +137,62 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
         case writeWord8Array# marr# i# x s# of
             s2# -> go s2# (i + 1) marr# xs
 
+-- Generics
+
+#ifdef GENERICS
+
+data Product2 a b = Product2 a b
+                    deriving (Generic)
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (Product2 a b) where
+    arbitrary = Product2 `liftM` arbitrary `ap` arbitrary
+
+instance (Hashable a, Hashable b) => Hashable (Product2 a b)
+
+data Product3 a b c = Product3 a b c
+                    deriving (Generic)
+
+instance (Arbitrary a, Arbitrary b, Arbitrary c) =>
+    Arbitrary (Product3 a b c) where
+    arbitrary = Product3 `liftM` arbitrary `ap` arbitrary `ap` arbitrary
+
+instance (Hashable a, Hashable b, Hashable c) => Hashable (Product3 a b c)
+
+-- Hashes of all product types of the same shapes should be the same.
+
+pProduct2 :: Int -> String -> Bool
+pProduct2 x y = hash (x, y) == hash (Product2 x y)
+
+pProduct3 :: Double -> Maybe Bool -> (Int, String) -> Bool
+pProduct3 x y z = hash (x, y, z) == hash (Product3 x y z)
+
+data Sum2 a b = S2a a | S2b b
+                deriving (Eq, Ord, Show, Generic)
+
+instance (Hashable a, Hashable b) => Hashable (Sum2 a b)
+
+data Sum3 a b c = S3a a | S3b b | S3c c
+                  deriving (Eq, Ord, Show, Generic)
+
+instance (Hashable a, Hashable b, Hashable c) => Hashable (Sum3 a b c)
+
+-- Hashes of the same parameter, but with different sum constructors,
+-- should differ. (They might legitimately collide, but that's
+-- vanishingly unlikely.)
+
+pSum2_differ :: Int -> Bool
+pSum2_differ x = nub hs == hs
+  where hs = [ hash (S2a x :: Sum2 Int Int)
+             , hash (S2b x :: Sum2 Int Int) ]
+
+pSum3_differ :: Int -> Bool
+pSum3_differ x = nub hs == hs
+  where hs = [ hash (S3a x :: Sum3 Int Int Int)
+             , hash (S3b x :: Sum3 Int Int Int)
+             , hash (S3c x :: Sum3 Int Int Int) ]
+
+#endif
+
 ------------------------------------------------------------------------
 -- Test harness
 
@@ -98,7 +205,22 @@ tests =
     , testGroup "text"
       [ testProperty "text/strict" pText
       , testProperty "text/lazy" pTextLazy
-      , testProperty "rechunk" pRechunk
-      , testProperty "text/rechunked" pLazyRechunked
+      , testProperty "text/rechunk" pTextRechunk
+      , testProperty "text/rechunked" pTextLazyRechunked
       ]
+    , testGroup "bytestring"
+      [ testProperty "bytestring/strict" pBS
+      , testProperty "bytestring/lazy" pBSLazy
+      , testProperty "bytestring/rechunk" pBSRechunk
+      , testProperty "bytestring/rechunked" pBSLazyRechunked
+      ]
+#ifdef GENERICS
+    , testGroup "generics"
+      [
+        testProperty "product2" pProduct2
+      , testProperty "product3" pProduct3
+      , testProperty "sum2_differ" pSum2_differ
+      , testProperty "sum3_differ" pSum3_differ
+      ]
+#endif
     ]
