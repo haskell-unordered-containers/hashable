@@ -68,6 +68,7 @@ Test-suite tests
   Main-is:           Properties.hs
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring,
+                     ghc-prim,
                      hashable,
                      test-framework >= 0.3.3,
                      test-framework-quickcheck2 >= 0.2.9,
@@ -91,7 +92,8 @@ benchmark benchmarks
     base,
     bytestring,
     criterion,
-    mtl
+    mtl,
+    siphash
 
   if impl(ghc)
     Build-depends:   ghc-prim,
@@ -99,10 +101,19 @@ benchmark benchmarks
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
-  C-sources:         cbits/hashByteString.c
+  C-sources:         cbits/getRandomBytes.c
+                     cbits/inthash.c
+                     cbits/siphash.c
+  if arch(i386)
+    C-sources:       cbits/siphash-sse41.c
+    CC-options:      -msse4.1
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
+  if flag(fixed-salt)
+    Cpp-options: -DFIXED_SALT
+  if os(windows)
+    extra-libraries: advapi32
 
 source-repository head
   type:     git

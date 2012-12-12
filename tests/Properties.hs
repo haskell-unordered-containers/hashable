@@ -113,7 +113,7 @@ rechunkBS t0 (NonEmpty cs0) = BL.fromChunks . go t0 . cycle $ cs0
 -- | Ensure that the rechunk function causes a rechunked string to
 -- still match its original form.
 pBSRechunk :: B.ByteString -> NonEmptyList ChunkSize -> Bool
-pBSRechunk t cs = BL.fromStrict t == rechunkBS t cs
+pBSRechunk t cs = fromStrict t == rechunkBS t cs
 
 -- | Lazy bytestrings must hash to the same value no matter how they
 -- are chunked.
@@ -224,3 +224,14 @@ tests =
       ]
 #endif
     ]
+
+------------------------------------------------------------------------
+-- Utilities
+
+fromStrict :: B.ByteString -> BL.ByteString
+#if MIN_VERSION_bytestring(0,10,0)
+fromStrict = BL.fromStrict
+#else
+fromStrict b = BL.fromChunks [b]
+#endif
+
