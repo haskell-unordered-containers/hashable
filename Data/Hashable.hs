@@ -22,11 +22,6 @@ module Data.Hashable
       Hashable(..)
     , hash
 
-#ifdef GENERICS
-      -- ** Support for generics
-    , GHashable(..)
-#endif
-
       -- ** Avalanche
       -- $avalanche
 
