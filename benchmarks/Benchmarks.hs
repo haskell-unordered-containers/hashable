@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MagicHash,
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
     UnboxedTuples #-}
 
 module Main (main) where
@@ -59,9 +59,11 @@ main = do
         cSipHash24 (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+#if WORD_SIZE_IN_BITS == 32
         sse41SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+#endif
         cSipHash8 v = c_siphash24_u8 k0 k1 (fromIntegral v)
         cSipHash16 v = c_siphash24_u16 k0 k1 (fromIntegral v)
         cSipHash32 v = c_siphash24_u32 k0 k1 (fromIntegral v)
@@ -142,6 +144,7 @@ main = do
           , bench "Int32" $ whnf cSipHash32 (0x5a5a5a5a :: Int32)
           , bench "Int64" $ whnf cSipHash64 (0x5a5a5a5a5a5a5a5a :: Int64)
           ]
+#if WORD_SIZE_IN_BITS == 32
         , bgroup "sse41SipHash"
           [ bench "5" $ whnf sse41SipHash bs5
           , bench "8" $ whnf sse41SipHash bs8
@@ -151,6 +154,7 @@ main = do
           , bench "512" $ whnf sse41SipHash bs512
           , bench "2^20" $ whnf sse41SipHash bs1Mb
           ]
+#endif
         , bgroup "pkgSipHash"
           [ bench "5" $ whnf hsSipHash bs5
           , bench "8" $ whnf hsSipHash bs8
@@ -190,8 +194,10 @@ foreign import ccall unsafe "hashable_siphash24_u16" c_siphash24_u16
     :: Word64 -> Word64 -> Word16 -> Word64
 foreign import ccall unsafe "hashable_siphash24_u8" c_siphash24_u8
     :: Word64 -> Word64 -> Word8 -> Word64
+#if WORD_SIZE_IN_BITS == 32
 foreign import ccall unsafe "hashable_siphash24_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+#endif
 
 foreign import ccall unsafe "hashable_wang_32" hash_wang_32
     :: Word32 -> Word32
