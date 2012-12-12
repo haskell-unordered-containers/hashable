@@ -176,6 +176,9 @@ class GHashable f where
     ghashWithSalt :: Int -> f a -> Int
 #endif
 
+-- | Return a hash value for the argument. Defined as:
+--
+-- > hash = hashWithSalt defaultSalt
 hash :: Hashable a => a -> Int
 hash = hashWithSalt defaultSalt
 
@@ -184,6 +187,7 @@ hash = hashWithSalt defaultSalt
 --
 -- This is a useful shorthand in cases where a type can easily be
 -- mapped to another type that is already an instance of 'Hashable'.
+-- Example:
 --
 -- > data Foo = Foo | Bar
 -- >          deriving (Enum)

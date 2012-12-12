@@ -20,11 +20,12 @@ module Data.Hashable
     (
       -- * Computing hash values
       Hashable(..)
+    , hash
+
 #ifdef GENERICS
       -- ** Support for generics
     , GHashable(..)
 #endif
-    , hash
 
       -- ** Avalanche
       -- $avalanche
