@@ -367,7 +367,7 @@ hashTypeRep :: Int -> TypeRep -> Int
 -- Fingerprint is just the MD5, so taking any Int from it is fine
 hashTypeRep salt (TypeRep (Fingerprint x _) _ _) = hashWithSalt salt x
 #elif __GLASGOW_HASKELL__ >= 606
-hashTypeRep salt = hashUsing (B.inlinePerformIO . typeRepKey)
+hashTypeRep = hashUsing (B.inlinePerformIO . typeRepKey)
 #else
 hashTypeRep = hashUsing show
 #endif
