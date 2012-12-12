@@ -32,7 +32,8 @@ Flag fixed-salt
 
 Library
   Exposed-modules:   Data.Hashable
-  Other-modules:     Data.Hashable.RandomSource
+  Other-modules:     Data.Hashable.Class
+                     Data.Hashable.RandomSource
                      Data.Hashable.SipHash
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9
@@ -44,8 +45,7 @@ Library
 
   if impl(ghc >= 7.2.1)
     CPP-Options:     -DGENERICS
-    Other-modules:   Data.Hashable.Class
-                     Data.Hashable.Generic
+    Other-modules:   Data.Hashable.Generic
 
   C-sources:         cbits/getRandomBytes.c
                      cbits/inthash.c
