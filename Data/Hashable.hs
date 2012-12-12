@@ -30,6 +30,9 @@ module Data.Hashable
       -- ** Generic instances
       -- $generics
 
+      -- *** Understanding a compiler error
+      -- $generic_err
+
       -- ** Writing instances by hand
       -- $blocks
     , hashUsing
@@ -73,10 +76,37 @@ import Data.Hashable.Generic ()
 -- >              deriving (Eq, Generic)
 -- >
 -- > instance (Hashable a) => Hashable (Foo a)
+-- >
+-- > data Colour = Red | Green | Blue
+-- >               deriving (Generic)
+-- >
+-- > instance Hashable Colour
 --
 -- If you omit a body for the instance declaration, GHC will generate
 -- a default instance that correctly and efficiently hashes every
 -- constructor and parameter.
+
+-- $generic_err
+--
+-- Suppose you intend to use the generic machinery to automatically
+-- generate a 'Hashable' instance.
+--
+-- > data Oops = Oops
+-- >      -- forgot to add "deriving (Generic)" here!
+-- >
+-- > instance Hashable Oops
+--
+-- And imagine that, as in the example above, you forget to add a
+-- \"@deriving 'Generic'@\" clause to your data type. At compile time,
+-- you will get an error message from GHC that begins roughly as
+-- follows:
+--
+-- > No instance for (GHashable (Rep Oops))
+--
+-- This error can be confusing, as 'GHashable' is not exported (it is
+-- an internal typeclass used by this library's generics machinery).
+-- The correct fix is simply to add the missing \"@deriving
+-- 'Generic'@\".
 
 -- $blocks
 --
