@@ -104,6 +104,7 @@ benchmark benchmarks
   C-sources:         cbits/getRandomBytes.c
                      cbits/inthash.c
                      cbits/siphash.c
+                     benchmarks/cbits/inthash.c
   if arch(i386)
     C-sources:       cbits/siphash-sse41.c
     CC-options:      -msse4.1
