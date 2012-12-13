@@ -12,7 +12,7 @@ import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
 import Data.Word
-import Foreign.C.Types (CInt(..), CSize(..))
+import Foreign.C.Types (CInt(..), CLong(..), CSize(..))
 import Foreign.Ptr
 import Data.ByteString.Internal
 import qualified Data.ByteString.Lazy as BL
@@ -75,6 +75,9 @@ main = do
         cSipHash24 (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+        fnvHash (PS fp off len) =
+            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            return $! fnv_hash (ptr `plusPtr` off) (fromIntegral len) 2166136261
 #ifdef HAVE_SSE
         sse2SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
@@ -227,6 +230,15 @@ main = do
           , bench "512" $ whnf hsSipHash bs512
           , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
+        , bgroup "fnv"
+          [ bench "5" $ whnf fnvHash bs5
+          , bench "8" $ whnf fnvHash bs8
+          , bench "11" $ whnf fnvHash bs11
+          , bench "40" $ whnf fnvHash bs40
+          , bench "128" $ whnf fnvHash bs128
+          , bench "512" $ whnf fnvHash bs512
+          , bench "2^20" $ whnf fnvHash bs1Mb
+          ]
         , bgroup "Int"
           [ bench "id32"   $ whnf id           (0x7eadbeef :: Int32)
           , bench "id64"   $ whnf id           (0x7eadbeefdeadbeef :: Int64)
@@ -255,6 +267,9 @@ foreign import ccall unsafe "hashable_siphash24_sse2" sse2_siphash
 foreign import ccall unsafe "hashable_siphash24_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 #endif
+
+foreign import ccall unsafe "hashable_fnv_hash" fnv_hash
+    :: Ptr Word8 -> CLong -> CLong -> CLong
 
 foreign import ccall unsafe "hashable_wang_32" hash_wang_32
     :: Word32 -> Word32
