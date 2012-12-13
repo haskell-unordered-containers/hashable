@@ -88,14 +88,20 @@ benchmark benchmarks
   hs-source-dirs: . benchmarks
 
   main-is: Benchmarks.hs
+  other-modules:
+    Data.Hashable
+    Data.Hashable.Class
+    Data.Hashable.RandomSource
+    Data.Hashable.SipHash
   type: exitcode-stdio-1.0
 
   build-depends:
     base,
     bytestring,
     criterion,
-    mtl,
-    siphash
+    ghc-prim,
+    siphash,
+    text
 
   if impl(ghc)
     Build-depends:   ghc-prim,
@@ -103,17 +109,21 @@ benchmark benchmarks
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
-  C-sources:         cbits/getRandomBytes.c
-                     cbits/inthash.c
-                     cbits/siphash.c
-                     benchmarks/cbits/fnv.c
-                     benchmarks/cbits/inthash.c
+  c-sources:
+    cbits/getRandomBytes.c
+    cbits/inthash.c
+    cbits/siphash.c
+    benchmarks/cbits/fnv.c
+    benchmarks/cbits/inthash.c
+
   if arch(i386) || arch(x86_64)
-    C-sources:       cbits/siphash-sse2.c
-                     cbits/siphash-sse41.c
-    CC-options:      -msse2 -msse4.1
-    CPP-options:     -DHAVE_SSE
-  Ghc-options:       -Wall
+    cpp-options: -DHAVE_SSE
+    cc-options: -msse2 -msse4.1
+    c-sources:
+      cbits/siphash-sse2.c
+      cbits/siphash-sse41.c
+
+  Ghc-options:       -Wall -O2
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
   if flag(fixed-salt)
