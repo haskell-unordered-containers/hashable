@@ -1,12 +1,7 @@
 /* Almost a verbatim copy of the reference implementation. */
 
 #include <stddef.h>
-#include <stdint.h>
-
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint16_t u16;
-typedef uint8_t u8;
+#include "siphash.h"
 
 #define ROTL(x,b) (u64)(((x) << (b)) | ((x) >> (64 - (b))))
 
@@ -97,12 +92,10 @@ static inline u64 _siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 
 static u64 (*_siphash24)(u64 k0, u64 k1, const u8 *, size_t);
 
-u64 hashable_siphash24_sse41(u64 k0, u64 k1, const u8 *, size_t);
-
-static void maybe_use_sse41()
+static void maybe_use_sse()
     __attribute__((constructor));
 
-static void maybe_use_sse41()
+static void maybe_use_sse()
 {
     uint32_t eax = 1, ebx, ecx, edx;
 
@@ -114,6 +107,8 @@ static void maybe_use_sse41()
 	 :"+a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)
 	 : :"edi");
 
+    if (edx & (1 << 26))
+	_siphash24 = hashable_siphash24_sse2;
     if (ecx & (1 << 19))
 	_siphash24 = hashable_siphash24_sse41;
     else
