@@ -51,7 +51,8 @@ Library
                      cbits/inthash.c
                      cbits/siphash.c
   if arch(i386)
-    C-sources:       cbits/siphash-sse41.c
+    C-sources:       cbits/siphash-sse2.c
+                     cbits/siphash-sse41.c
     CC-options:      -msse4.1
 
   Ghc-options:       -Wall
