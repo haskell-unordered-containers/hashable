@@ -21,22 +21,23 @@
 -- The easiest way to get started is to use the 'hash' function. Here
 -- is an example session with @ghci@.
 --
--- @
--- Prelude> import Data.Hashable
--- Prelude> 'hash' \"foo\"
--- 60853164
--- @
+-- > Prelude> import Data.Hashable
+-- > Prelude> hash "foo"
+-- > 60853164
 
 module Data.Hashable
     (
       -- * Computing hash values
-      Hashable(..)
-    , hash
+      hash
+    , Hashable(..)
 
-      -- ** Avalanche
+      -- ** Avalanche behavior
       -- $avalanche
 
       -- * Creating new instances
+      -- | There are two ways to create new instances: by deriving
+      -- instances automatically using GHC's generic programming
+      -- support or by writing instances manually.
 
       -- ** Generic instances
       -- $generics
@@ -53,7 +54,7 @@ module Data.Hashable
     , hashByteArray
     , hashByteArrayWithSalt
 #endif
-      -- * Hashing types with multiple constructors
+      -- ** Hashing types with multiple constructors
       -- $ctors
     ) where
 
@@ -86,10 +87,10 @@ import Data.Hashable.Generic ()
 -- > data Foo a = Foo a String
 -- >              deriving (Eq, Generic)
 -- >
--- > instance (Hashable a) => Hashable (Foo a)
+-- > instance Hashable a => Hashable (Foo a)
 -- >
 -- > data Colour = Red | Green | Blue
--- >               deriving (Generic)
+-- >               deriving Generic
 -- >
 -- > instance Hashable Colour
 --
@@ -103,7 +104,7 @@ import Data.Hashable.Generic ()
 -- generate a 'Hashable' instance.
 --
 -- > data Oops = Oops
--- >      -- forgot to add "deriving (Generic)" here!
+-- >      -- forgot to add "deriving Generic" here!
 -- >
 -- > instance Hashable Oops
 --
@@ -166,7 +167,7 @@ import Data.Hashable.Generic ()
 -- instance for 'Int'.
 --
 -- > data Color = Red | Green | Blue
--- >              deriving (Enum)
+-- >              deriving Enum
 -- >
 -- > instance Hashable Color where
 -- >     hashWithSalt = hashUsing fromEnum
