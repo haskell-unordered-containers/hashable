@@ -5,19 +5,11 @@
  * Used with permission.
  */
 #include <emmintrin.h>
-
-#include <stdint.h>
-
-#define SIPHASH_ROUNDS 2
-#define SIPHASH_FINALROUNDS 4
-
-typedef  uint8_t  u8;
-typedef uint32_t u32;
-typedef uint64_t u64;
+#include "siphash.h"
 
 #define _mm_roti_epi64(x, c) ((16 == (c)) ? _mm_shufflelo_epi16((x), _MM_SHUFFLE(2,1,0,3)) : _mm_xor_si128(_mm_slli_epi64((x), (c)), _mm_srli_epi64((x), 64-(c))))
 
-u64 hashable_siphash_sse2(const u8 key[16], const unsigned char *m, const u64 n)
+u64 hashable_siphash_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 {
 	__m128i v0, v1, v2, v3;
 	__m128i k0, k1;
@@ -25,8 +17,8 @@ u64 hashable_siphash_sse2(const u8 key[16], const unsigned char *m, const u64 n)
 	size_t i, k;
 	union { u64 gpr; __m128i xmm; } hash;
 
-	k0 = _mm_loadl_epi64((__m128i*)(key + 0));
-	k1 = _mm_loadl_epi64((__m128i*)(key + 8));
+	k0 = _mm_loadl_epi64((__m128i*)(&ik0));
+	k1 = _mm_loadl_epi64((__m128i*)(&ik1));
 
 	v0 = _mm_xor_si128(k0, _mm_set_epi32(0, 0, 0x736f6d65, 0x70736575));
 	v1 = _mm_xor_si128(k1, _mm_set_epi32(0, 0, 0x646f7261, 0x6e646f6d));

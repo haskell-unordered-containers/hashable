@@ -5,15 +5,7 @@
  * Used with permission.
  */
 #include <smmintrin.h>
-
-#include <stdint.h>
-
-#define SIPHASH_ROUNDS 2
-#define SIPHASH_FINALROUNDS 4
-
-typedef  uint8_t  u8;
-typedef uint32_t u32;
-typedef uint64_t u64;
+#include "siphash.h"
 
 // Specialized for siphash, do not reuse
 #define rotate16(x) _mm_shufflehi_epi16((x), _MM_SHUFFLE(2,1,0,3))
