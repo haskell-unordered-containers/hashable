@@ -21,7 +21,7 @@ Cabal-version:       >=1.8
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
 Extra-source-files:
   CHANGES, README.md, tests/Properties.hs, benchmarks/Benchmarks.hs,
-  cbits/siphash.h
+  benchmarks/hashable-benchmarks.cabal, cbits/siphash.h
 
 Flag integer-gmp
   Description: Are we using integer-gmp to provide fast Integer instances?
