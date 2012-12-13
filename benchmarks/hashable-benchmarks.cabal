@@ -7,10 +7,10 @@ cabal-version: >=1.2
 executable hashable-benchmarks
   ghc-options: -Wall -O2
   c-sources:
-    ../cbits/hashByteString.c
     ../cbits/getRandomBytes.c
     ../cbits/inthash.c
     ../cbits/siphash.c
+    cbits/fnv.c
     cbits/inthash.c
 
   if arch(i386) || arch(x86_64)
