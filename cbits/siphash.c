@@ -117,6 +117,15 @@ static void maybe_use_sse()
 
 #endif
 
+/* On Windows, ghci's linker fails to call static initializers. */
+static inline void ensure_sse_init()
+{
+#if defined(_WIN32) && defined(__i386)
+    if (_siphash24 == NULL)
+	maybe_use_sse();
+#endif
+}
+
 u64 hashable_siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 {
     return _siphash(c, d, k0, k1, str, len);
@@ -124,6 +133,7 @@ u64 hashable_siphash(int c, int d, u64 k0, u64 k1, const u8 *str, size_t len)
 
 u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 {
+    ensure_sse_init();
     return _siphash24(k0, k1, str, len);
 }
 
@@ -133,6 +143,7 @@ u64 hashable_siphash24(u64 k0, u64 k1, const u8 *str, size_t len)
 u64 hashable_siphash24_offset(u64 k0, u64 k1,
 			      const u8 *str, size_t off, size_t len)
 {
+    ensure_sse_init();
     return _siphash24(k0, k1, str + off, len);
 }
 
