@@ -109,7 +109,7 @@ static void maybe_use_sse()
 
     if (edx & (1 << 26))
 	_siphash24 = hashable_siphash24_sse2;
-    if (ecx & (1 << 19))
+    else if (ecx & (1 << 19))
 	_siphash24 = hashable_siphash24_sse41;
     else
 	_siphash24 = plain_siphash24;
