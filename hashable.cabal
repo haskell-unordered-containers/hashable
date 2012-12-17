@@ -31,6 +31,10 @@ Flag fixed-salt
   Description: Do we use a single fixed salt every time the program runs?
   Default: False
 
+Flag sse41
+  Description: Do we want to assume that a target supports SSE 4.1?
+  Default: False
+
 Library
   Exposed-modules:   Data.Hashable
   Other-modules:     Data.Hashable.Class
@@ -53,8 +57,12 @@ Library
                      cbits/siphash.c
   if arch(i386)
     C-sources:       cbits/siphash-sse2.c
-                     cbits/siphash-sse41.c
-    CC-options:      -msse2 -msse4.1
+    CC-options:      -msse2
+
+    if flag(sse41)
+      CPP-Options:   -DHAVE_SSE41
+      CC-options:    -msse41
+      C-sources:     cbits/siphash-sse41.c
 
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
@@ -117,11 +125,16 @@ benchmark benchmarks
     benchmarks/cbits/inthash.c
 
   if arch(i386) || arch(x86_64)
-    cpp-options: -DHAVE_SSE
-    cc-options: -msse2 -msse4.1
+    cpp-options: -DHAVE_SSE2
+    cc-options: -msse2
     c-sources:
       cbits/siphash-sse2.c
-      cbits/siphash-sse41.c
+
+    if flag(sse41)
+      cpp-options: -DHAVE_SSE41
+      cc-options: -msse4.1
+      c-sources:
+        cbits/siphash-sse41.c
 
   Ghc-options:       -Wall -O2
   if impl(ghc >= 6.8)

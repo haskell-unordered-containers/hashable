@@ -78,10 +78,12 @@ main = do
         fnvHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! fnv_hash (ptr `plusPtr` off) (fromIntegral len) 2166136261
-#ifdef HAVE_SSE
+#ifdef HAVE_SSE2
         sse2SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse2_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+#endif
+#ifdef HAVE_SSE41
         sse41SipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
@@ -201,7 +203,7 @@ main = do
           , bench "512" $ whnf cSipHash24 bs512
           , bench "2^20" $ whnf cSipHash24 bs1Mb
           ]
-#ifdef HAVE_SSE
+#ifdef HAVE_SSE2
         , bgroup "sse2SipHash"
           [ bench "5" $ whnf sse2SipHash bs5
           , bench "8" $ whnf sse2SipHash bs8
@@ -211,6 +213,8 @@ main = do
           , bench "512" $ whnf sse2SipHash bs512
           , bench "2^20" $ whnf sse2SipHash bs1Mb
           ]
+#endif
+#ifdef HAVE_SSE41
         , bgroup "sse41SipHash"
           [ bench "5" $ whnf sse41SipHash bs5
           , bench "8" $ whnf sse41SipHash bs8
@@ -261,9 +265,11 @@ foreign import ccall unsafe "hashable_siphash" c_siphash
     :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 foreign import ccall unsafe "hashable_siphash24" c_siphash24
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-#ifdef HAVE_SSE
+#ifdef HAVE_SSE2
 foreign import ccall unsafe "hashable_siphash24_sse2" sse2_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
+#endif
+#ifdef HAVE_SSE41
 foreign import ccall unsafe "hashable_siphash24_sse41" sse41_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 #endif
