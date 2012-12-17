@@ -27,6 +27,9 @@
 
 module Data.Hashable
     (
+      -- * Hashing and security
+      -- $security
+
       -- * Computing hash values
       hash
     , Hashable(..)
@@ -219,3 +222,45 @@ import Data.Hashable.Generic ()
 -- >         s `hashWithSalt`
 -- >         yr `hashWithSalt`
 -- >         mo `hashWithSalt` dy
+
+-- $security
+-- #security#
+--
+-- Applications that use hash-based data structures to store input
+-- from untrusted users can be susceptible to \"hash DoS\", a class of
+-- denial-of-service attack that uses deliberately chosen colliding
+-- inputs to force an application into unexpectedly behaving with
+-- quadratic time complexity.
+--
+-- This library uses the SipHash algorithm to hash strings. SipHash
+-- was designed to be more robust against collision attacks than
+-- traditional hash algorithms, while retaining good performance.
+--
+-- To further mitigate the risk from collision attacks, this library
+-- provides an environment variable named @HASHABLE_SALT@ that allows
+-- the default salt used by the 'hash' function to be chosen at
+-- application startup time.
+--
+-- * In the normal case, the environment variable is not set, and a
+--   fixed salt is used that does not vary between runs. (This choice
+--   can be made permanent by building this package with the
+--   @-ffixed-salt@ flag.)
+--
+-- * If the value is the string @random@, the system's cryptographic
+--   pseudo-random number generator will be used to supply a salt.
+--   While this may offer added security, it can also violate the
+--   assumption of some Haskell libraries that expect the results of
+--   'hash' to be stable across application runs. Choose this
+--   behaviour with care (and testing)!
+--
+-- * When the value is an integer (prefixed with @0x@ for hexadecimal),
+--   it will be used as the salt.
+--
+-- If @HASHABLE_SALT@ cannot be parsed, then the first time that a
+-- call to 'hash' is made, the application will halt with an
+-- informative error message.
+--
+-- (Implementation note: while SipHash is used for strings, a
+-- faster&#8212;and almost certainly less secure&#8212;algorithm is
+-- used for numeric types, on the assumption that strings are much
+-- more likely as a hash DoS attack vector.)
