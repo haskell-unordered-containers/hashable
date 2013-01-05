@@ -57,11 +57,9 @@ Library
                      cbits/siphash.c
   if arch(i386)
     C-sources:       cbits/siphash-sse2.c
-    CC-options:      -msse2
 
     if flag(sse41)
       CPP-Options:   -DHAVE_SSE41
-      CC-options:    -msse41
       C-sources:     cbits/siphash-sse41.c
 
   Ghc-options:       -Wall
@@ -126,13 +124,11 @@ benchmark benchmarks
 
   if arch(i386) || arch(x86_64)
     cpp-options: -DHAVE_SSE2
-    cc-options: -msse2
     c-sources:
       cbits/siphash-sse2.c
 
     if flag(sse41)
       cpp-options: -DHAVE_SSE41
-      cc-options: -msse4.1
       c-sources:
         cbits/siphash-sse41.c
 

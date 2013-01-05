@@ -4,6 +4,8 @@
  *
  * Used with permission.
  */
+#pragma GCC target("sse2")
+
 #include <emmintrin.h>
 #include "siphash.h"
 
