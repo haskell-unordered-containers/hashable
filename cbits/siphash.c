@@ -119,7 +119,7 @@ static void maybe_use_sse()
 
 #endif
 
-/* On Windows, ghci's linker fails to call static initializers. */
+/* ghci's linker fails to call static initializers. */
 static inline void ensure_sse_init()
 {
 #if defined(__i386)
