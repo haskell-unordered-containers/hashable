@@ -122,7 +122,7 @@ static void maybe_use_sse()
 /* On Windows, ghci's linker fails to call static initializers. */
 static inline void ensure_sse_init()
 {
-#if defined(_WIN32) && defined(__i386)
+#if defined(__i386)
     if (_siphash24 == NULL)
 	maybe_use_sse();
 #endif
