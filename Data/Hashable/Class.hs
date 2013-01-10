@@ -23,7 +23,7 @@
 module Data.Hashable.Class
     (
       -- * Computing hash values
-      Hashable(..)
+      Hashable(hashWithSalt)
 #ifdef GENERICS
       -- ** Support for generics
     , GHashable(..)
@@ -186,6 +186,11 @@ class Hashable a where
     -- implementation.
     hashWithSalt :: Int -> a -> Int
 
+    -- | (/Not public/) Hash a list of values. Used to make hashing of
+    -- 'String' and 'Word8' more efficient.
+    hashListWithSalt :: Int -> [a] -> Int
+    hashListWithSalt = foldl' hashWithSalt
+
 #ifdef GENERICS
     default hashWithSalt :: (Generic a, GHashable (Rep a)) => Int -> a -> Int
     hashWithSalt salt = ghashWithSalt salt . from
@@ -225,13 +230,11 @@ hashUsing f salt x = hashWithSalt salt (f x)
 {-# INLINE hashUsing #-}
 
 instance Hashable Int where hashWithSalt = hashNative
-instance Hashable Int8 where hashWithSalt = hashNative
 instance Hashable Int16 where hashWithSalt = hashNative
 instance Hashable Int32 where hashWithSalt = hashNative
 instance Hashable Int64 where hashWithSalt = hash64
 
 instance Hashable Word where hashWithSalt = hashNative
-instance Hashable Word8 where hashWithSalt = hashNative
 instance Hashable Word16 where hashWithSalt = hashNative
 instance Hashable Word32 where hashWithSalt = hashNative
 instance Hashable Word64 where hashWithSalt = hash64
@@ -239,7 +242,21 @@ instance Hashable Word64 where hashWithSalt = hash64
 instance Hashable () where hashWithSalt = hashUsing fromEnum
 instance Hashable Bool where hashWithSalt = hashUsing fromEnum
 instance Hashable Ordering where hashWithSalt = hashUsing fromEnum
-instance Hashable Char where hashWithSalt = hashUsing fromEnum
+
+instance Hashable Int8 where
+    hashWithSalt = hashNative
+    hashListWithSalt salt = hashUsing B.pack salt . map fromIntegral
+    {-# NOINLINE hashListWithSalt #-}
+
+instance Hashable Word8 where
+    hashWithSalt = hashNative
+    hashListWithSalt = hashUsing B.pack
+    {-# NOINLINE hashListWithSalt #-}
+
+instance Hashable Char where
+    hashWithSalt = hashUsing fromEnum
+    hashListWithSalt = hashUsing T.pack
+    {-# NOINLINE hashListWithSalt #-}
 
 -- | Hash an integer of at most the native width supported by the
 -- machine.
@@ -348,13 +365,7 @@ instance Hashable (StableName a) where
 #endif
 
 instance Hashable a => Hashable [a] where
-    hashWithSalt = foldl' hashWithSalt
-
-{-# RULES "hashWithSalt/String"
-    forall s v. hashWithSalt s (v::[Char]) = hashWithSalt s (T.pack v) #-}
-
-{-# RULES "hash/String"
-    forall v. hash (v::[Char]) = hash (T.pack v) #-}
+    hashWithSalt = hashListWithSalt
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $
