@@ -65,7 +65,12 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	{
 		mi = _mm_loadl_epi64((__m128i*)(m + i));
 		v3 = _mm_xor_si128(v3, mi);
-		for(k = 0; k < SIPHASH_ROUNDS; ++k) COMPRESS(v0,v1,v2,v3);
+		if (SIPHASH_ROUNDS == 2) {
+			COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
+		} else {
+			for (k = 0; k < SIPHASH_ROUNDS; ++k) 
+				COMPRESS(v0,v1,v2,v3);
+		}
 		v0 = _mm_xor_si128(v0, mi);
 	}
 
@@ -75,11 +80,22 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	mi = _mm_xor_si128(_mm_and_si128(mi, mask), len);
 
 	v3 = _mm_xor_si128(v3, mi);
-	for(k = 0; k < SIPHASH_ROUNDS; ++k) COMPRESS(v0,v1,v2,v3);
+	if (SIPHASH_ROUNDS == 2) {
+		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
+	} else {	
+		for (k = 0; k < SIPHASH_ROUNDS; ++k) 
+			COMPRESS(v0,v1,v2,v3);
+	}
 	v0 = _mm_xor_si128(v0, mi);
 
 	v2 = _mm_xor_si128(v2, _mm_loadu_si128((__m128i*) &iv[5]));
-	for(k = 0; k < SIPHASH_FINALROUNDS; ++k) COMPRESS(v0,v1,v2,v3);
+	if (SIPHASH_FINALROUNDS == 4) {
+		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
+		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
+	} else {
+		for (k = 0; k < SIPHASH_FINALROUNDS; ++k) 
+			COMPRESS(v0,v1,v2,v3);
+	}
 
 	v0 = _mm_xor_si128(_mm_xor_si128(v0, v1), _mm_xor_si128(v2, v3));
 	hash.xmm = v0;
