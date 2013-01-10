@@ -52,8 +52,7 @@ Library
     CPP-Options:     -DGENERICS
     Other-modules:   Data.Hashable.Generic
 
-  C-sources:         cbits/getRandomBytes.c
-                     cbits/inthash.c
+  C-sources:         cbits/inthash.c
                      cbits/siphash.c
   if arch(i386)
     C-sources:       cbits/siphash-sse2.c
@@ -68,7 +67,12 @@ Library
   if flag(fixed-salt)
     Cpp-options: -DFIXED_SALT
   if os(windows)
+    build-depends:   Win32
     extra-libraries: advapi32
+    other-modules:   Data.Hashable.RandomSource.Windows
+  else
+    other-modules:   Data.Hashable.RandomSource.Posix
+    c-sources:       cbits/getRandomBytes.c
 
 Test-suite tests
   Type:              exitcode-stdio-1.0
@@ -138,7 +142,12 @@ benchmark benchmarks
   if flag(fixed-salt)
     Cpp-options: -DFIXED_SALT
   if os(windows)
+    build-depends:   Win32
     extra-libraries: advapi32
+    other-modules:   Data.Hashable.RandomSource.Windows
+  else
+    other-modules:   Data.Hashable.RandomSource.Posix
+    c-sources:       cbits/getRandomBytes.c
 
 source-repository head
   type:     git
