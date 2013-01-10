@@ -17,13 +17,32 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	size_t i, k;
 	union { u64 gpr; __m128i xmm; } hash;
 
+	/* We used to use the _mm_seti_epi32 intrinsic to initialize
+	   SSE2 registers. This compiles to a movdqa instruction,
+	   which requires 16-byte alignment. On 32-bit Windows, it
+	   looks like ghc's runtime linker doesn't align ".rdata"
+	   sections as requested, so we got segfaults for our trouble.
+
+	   Now we use an intrinsic that cares less about alignment
+	   (_mm_loadu_si128, aka movdqu) instead, and all seems
+	   happy. */
+
+	static const u32 const iv[6][4] = {
+		{ 0x70736575, 0x736f6d65, 0, 0 },
+		{ 0x6e646f6d, 0x646f7261, 0, 0 },
+		{ 0x6e657261, 0x6c796765, 0, 0 },
+		{ 0x79746573, 0x74656462, 0, 0 },
+		{ -1, -1, 0, 0 },
+		{ 255, 0, 0, 0 },
+	};
+
 	k0 = _mm_loadl_epi64((__m128i*)(&ik0));
 	k1 = _mm_loadl_epi64((__m128i*)(&ik1));
 
-	v0 = _mm_xor_si128(k0, _mm_set_epi32(0, 0, 0x736f6d65, 0x70736575));
-	v1 = _mm_xor_si128(k1, _mm_set_epi32(0, 0, 0x646f7261, 0x6e646f6d));
-	v2 = _mm_xor_si128(k0, _mm_set_epi32(0, 0, 0x6c796765, 0x6e657261));
-	v3 = _mm_xor_si128(k1, _mm_set_epi32(0, 0, 0x74656462, 0x79746573));
+	v0 = _mm_xor_si128(k0, _mm_loadu_si128((__m128i*) &iv[0]));
+	v1 = _mm_xor_si128(k1, _mm_loadu_si128((__m128i*) &iv[1]));
+	v2 = _mm_xor_si128(k0, _mm_loadu_si128((__m128i*) &iv[2]));
+	v3 = _mm_xor_si128(k1, _mm_loadu_si128((__m128i*) &iv[3]));
 
 #define HALF_ROUND(a,b,c,d,s,t) \
 	do \
@@ -52,14 +71,14 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 
 	mi = _mm_loadl_epi64((__m128i*)(m + i));
 	len = _mm_set_epi32(0, 0, (n&0xff) << 24, 0);
-	mask = _mm_srli_epi64(_mm_set_epi32(0, 0, 0xffffffff, 0xffffffff), 8*(8-n%8));
+	mask = _mm_srli_epi64(_mm_loadu_si128((__m128i*) &iv[4]), 8*(8-n%8));
 	mi = _mm_xor_si128(_mm_and_si128(mi, mask), len);
 
 	v3 = _mm_xor_si128(v3, mi);
 	for(k = 0; k < SIPHASH_ROUNDS; ++k) COMPRESS(v0,v1,v2,v3);
 	v0 = _mm_xor_si128(v0, mi);
 
-	v2 = _mm_xor_si128(v2, _mm_set_epi32(0, 0, 0, 0xff));
+	v2 = _mm_xor_si128(v2, _mm_loadu_si128((__m128i*) &iv[5]));
 	for(k = 0; k < SIPHASH_FINALROUNDS; ++k) COMPRESS(v0,v1,v2,v3);
 
 	v0 = _mm_xor_si128(_mm_xor_si128(v0, v1), _mm_xor_si128(v2, v3));
