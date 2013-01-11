@@ -3,12 +3,6 @@
 #include <stddef.h>
 #include "siphash.h"
 
-#ifndef _WIN32
-# include <endian.h>
-#else
-# define le64toh
-#endif
-
 #define ROTL(x,b) (u64)(((x) << (b)) | ((x) >> (64 - (b))))
 
 #define SIPROUND \
@@ -49,7 +43,7 @@ static inline u64 _siphash(int c, int d, u64 k0, u64 k1,
     int i;
 
     for (p = str, end = str + (len & ~7); p < end; p += 8) {
-	u64 m = le64toh(*(u64 *) p);
+	u64 m = peek_u64le((u64 *) p);
 	v3 ^= m;
 	if (c == 2) {
 	    SIPROUND;
@@ -191,7 +185,7 @@ static int _siphash_chunk(int c, int d, int buffered, u64 v[5],
     }
 
     for (p = str, end = str + (len & ~7); p < end; p += 8) {
-	m = le64toh(*(u64 *) p);
+	m = peek_u64le((u64 *) p);
 	v3 ^= m;
 	if (c == 2) {
 	    SIPROUND;
