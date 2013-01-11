@@ -70,7 +70,7 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 		if (SIPHASH_ROUNDS == 2) {
 			COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
 		} else {
-			for (k = 0; k < SIPHASH_ROUNDS; ++k) 
+			for (k = 0; k < SIPHASH_ROUNDS; ++k)
 				COMPRESS(v0,v1,v2,v3);
 		}
 		v0 = _mm_xor_si128(v0, mi);
@@ -85,7 +85,7 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	if (SIPHASH_ROUNDS == 2) {
 		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
 	} else {	
-		for (k = 0; k < SIPHASH_ROUNDS; ++k) 
+		for (k = 0; k < SIPHASH_ROUNDS; ++k)
 			COMPRESS(v0,v1,v2,v3);
 	}
 	v0 = _mm_xor_si128(v0, mi);
@@ -95,7 +95,7 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
 		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
 	} else {
-		for (k = 0; k < SIPHASH_FINALROUNDS; ++k) 
+		for (k = 0; k < SIPHASH_FINALROUNDS; ++k)
 			COMPRESS(v0,v1,v2,v3);
 	}
 

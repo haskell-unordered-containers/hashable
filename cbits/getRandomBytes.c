@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int hashable_getRandomBytes(unsigned char *dest, int nbytes);
 
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__) 
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 
 #include <windows.h>
 #include <wincrypt.h>
@@ -46,9 +46,9 @@ int hashable_getRandomBytes(unsigned char *dest, int nbytes)
   int ret;
 
   if (!CryptAcquireContextA(&hCryptProv, NULL, NULL, PROV_RSA_FULL,
-			    CRYPT_VERIFYCONTEXT)) 
+			    CRYPT_VERIFYCONTEXT))
     return -1;
-  
+
   ret = CryptGenRandom(hCryptProv, (DWORD) nbytes, (BYTE *) dest) ? nbytes : -1;
 
   CryptReleaseContext(hCryptProv, 0);
@@ -70,7 +70,7 @@ int hashable_getRandomBytes(unsigned char *dest, int nbytes)
 {
   ssize_t off, nread;
   int fd;
-  
+
   fd = open("/dev/urandom", O_RDONLY);
   if (fd == -1)
     return -1;
