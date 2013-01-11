@@ -3,9 +3,23 @@
 #include <stddef.h>
 #include "siphash.h"
 
-#ifndef _WIN32
-# include <endian.h>
-#else
+#if defined(OS_MacOS)
+#  include <libkern/OSByteOrder.h>
+#  define le64toh(x) OSSwapLittleToHostInt64(x)
+#elif defined(DOS_BSD)
+#  include <sys/endian.h>
+#elif defined(DOS_Linux)
+#  include <endian.h>
+#  ifndef le64toh
+#    if __BYTE_ORDER == __LITTLE_ENDIAN
+#      define le64toh(x) (x)
+#    else
+#      define le64toh(x) __bswap_64 (x)
+#    endif
+#  endif
+#endif
+
+#ifndef le64toh
 # define le64toh
 #endif
 

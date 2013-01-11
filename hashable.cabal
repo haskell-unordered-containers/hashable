@@ -71,6 +71,15 @@ Library
     if os(windows)
       extra-libraries: advapi32
 
+  if os(freebsd) || os(netbsd) || os(openbsd)
+    CPP-Options:        -DOS_BSD
+  else
+    if os(darwin)
+      CPP-Options:      -DOS_MacOS
+    else
+      if os(linux)
+        CPP-Options:    -DOS_Linux
+
 Test-suite tests
   Type:              exitcode-stdio-1.0
   Hs-source-dirs:    tests
