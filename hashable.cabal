@@ -38,7 +38,6 @@ Flag sse41
 Library
   Exposed-modules:   Data.Hashable
   Other-modules:     Data.Hashable.Class
-                     Data.Hashable.RandomSource
                      Data.Hashable.SipHash
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring >= 0.9
@@ -52,7 +51,7 @@ Library
     CPP-Options:     -DGENERICS
     Other-modules:   Data.Hashable.Generic
 
-  C-sources:         cbits/getRandomBytes.c
+  C-sources:
                      cbits/inthash.c
                      cbits/siphash.c
   if arch(i386)
@@ -67,8 +66,11 @@ Library
     Ghc-options: -fwarn-tabs
   if flag(fixed-salt)
     Cpp-options: -DFIXED_SALT
-  if os(windows)
-    extra-libraries: advapi32
+  else
+    c-sources:         cbits/getRandomBytes.c
+    other-modules:     Data.Hashable.RandomSource
+    if os(windows)
+      extra-libraries: advapi32
 
 Test-suite tests
   Type:              exitcode-stdio-1.0
@@ -116,7 +118,6 @@ benchmark benchmarks
     Build-depends:   integer-gmp >= 0.2
 
   c-sources:
-    cbits/getRandomBytes.c
     cbits/inthash.c
     cbits/siphash.c
     benchmarks/cbits/fnv.c
@@ -137,8 +138,11 @@ benchmark benchmarks
     Ghc-options: -fwarn-tabs
   if flag(fixed-salt)
     Cpp-options: -DFIXED_SALT
-  if os(windows)
-    extra-libraries: advapi32
+  else
+    c-sources:         cbits/getRandomBytes.c
+    other-modules:     Data.Hashable.RandomSource
+    if os(windows)
+      extra-libraries: advapi32
 
 source-repository head
   type:     git
