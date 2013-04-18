@@ -74,16 +74,23 @@ Library
 Test-suite tests
   Type:              exitcode-stdio-1.0
   Hs-source-dirs:    tests
-  Main-is:           Properties.hs
+  Main-is:           Main.hs
+  Other-modules:     Properties Regress
   Build-depends:     base >= 4.0 && < 5.0,
                      bytestring,
                      ghc-prim,
                      hashable,
                      test-framework >= 0.3.3,
+                     test-framework-hunit,
                      test-framework-quickcheck2 >= 0.2.9,
+                     HUnit,
                      QuickCheck >= 2.4.0.1,
                      random == 1.0.*,
                      text >= 0.11.0.5
+  if !os(windows)
+    Build-depends:   unix
+    CPP-options:     -DHAVE_MMAP
+    Other-modules:   Regress.Mmap
 
   Ghc-options:       -Wall -fno-warn-orphans
   if impl(ghc >= 7.2.1)

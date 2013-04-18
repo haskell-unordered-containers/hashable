@@ -4,10 +4,10 @@
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
 #endif
 
--- | Tests for the 'Data.Hashable' module.  We test functions by
--- comparing the C and Haskell implementations.
+-- | QuickCheck tests for the 'Data.Hashable' module.  We test
+-- functions by comparing the C and Haskell implementations.
 
-module Main (main) where
+module Properties (properties) where
 
 import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
 import qualified Data.ByteString as B
@@ -23,7 +23,7 @@ import GHC.Base (ByteArray#, Int(..), newByteArray#, unsafeCoerce#,
 import GHC.ST (ST(..), runST)
 import GHC.Word (Word8(..))
 import Test.QuickCheck hiding ((.&.))
-import Test.Framework (Test, defaultMain, testGroup)
+import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 #ifdef GENERICS
 import GHC.Generics
@@ -193,14 +193,8 @@ pSum3_differ x = nub hs == hs
 
 #endif
 
-------------------------------------------------------------------------
--- Test harness
-
-main :: IO ()
-main = defaultMain tests
-
-tests :: [Test]
-tests =
+properties :: [Test]
+properties =
     [ testProperty "bernstein" pHash
     , testGroup "text"
       [ testProperty "text/strict" pText
@@ -234,4 +228,3 @@ fromStrict = BL.fromStrict
 #else
 fromStrict b = BL.fromChunks [b]
 #endif
-
