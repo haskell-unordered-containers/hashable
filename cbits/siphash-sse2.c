@@ -18,6 +18,7 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	__m128i mi, mask, len;
 	size_t i, k;
 	union { u64 gpr; __m128i xmm; } hash;
+	const u8 *p;
 
 	/* We used to use the _mm_seti_epi32 intrinsic to initialize
 	   SSE2 registers. This compiles to a movdqa instruction,
@@ -76,7 +77,26 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 		v0 = _mm_xor_si128(v0, mi);
 	}
 
-	mi = _mm_loadl_epi64((__m128i*)(m + i));
+	p = m + n;
+
+	/* We must be careful to not trigger a segfault by reading an
+	   unmapped page. So where is the end of our input? */
+
+	if (((uintptr_t) p & 4095) == 0)
+		/* Exactly at a page boundary: do not read past the end. */
+		mi = _mm_setzero_si128();
+	else if (((uintptr_t) p & 4095) <= 4088)
+		/* Inside a page: safe to read past the end, as we'll
+		   mask out any bits we shouldn't have looked at below. */
+		mi = _mm_loadl_epi64((__m128i*)(m + i));
+	else
+		/* Within 8 bytes of the end of a page: ensure that
+		   our final read re-reads some bytes so that we do
+		   not cross the page boundary, then shift our result
+		   right so that the re-read bytes vanish. */
+		mi = _mm_srli_epi64(_mm_loadl_epi64((__m128i*)(((uintptr_t) m + i) & ~7)),
+				    8 * (((uintptr_t) m + i) % 8));
+
 	len = _mm_set_epi32(0, 0, (n&0xff) << 24, 0);
 	mask = _mm_srli_epi64(_mm_loadu_si128((__m128i*) &iv[4]), 8*(8-n%8));
 	mi = _mm_xor_si128(_mm_and_si128(mi, mask), len);
@@ -84,7 +104,7 @@ u64 hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
 	v3 = _mm_xor_si128(v3, mi);
 	if (SIPHASH_ROUNDS == 2) {
 		COMPRESS(v0,v1,v2,v3); COMPRESS(v0,v1,v2,v3);
-	} else {	
+	} else {
 		for (k = 0; k < SIPHASH_ROUNDS; ++k)
 			COMPRESS(v0,v1,v2,v3);
 	}
