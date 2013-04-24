@@ -31,6 +31,10 @@ Flag fixed-salt
   Description: Do we use a single fixed salt every time the program runs?
   Default: False
 
+Flag sse2
+  Description: Do we want to assume that a target supports SSE 2?
+  Default: True
+
 Flag sse41
   Description: Do we want to assume that a target supports SSE 4.1?
   Default: False
@@ -53,7 +57,7 @@ Library
   C-sources:
                      cbits/inthash.c
                      cbits/siphash.c
-  if arch(i386)
+  if arch(i386) && flag(sse2)
     C-sources:       cbits/siphash-sse2.c
 
     if flag(sse41)
@@ -128,7 +132,7 @@ benchmark benchmarks
     benchmarks/cbits/fnv.c
     benchmarks/cbits/inthash.c
 
-  if arch(i386) || arch(x86_64)
+  if (arch(i386) || arch(x86_64)) && flag(sse2)
     cpp-options: -DHAVE_SSE2
     c-sources:
       cbits/siphash-sse2.c
