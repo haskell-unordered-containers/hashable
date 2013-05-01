@@ -107,6 +107,7 @@ static void maybe_use_sse()
 	 :"+a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)
 	 : :"edi");
 
+#if defined(HAVE_SSE2)
     if (edx & (1 << 26))
 	_siphash24 = hashable_siphash24_sse2;
 #if defined(HAVE_SSE41)
@@ -114,6 +115,7 @@ static void maybe_use_sse()
 	_siphash24 = hashable_siphash24_sse41;
 #endif
     else
+#endif
 	_siphash24 = plain_siphash24;
 }
 
