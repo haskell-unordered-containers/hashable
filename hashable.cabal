@@ -1,5 +1,5 @@
 Name:                hashable
-Version:             1.2.0.7
+Version:             1.2.0.8
 Synopsis:            A class for types that can be converted to a hash value
 Description:         This package defines a class, 'Hashable', for types that
                      can be converted to a hash value.  This class
@@ -58,6 +58,7 @@ Library
                      cbits/inthash.c
                      cbits/siphash.c
   if arch(i386) && flag(sse2)
+    CPP-Options:   -DHAVE_SSE2
     C-sources:       cbits/siphash-sse2.c
 
     if flag(sse41)
