@@ -276,10 +276,12 @@ hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
 instance Hashable Integer where
 #if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
     hashWithSalt salt (S# int) = hashWithSalt salt (I# int)
-    hashWithSalt salt n@(J# size byteArray)
+    hashWithSalt salt n@(J# size# byteArray)
         | n >= minInt && n <= maxInt = hashWithSalt salt (fromInteger n :: Int)
-        | otherwise = let numBytes = SIZEOF_HSWORD * (I# size)
+        | otherwise = let size = I# size#
+                          numBytes = SIZEOF_HSWORD * abs size
                       in hashByteArrayWithSalt byteArray 0 numBytes salt
+                         `hashWithSalt` size
       where minInt = fromIntegral (minBound :: Int)
             maxInt = fromIntegral (maxBound :: Int)
 #else
