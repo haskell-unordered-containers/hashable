@@ -111,6 +111,7 @@ benchmark benchmarks
     Data.Hashable
     Data.Hashable.Class
     Data.Hashable.RandomSource
+    Data.Hashable.SipHash
   type: exitcode-stdio-1.0
 
   build-depends:
