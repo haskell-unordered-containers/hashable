@@ -50,7 +50,6 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Internal as BL
 #if defined(__GLASGOW_HASKELL__)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
