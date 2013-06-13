@@ -20,8 +20,7 @@ Cabal-version:       >=1.8
 -- tests/Properties.hs shouldn't have to go here, but the source files
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
 Extra-source-files:
-  CHANGES, README.md, tests/Properties.hs, benchmarks/Benchmarks.hs,
-  cbits/siphash.h
+  CHANGES, README.md, tests/Properties.hs, benchmarks/Benchmarks.hs
 
 Flag integer-gmp
   Description: Are we using integer-gmp to provide fast Integer instances?
@@ -55,15 +54,8 @@ Library
     Other-modules:   Data.Hashable.Generic
 
   C-sources:
+                     cbits/fnv.c
                      cbits/inthash.c
-                     cbits/siphash.c
-  if arch(i386) && flag(sse2)
-    CPP-Options:   -DHAVE_SSE2
-    C-sources:       cbits/siphash-sse2.c
-
-    if flag(sse41)
-      CPP-Options:   -DHAVE_SSE41
-      C-sources:     cbits/siphash-sse41.c
 
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
@@ -111,6 +103,7 @@ benchmark benchmarks
     Data.Hashable
     Data.Hashable.Class
     Data.Hashable.RandomSource
+    Data.Hashable.SipHash
   type: exitcode-stdio-1.0
 
   build-depends:
@@ -128,20 +121,20 @@ benchmark benchmarks
     Build-depends:   integer-gmp >= 0.2
 
   c-sources:
-    cbits/inthash.c
-    cbits/siphash.c
-    benchmarks/cbits/fnv.c
     benchmarks/cbits/inthash.c
+    benchmarks/cbits/siphash.c
+    cbits/fnv.c
+    cbits/inthash.c
 
   if (arch(i386) || arch(x86_64)) && flag(sse2)
     cpp-options: -DHAVE_SSE2
     c-sources:
-      cbits/siphash-sse2.c
+      benchmarks/cbits/siphash-sse2.c
 
     if flag(sse41)
       cpp-options: -DHAVE_SSE41
       c-sources:
-        cbits/siphash-sse41.c
+        benchmarks/cbits/siphash-sse41.c
 
   Ghc-options:       -Wall -O2
   if impl(ghc >= 6.8)
