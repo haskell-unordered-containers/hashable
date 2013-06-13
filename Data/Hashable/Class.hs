@@ -56,21 +56,20 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Internal as TL
 # ifdef GENERICS
 import GHC.Generics
 # endif
 #endif
+import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
-import Foreign.C (CSize(..))
+import Foreign.C (CLong(..))
 #else
-import Foreign.C (CSize)
+import Foreign.C (CLong)
 #endif
 import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr, castPtr, nullPtr)
+import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
-import Foreign.Marshal.Array (advancePtr, allocaArray)
 
 -- Byte arrays and Integers.
 #if defined(__GLASGOW_HASKELL__)
@@ -264,14 +263,18 @@ hashNative :: (Integral a) => Int -> a -> Int
 hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
   where
 #if WORD_SIZE_IN_BITS == 32
-    go = c_wang32
+    go :: Word32 -> Word32
 #else
-    go = c_wang64
+    go :: Word64 -> Word64
 #endif
+    go = id
 
 -- | Hash a 64-bit integer.
 hash64 :: (Integral a) => Int -> a -> Int
-hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
+hash64 salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
+  where
+    go :: Word64 -> Word64
+    go = id
 
 instance Hashable Integer where
 #if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
@@ -375,7 +378,7 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) salt
 
 instance Hashable BL.ByteString where
-    hashWithSalt = hashLazyByteStringWithSalt
+    hashWithSalt = BL.foldlChunks hashWithSalt
 
 #if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
@@ -384,7 +387,7 @@ instance Hashable T.Text where
         salt
 
 instance Hashable TL.Text where
-    hashWithSalt = hashLazyTextWithSalt
+    hashWithSalt = TL.foldlChunks hashWithSalt
 #endif
 
 
@@ -437,54 +440,11 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ salt
                 -> IO Int  -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_siphash24 k0 (fromSalt salt) (castPtr p)
-                        (fromIntegral len)
+    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
+    (fromIntegral salt)
 
-k0 :: Word64
-k0 = 0x56e2b8a0aee1721a
-{-# INLINE k0 #-}
-
-hashLazyByteStringWithSalt :: Int -> BL.ByteString -> Int
-hashLazyByteStringWithSalt salt cs0 = unsafePerformIO . allocaArray 5 $ \v -> do
-  c_siphash_init k0 (fromSalt salt) v
-  let go !buffered !totallen (BL.Chunk c cs) =
-        B.unsafeUseAsCStringLen c $ \(ptr, len) -> do
-          let len' = fromIntegral len
-          buffered' <- c_siphash24_chunk buffered v (castPtr ptr) len' (-1)
-          go buffered' (totallen + len') cs
-      go buffered totallen _ = do
-        _ <- c_siphash24_chunk buffered v nullPtr 0 totallen
-        fromIntegral `fmap` peek (v `advancePtr` 4)
-  go 0 0 cs0
-
-#if defined(__GLASGOW_HASKELL__)
-hashLazyTextWithSalt :: Int -> TL.Text -> Int
-hashLazyTextWithSalt salt cs0 = unsafePerformIO . allocaArray 5 $ \v -> do
-  c_siphash_init k0 (fromSalt salt) v
-  let go !buffered !totallen (TL.Chunk (T.Text arr off len) cs) = do
-        let len' = fromIntegral (len `shiftL` 1)
-        buffered' <- c_siphash24_chunk_offset buffered v (TA.aBA arr)
-                     (fromIntegral (off `shiftL` 1)) len' (-1)
-        go buffered' (totallen + len') cs
-      go buffered totallen _ = do
-        _ <- c_siphash24_chunk buffered v nullPtr 0 totallen
-        fromIntegral `fmap` peek (v `advancePtr` 4)
-  go 0 0 cs0
-#endif
-
-fromSalt :: Int -> Word64
-#if WORD_SIZE_IN_BITS == 64
-fromSalt = fromIntegral
-#else
-fromSalt v = fromIntegral v `xor` k1
-
-k1 :: Word64
-k1 = 0x7654954208bdfef9
-{-# INLINE k1 #-}
-#endif
-
-foreign import ccall unsafe "hashable_siphash24" c_siphash24
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> IO Word64
+foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
+    :: CString -> CLong -> CLong -> IO CLong
 
 #if defined(__GLASGOW_HASKELL__)
 -- | Compute a hash value for the content of this 'ByteArray#',
@@ -512,27 +472,9 @@ hashByteArrayWithSalt
     -> Int         -- ^ salt
     -> Int         -- ^ hash value
 hashByteArrayWithSalt ba !off !len !h =
-    fromIntegral $
-    c_siphash24_offset k0 (fromSalt h) ba (fromIntegral off) (fromIntegral len)
+    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
+    (fromIntegral h)
 
-foreign import ccall unsafe "hashable_siphash24_offset" c_siphash24_offset
-    :: Word64 -> Word64 -> ByteArray# -> CSize -> CSize -> Word64
-
-foreign import ccall unsafe "hashable_siphash24_chunk_offset"
-        c_siphash24_chunk_offset
-    :: CInt -> Ptr Word64 -> ByteArray# -> CSize -> CSize -> CSize -> IO CInt
+foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
+    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
 #endif
-
-#if WORD_SIZE_IN_BITS == 32
-foreign import ccall unsafe "hashable_wang_32" c_wang32
-    :: Word32 -> Word32
-#endif
-
-foreign import ccall unsafe "hashable_wang_64" c_wang64
-    :: Word64 -> Word64
-
-foreign import ccall unsafe "hashable_siphash_init" c_siphash_init
-    :: Word64 -> Word64 -> Ptr Word64 -> IO ()
-
-foreign import ccall unsafe "hashable_siphash24_chunk" c_siphash24_chunk
-    :: CInt -> Ptr Word64 -> Ptr Word8 -> CSize -> CSize -> IO CInt

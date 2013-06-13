@@ -232,11 +232,7 @@ import Data.Hashable.Generic ()
 -- inputs to force an application into unexpectedly behaving with
 -- quadratic time complexity.
 --
--- This library uses the SipHash algorithm to hash strings. SipHash
--- was designed to be more robust against collision attacks than
--- traditional hash algorithms, while retaining good performance.
---
--- To further mitigate the risk from collision attacks, this library
+-- To mitigate the risk from collision attacks, this library
 -- provides an environment variable named @HASHABLE_SALT@ that allows
 -- the default salt used by the 'hash' function to be chosen at
 -- application startup time.
@@ -260,7 +256,7 @@ import Data.Hashable.Generic ()
 -- call to 'hash' is made, the application will halt with an
 -- informative error message.
 --
--- (Implementation note: while SipHash is used for strings, a
--- faster&#8212;and almost certainly less secure&#8212;algorithm is
--- used for numeric types, on the assumption that strings are much
--- more likely as a hash DoS attack vector.)
+-- (Implementation note: FNV-1, the hash function used for strings,
+-- can still be susceptible to collision attacks, even if a salt
+-- unknown to the attacker is used. Future versions of the library
+-- might improve on this situation.)
