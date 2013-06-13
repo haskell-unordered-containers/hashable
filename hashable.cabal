@@ -55,7 +55,6 @@ Library
 
   C-sources:
                      cbits/fnv.c
-                     cbits/inthash.c
 
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
@@ -123,8 +122,8 @@ benchmark benchmarks
   c-sources:
     benchmarks/cbits/inthash.c
     benchmarks/cbits/siphash.c
+    benchmarks/cbits/wang.c
     cbits/fnv.c
-    cbits/inthash.c
 
   if (arch(i386) || arch(x86_64)) && flag(sse2)
     cpp-options: -DHAVE_SSE2

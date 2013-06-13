@@ -263,14 +263,18 @@ hashNative :: (Integral a) => Int -> a -> Int
 hashNative salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
   where
 #if WORD_SIZE_IN_BITS == 32
-    go = c_wang32
+    go :: Word32 -> Word32
 #else
-    go = c_wang64
+    go :: Word64 -> Word64
 #endif
+    go = id
 
 -- | Hash a 64-bit integer.
 hash64 :: (Integral a) => Int -> a -> Int
-hash64 salt = fromIntegral . c_wang64 . xor (fromIntegral salt) . fromIntegral
+hash64 salt = fromIntegral . go . xor (fromIntegral salt) . fromIntegral
+  where
+    go :: Word64 -> Word64
+    go = id
 
 instance Hashable Integer where
 #if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
@@ -474,11 +478,3 @@ hashByteArrayWithSalt ba !off !len !h =
 foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
     :: ByteArray# -> CLong -> CLong -> CLong -> CLong
 #endif
-
-#if WORD_SIZE_IN_BITS == 32
-foreign import ccall unsafe "hashable_wang_32" c_wang32
-    :: Word32 -> Word32
-#endif
-
-foreign import ccall unsafe "hashable_wang_64" c_wang64
-    :: Word64 -> Word64
