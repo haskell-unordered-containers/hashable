@@ -138,15 +138,12 @@ defaultSalt = unsafePerformIO $ do
 #endif
 
 -- | The class of types that can be converted to a hash value.
+--
+-- Minimal implementation: 'hashWithSalt'.
 class Hashable a where
     -- | Return a hash value for the argument, using the given salt.
     --
     -- The general contract of 'hashWithSalt' is:
-    --
-    --  * If a value is hashed using the same salt during distinct
-    --    runs of an application, the result must remain the
-    --    same. (This is necessary to make it possible to store hashes
-    --    on persistent media.)
     --
     --  * If two values are equal according to the '==' method, then
     --    applying the 'hashWithSalt' method on each of the two values
@@ -156,16 +153,16 @@ class Hashable a where
     --  * It is /not/ required that if two values are unequal
     --    according to the '==' method, then applying the
     --    'hashWithSalt' method on each of the two values must produce
-    --    distinct integer results.  (Every programmer will be aware
-    --    that producing distinct integer results for unequal values
-    --    will improve the performance of hashing-based data
-    --    structures.)
+    --    distinct integer results. However, the programmer should be
+    --    aware that producing distinct integer results for unequal
+    --    values may improve the performance of hashing-based data
+    --    structures.
     --
-    -- This method can be used to compute different hash values for
-    -- the same input by providing a different salt in each
-    -- application of the method. This implies that any instance that
-    -- defines 'hashWithSalt' /must/ make use of the salt in its
-    -- implementation.
+    --  * This method can be used to compute different hash values for
+    --    the same input by providing a different salt in each
+    --    application of the method. This implies that any instance
+    --    that defines 'hashWithSalt' /must/ make use of the salt in
+    --    its implementation.
     hashWithSalt :: Int -> a -> Int
 
     -- | Like 'hashWithSalt', but no salt is used. The default
