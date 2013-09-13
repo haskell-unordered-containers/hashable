@@ -39,59 +39,53 @@ module Data.Hashable.Class
 
 import Control.Exception (assert)
 import Data.Bits (bitSize, shiftL, shiftR, xor)
-import Data.Int (Int8, Int16, Int32, Int64)
-import Data.Word (Word, Word8, Word16, Word32, Word64)
-import Data.List (foldl')
-import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
-import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
-#if !MIN_VERSION_bytestring(0,10,0)
-import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
-#endif
+import qualified Data.ByteString.Unsafe as B
+import Data.Int (Int8, Int16, Int32, Int64)
+import Data.List (foldl')
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-#ifdef GENERICS
-import GHC.Generics
-#endif
+import Data.Typeable
+import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
-#if __GLASGOW_HASKELL__ >= 703
-import Foreign.C (CLong(..))
-#else
-import Foreign.C (CLong)
-#endif
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
-import System.IO.Unsafe (unsafePerformIO)
-
--- Byte arrays and Integers.
 import GHC.Base (ByteArray#)
-#ifdef VERSION_integer_gmp
-import GHC.Exts (Int(..))
-import GHC.Integer.GMP.Internals (Integer(..))
-#else
-import Data.Bits (shiftR)
-#endif
-
--- ThreadId
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName
+
+#ifdef GENERICS
+import GHC.Generics
+#endif
+
+#if __GLASGOW_HASKELL__ >= 702
+import Data.Typeable.Internal(TypeRep(..))
+import GHC.Fingerprint.Type(Fingerprint(..))
+#endif
+
 #if __GLASGOW_HASKELL__ >= 703
+import Foreign.C (CLong(..))
 import Foreign.C.Types (CInt(..))
 #else
+import Foreign.C (CLong)
 import Foreign.C.Types (CInt)
 #endif
 
-import System.Mem.StableName
+#if !MIN_VERSION_bytestring(0,10,0)
+import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
+#endif
 
-import Data.Typeable
-#if __GLASGOW_HASKELL__ >= 702
-import GHC.Fingerprint.Type(Fingerprint(..))
-import Data.Typeable.Internal(TypeRep(..))
+#ifdef VERSION_integer_gmp
+import GHC.Exts (Int(..))
+import GHC.Integer.GMP.Internals (Integer(..))
 #endif
 
 #ifndef FIXED_SALT
