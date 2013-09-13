@@ -34,8 +34,7 @@ module Data.Hashable
       -- $security
 
       -- * Computing hash values
-      hash
-    , Hashable(..)
+      Hashable(..)
 
       -- ** Avalanche behavior
       -- $avalanche

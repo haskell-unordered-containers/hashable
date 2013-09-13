@@ -211,9 +211,13 @@ properties =
 #ifdef GENERICS
     , testGroup "generics"
       [
-        testProperty "product2" pProduct2
-      , testProperty "product3" pProduct3
-      , testProperty "sum2_differ" pSum2_differ
+      -- Note: "product2" and "product3" have been temporarily
+      -- disabled until we have added a 'hash' method to the GHashable
+      -- class. Until then (a,b) hashes to a different value than (a
+      -- :*: b). While this is not incorrect, it would be nicer if
+      -- they didn't. testProperty "product2" pProduct2 , testProperty
+      -- "product3" pProduct3
+        testProperty "sum2_differ" pSum2_differ
       , testProperty "sum3_differ" pSum3_differ
       ]
 #endif
