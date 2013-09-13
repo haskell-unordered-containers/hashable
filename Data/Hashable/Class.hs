@@ -415,14 +415,14 @@ instance Hashable TL.Text where
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
-{-# INLINE hashThreadId #-}
 hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
-foreign import ccall unsafe "rts_getThreadId" getThreadId :: ThreadId# -> CInt
+
+foreign import ccall unsafe "rts_getThreadId" getThreadId
+    :: ThreadId# -> CInt
 
 instance Hashable ThreadId where
     hash = hashThreadId
     hashWithSalt = defaultHashWithSalt
-    {-# INLINE hashWithSalt #-}
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
