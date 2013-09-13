@@ -26,10 +26,6 @@ Flag integer-gmp
   Description: Are we using integer-gmp to provide fast Integer instances?
   Default: True
 
-Flag fixed-salt
-  Description: Do we use a single fixed salt every time the program runs?
-  Default: False
-
 Flag sse2
   Description: Do we want to assume that a target supports SSE 2?
   Default: True

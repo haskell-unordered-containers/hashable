@@ -88,15 +88,6 @@ import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
 #endif
 
-#ifndef FIXED_SALT
-import Control.Exception (tryJust)
-import Control.Monad (guard)
-import Data.Hashable.RandomSource (getRandomBytes_)
-import Foreign.Marshal.Alloc (alloca)
-import System.Environment (getEnv)
-import System.IO.Error (isDoesNotExistError)
-#endif
-
 #include "MachDeps.h"
 
 infixl 0 `hashWithSalt`
@@ -105,37 +96,9 @@ infixl 0 `hashWithSalt`
 -- * Computing hash values
 
 -- | A default salt used in the implementation of 'hash'.
---
--- To reduce the probability of hash collisions, the value of the
--- default salt may vary from one program invocation to the next
--- unless this package is compiled with the @fixed-salt@ flag set.
-defaultSalt, fixedSalt :: Int
-
-fixedSalt = 0xdc36d1615b7400a4
-{-# INLINE fixedSalt #-}
-
-#ifdef FIXED_SALT
-
-defaultSalt = fixedSalt
+defaultSalt :: Int
+defaultSalt = 0xdc36d1615b7400a4
 {-# INLINE defaultSalt #-}
-
-#else
-
-defaultSalt = unsafePerformIO $ do
-  let varName = "HASHABLE_SALT"
-  msalt <- tryJust (guard . isDoesNotExistError) $ getEnv varName
-  case msalt of
-    Right "random" -> alloca $ \p -> do
-      getRandomBytes_ "defaultSalt" p (sizeOf (undefined :: Int))
-      peek p
-    Right s -> case reads s of
-                 [(salt, "")] -> return salt
-                 _            -> fail $ "Fatal: cannot parse contents of " ++
-                                        varName ++ " environment variable"
-    Left _ -> return fixedSalt
-{-# NOINLINE defaultSalt #-}
-
-#endif
 
 -- | The class of types that can be converted to a hash value.
 --
