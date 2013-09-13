@@ -50,10 +50,10 @@ module Data.Hashable
       -- ** Writing instances by hand
       -- $blocks
 
-      -- ** Hashing contructors with multiple fields
+      -- *** Hashing contructors with multiple fields
       -- $multiple-fields
 
-      -- ** Hashing types with multiple constructors
+      -- *** Hashing types with multiple constructors
       -- $multiple-ctors
 
     , hashUsing
