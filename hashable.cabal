@@ -55,8 +55,6 @@ Library
   Ghc-options:       -Wall
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
-  if flag(fixed-salt)
-    Cpp-options: -DFIXED_SALT
   else
     c-sources:         cbits/getRandomBytes.c
     other-modules:     Data.Hashable.RandomSource
@@ -134,8 +132,6 @@ benchmark benchmarks
   Ghc-options:       -Wall -O2
   if impl(ghc >= 6.8)
     Ghc-options: -fwarn-tabs
-  if flag(fixed-salt)
-    Cpp-options: -DFIXED_SALT
   else
     c-sources:         cbits/getRandomBytes.c
     other-modules:     Data.Hashable.RandomSource
