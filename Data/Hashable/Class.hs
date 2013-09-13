@@ -216,6 +216,10 @@ instance Hashable Int where
     hash = id
     hashWithSalt = defaultHashWithSalt
 
+instance Hashable Int8 where
+    hash = fromIntegral
+    hashWithSalt = defaultHashWithSalt
+
 instance Hashable Int16 where
     hash = fromIntegral
     hashWithSalt = defaultHashWithSalt
@@ -232,6 +236,10 @@ instance Hashable Int64 where
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Word where
+    hash = fromIntegral
+    hashWithSalt = defaultHashWithSalt
+
+instance Hashable Word8 where
     hash = fromIntegral
     hashWithSalt = defaultHashWithSalt
 
@@ -259,14 +267,6 @@ instance Hashable Bool where
 
 instance Hashable Ordering where
     hash = fromEnum
-    hashWithSalt = defaultHashWithSalt
-
-instance Hashable Int8 where
-    hash = fromIntegral
-    hashWithSalt = defaultHashWithSalt
-
-instance Hashable Word8 where
-    hash = fromIntegral
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Char where
