@@ -24,8 +24,8 @@
 -- The easiest way to get started is to use the 'hash' function. Here
 -- is an example session with @ghci@.
 --
--- > Prelude> import Data.Hashable
--- > Prelude> hash "foo"
+-- > ghci> import Data.Hashable
+-- > ghci> hash "foo"
 -- > 60853164
 
 module Data.Hashable
@@ -35,9 +35,6 @@ module Data.Hashable
 
       -- * Computing hash values
       Hashable(..)
-
-      -- ** Avalanche behavior
-      -- $avalanche
 
       -- * Creating new instances
       -- | There are two ways to create new instances: by deriving
@@ -52,6 +49,13 @@ module Data.Hashable
 
       -- ** Writing instances by hand
       -- $blocks
+
+      -- ** Hashing contructors with multiple fields
+      -- $multiple-fields
+
+      -- ** Hashing types with multiple constructors
+      -- $multiple-ctors
+
     , hashUsing
     , hashPtr
     , hashPtrWithSalt
@@ -59,8 +63,6 @@ module Data.Hashable
     , hashByteArray
     , hashByteArrayWithSalt
 #endif
-      -- ** Hashing types with multiple constructors
-      -- $ctors
     ) where
 
 import Data.Hashable.Class
@@ -68,15 +70,43 @@ import Data.Hashable.Class
 import Data.Hashable.Generic ()
 #endif
 
--- $avalanche
+-- $security
+-- #security#
 --
--- A good hash function has a 50% probability of flipping every bit of
--- its result in response to a change of just one bit in its
--- input. This property is called /avalanche/. To be truly general
--- purpose, hash functions must have strong avalanche behavior.
+-- Applications that use hash-based data structures to store input
+-- from untrusted users can be susceptible to \"hash DoS\", a class of
+-- denial-of-service attack that uses deliberately chosen colliding
+-- inputs to force an application into unexpectedly behaving with
+-- quadratic time complexity.
 --
--- All of the 'Hashable' instances provided by this module have
--- excellent avalanche properties.
+-- To mitigate the risk from collision attacks, this library
+-- provides an environment variable named @HASHABLE_SALT@ that allows
+-- the default salt used by the 'hash' function to be chosen at
+-- application startup time.
+--
+-- * In the normal case, the environment variable is not set, and a
+--   fixed salt is used that does not vary between runs. (This choice
+--   can be made permanent by building this package with the
+--   @-ffixed-salt@ flag.)
+--
+-- * If the value is the string @random@, the system's cryptographic
+--   pseudo-random number generator will be used to supply a salt.
+--   While this may offer added security, it can also violate the
+--   assumption of some Haskell libraries that expect the results of
+--   'hash' to be stable across application runs. Choose this
+--   behaviour with care (and testing)!
+--
+-- * When the value is an integer (prefixed with @0x@ for hexadecimal),
+--   it will be used as the salt.
+--
+-- If @HASHABLE_SALT@ cannot be parsed, then the first time that a
+-- call to 'hash' is made, the application will halt with an
+-- informative error message.
+--
+-- (Implementation note: FNV-1, the hash function used for strings,
+-- can still be susceptible to collision attacks, even if a salt
+-- unknown to the attacker is used. Future versions of the library
+-- might improve on this situation.)
 
 -- $generics
 --
@@ -132,7 +162,7 @@ import Data.Hashable.Generic ()
 -- functions.
 --
 -- The functions below can be used when creating new instances of
--- 'Hashable'.  For many string-like types the
+-- 'Hashable'.  For example, for many string-like types the
 -- 'hashWithSalt' method can be defined in terms of either
 -- 'hashPtrWithSalt' or 'hashByteArrayWithSalt'.  Here's how you could
 -- implement an instance for the 'B.ByteString' data type, from the
@@ -148,74 +178,10 @@ import Data.Hashable.Generic ()
 -- >     hashWithSalt salt bs = B.inlinePerformIO $
 -- >                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
 -- >                            hashPtrWithSalt p (fromIntegral len) salt
---
--- Use 'hashWithSalt' to compute a hash from several values, using
--- this recipe:
---
--- > data Product a b = P a b
--- >
--- > instance (Hashable a, Hashable b) => Hashable (Product a b) where
--- >     hashWithSalt s (P a b) = s `hashWithSalt` a `hashWithSalt` b
---
--- You can chain hashes together using 'hashWithSalt', by following
--- this recipe:
---
--- > combineTwo h1 h2 = h1 `hashWithSalt` h2
 
--- $ctors
+-- $multiple-fields
 --
--- For a type with several value constructors, there are a few
--- possible approaches to writing a 'Hashable' instance.
---
--- If the type is an instance of 'Enum', the easiest (and safest) path
--- is to convert it to an 'Int', and use the existing 'Hashable'
--- instance for 'Int'.
---
--- > data Color = Red | Green | Blue
--- >              deriving Enum
--- >
--- > instance Hashable Color where
--- >     hashWithSalt = hashUsing fromEnum
---
--- This instance benefits from the fact that the 'Hashable' instance
--- for 'Int' has excellent avalanche properties.
---
--- In contrast, a very weak hash function would be:
---
--- > terribleHash :: Color -> Int
--- > terribleHash salt = fromEnum
---
--- This has terrible avalanche properties, as the salt is ignored, and
--- every input is mapped to a small integer.
---
--- If the type's constructors accept parameters, it can be important
--- to distinguish the constructors.
---
--- > data Time = Days Int
--- >           | Weeks Int
--- >           | Months Int
---
--- The weak hash function below guarantees a high probability of days,
--- weeks, and months all colliding when hashed.
---
--- > veryBadHash :: Time -> Int
--- > veryBadHash (Days  d)  = hash d
--- > veryBadHash (Weeks w)  = hash w
--- > veryBadHash (Months m) = hash m
---
--- It is easy to distinguish the constructors using the `hashWithSalt`
--- function.
---
--- > instance Hashable Time where
--- >     hashWithSalt s (Days n)   = s `hashWithSalt`
--- >                                 (0::Int) `hashWithSalt` n
--- >     hashWithSalt s (Weeks n)  = s `hashWithSalt`
--- >                                 (1::Int) `hashWithSalt` n
--- >     hashWithSalt s (Months n) = s `hashWithSalt`
--- >                                 (2::Int) `hashWithSalt` n
---
--- If a constructor accepts multiple parameters, their hashes can be
--- chained.
+-- Hash constructors with multiple fields by chaining 'hashWithSalt':
 --
 -- > data Date = Date Int Int Int
 -- >
@@ -224,41 +190,39 @@ import Data.Hashable.Generic ()
 -- >         s `hashWithSalt`
 -- >         yr `hashWithSalt`
 -- >         mo `hashWithSalt` dy
+--
+-- If you need to chain hashes together, use 'hashWithSalt' and follow
+-- this recipe:
+--
+-- > combineTwo h1 h2 = h1 `hashWithSalt` h2
 
--- $security
--- #security#
+-- $multiple-ctors
 --
--- Applications that use hash-based data structures to store input
--- from untrusted users can be susceptible to \"hash DoS\", a class of
--- denial-of-service attack that uses deliberately chosen colliding
--- inputs to force an application into unexpectedly behaving with
--- quadratic time complexity.
+-- For a type with several value constructors, there are a few
+-- possible approaches to writing a 'Hashable' instance.
 --
--- To mitigate the risk from collision attacks, this library
--- provides an environment variable named @HASHABLE_SALT@ that allows
--- the default salt used by the 'hash' function to be chosen at
--- application startup time.
+-- If the type is an instance of 'Enum', the easiest path is to
+-- convert it to an 'Int', and use the existing 'Hashable' instance
+-- for 'Int'.
 --
--- * In the normal case, the environment variable is not set, and a
---   fixed salt is used that does not vary between runs. (This choice
---   can be made permanent by building this package with the
---   @-ffixed-salt@ flag.)
+-- > data Color = Red | Green | Blue
+-- >              deriving Enum
+-- >
+-- > instance Hashable Color where
+-- >     hashWithSalt = hashUsing fromEnum
 --
--- * If the value is the string @random@, the system's cryptographic
---   pseudo-random number generator will be used to supply a salt.
---   While this may offer added security, it can also violate the
---   assumption of some Haskell libraries that expect the results of
---   'hash' to be stable across application runs. Choose this
---   behaviour with care (and testing)!
+-- If the type's constructors accept parameters, it is important to
+-- distinguish the constructors. To distinguish the constructors, add
+-- a different integer to the hash computation of each constructor:
 --
--- * When the value is an integer (prefixed with @0x@ for hexadecimal),
---   it will be used as the salt.
---
--- If @HASHABLE_SALT@ cannot be parsed, then the first time that a
--- call to 'hash' is made, the application will halt with an
--- informative error message.
---
--- (Implementation note: FNV-1, the hash function used for strings,
--- can still be susceptible to collision attacks, even if a salt
--- unknown to the attacker is used. Future versions of the library
--- might improve on this situation.)
+-- > data Time = Days Int
+-- >           | Weeks Int
+-- >           | Months Int
+-- >
+-- > instance Hashable Time where
+-- >     hashWithSalt s (Days n)   = s `hashWithSalt`
+-- >                                 (0::Int) `hashWithSalt` n
+-- >     hashWithSalt s (Weeks n)  = s `hashWithSalt`
+-- >                                 (1::Int) `hashWithSalt` n
+-- >     hashWithSalt s (Months n) = s `hashWithSalt`
+-- >                                 (2::Int) `hashWithSalt` n
