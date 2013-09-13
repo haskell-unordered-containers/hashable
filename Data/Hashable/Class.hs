@@ -33,10 +33,8 @@ module Data.Hashable.Class
     , hashUsing
     , hashPtr
     , hashPtrWithSalt
-#if defined(__GLASGOW_HASKELL__)
     , hashByteArray
     , hashByteArrayWithSalt
-#endif
     ) where
 
 import Control.Exception (assert)
@@ -52,14 +50,12 @@ import qualified Data.ByteString.Lazy as BL
 #if !MIN_VERSION_bytestring(0,10,0)
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
-#if defined(__GLASGOW_HASKELL__)
 import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-# ifdef GENERICS
+#ifdef GENERICS
 import GHC.Generics
-# endif
 #endif
 import Foreign.C (CString)
 #if __GLASGOW_HASKELL__ >= 703
@@ -73,32 +69,24 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import System.IO.Unsafe (unsafePerformIO)
 
 -- Byte arrays and Integers.
-#if defined(__GLASGOW_HASKELL__)
 import GHC.Base (ByteArray#)
-# ifdef VERSION_integer_gmp
+#ifdef VERSION_integer_gmp
 import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
-# else
+#else
 import Data.Bits (shiftR)
-# endif
 #endif
 
 -- ThreadId
-#if defined(__GLASGOW_HASKELL__)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-# if __GLASGOW_HASKELL__ >= 703
+#if __GLASGOW_HASKELL__ >= 703
 import Foreign.C.Types (CInt(..))
-# else
-import Foreign.C.Types (CInt)
-# endif
 #else
-import Control.Concurrent (ThreadId)
+import Foreign.C.Types (CInt)
 #endif
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 import System.Mem.StableName
-#endif
 
 import Data.Typeable
 #if __GLASGOW_HASKELL__ >= 702
@@ -292,7 +280,7 @@ instance Hashable Char where
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Integer where
-#if defined(__GLASGOW_HASKELL__) && defined(VERSION_integer_gmp)
+#if defined(VERSION_integer_gmp)
     hash (S# int) = I# int
     hash n@(J# size# byteArray)
         | n >= minInt && n <= maxInt = fromInteger n :: Int
@@ -407,11 +395,9 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 instance Hashable (StableName a) where
     hash = hashStableName
     hashWithSalt = defaultHashWithSalt
-#endif
 
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
@@ -425,7 +411,6 @@ instance Hashable B.ByteString where
 instance Hashable BL.ByteString where
     hashWithSalt = BL.foldlChunks hashWithSalt
 
-#if defined(__GLASGOW_HASKELL__)
 instance Hashable T.Text where
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
@@ -433,19 +418,12 @@ instance Hashable T.Text where
 
 instance Hashable TL.Text where
     hashWithSalt = TL.foldlChunks hashWithSalt
-#endif
 
-
--- | Compute the hash of a ThreadId.  For GHC, we happen to know a
--- trick to make this fast.
+-- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
 {-# INLINE hashThreadId #-}
-#if defined(__GLASGOW_HASKELL__)
 hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
 foreign import ccall unsafe "rts_getThreadId" getThreadId :: ThreadId# -> CInt
-#else
-hashThreadId = hash . show
-#endif
 
 instance Hashable ThreadId where
     hash = hashThreadId
@@ -492,10 +470,8 @@ hashPtrWithSalt p len salt =
 foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
     :: CString -> CLong -> CLong -> IO CLong
 
-#if defined(__GLASGOW_HASKELL__)
 -- | Compute a hash value for the content of this 'ByteArray#',
 -- beginning at the specified offset, using specified number of bytes.
--- Availability: GHC.
 hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ offset, in bytes
               -> Int         -- ^ length, in bytes
@@ -509,8 +485,6 @@ hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 -- This function can for example be used to hash non-contiguous
 -- segments of memory as if they were one contiguous segment, by using
 -- the output of one hash as the salt for the next.
---
--- Availability: GHC.
 hashByteArrayWithSalt
     :: ByteArray#  -- ^ data to hash
     -> Int         -- ^ offset, in bytes
@@ -523,7 +497,6 @@ hashByteArrayWithSalt ba !off !len !h =
 
 foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
     :: ByteArray# -> CLong -> CLong -> CLong -> CLong
-#endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
