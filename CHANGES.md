@@ -1,3 +1,40 @@
+## Version 1.2.1.0
+
+ * Revert instances to their 1.1 implementations to regain the
+   performance we had then.
+
+ * Remove use of random salt altogether. Without using SipHash the
+   benefit is unclear (i.e. collision attacks still work) and the
+   complexity is no longer worth it.
+
+ * Documentation improvements.
+
+## Version 1.2.0.10
+
+ * Fix for GHC 7.0.
+
+## Version 1.2.0.9
+
+ * Stop using SipHash. The current implementation still has segfault
+   causing bugs that we won't be able to fix soon.
+
+ * Stop using Wang hash. It degrades performance of fixed-size integer
+   hashing too much.
+
+## Version 1.2.0.8
+
+ * Fix linking issue when SSE was disabled.
+
+ * Hash small signed Integers correctly.
+
+## Version 1.2.0.7
+
+ * Add flags to control usage of SSE.
+
+## Version 1.2.0.6
+
+ * Fix another segfault caused by SSE2 code.
+
 ## Version 1.2.0.5
 
  * More portability fixes.
@@ -16,10 +53,10 @@
 ## Version1.2.0.3
 
  * Make building of SSE 4.1 code conditional, as it doesn't work on all
-  platforms.
+   platforms.
 
  * Use a fixed salt, but allow random salting. Random salting by
-  default broke people's code.
+   default broke people's code.
 
 ## Version1.2.0.2
 
