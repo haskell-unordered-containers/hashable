@@ -1,3 +1,7 @@
+## Version TBA
+
+ * Add instances for `Data.ByteString.Short`
+
 ## Version 1.2.1.0
 
  * Revert instances to their 1.1 implementations to regain the

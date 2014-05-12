@@ -83,6 +83,10 @@ import Foreign.C.Types (CInt)
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
 
+#if MIN_VERSION_bytestring(0,10,4)
+import qualified Data.ByteString.Short.Internal as BSI
+#endif
+
 #ifdef VERSION_integer_gmp
 import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
@@ -368,6 +372,16 @@ instance Hashable B.ByteString where
 
 instance Hashable BL.ByteString where
     hashWithSalt = BL.foldlChunks hashWithSalt
+
+#if MIN_VERSION_bytestring(0,10,4)
+instance Hashable BSI.ShortByteString where
+#if MIN_VERSION_base(4,3,0)
+    hashWithSalt salt sbs@(BSI.SBS ba) =
+#else
+    hashWithSalt salt sbs@(BSI.SBS ba _) =
+#endif
+        hashByteArrayWithSalt ba 0 (BSI.length sbs) salt
+#endif
 
 instance Hashable T.Text where
     hashWithSalt salt (T.Text arr off len) =
