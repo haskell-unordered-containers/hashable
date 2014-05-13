@@ -1,6 +1,8 @@
-## Version TBA
+## Version 1.2.2.0
 
  * Add instances for `Data.ByteString.Short`
+
+ * Use a 32-bit default salt on 32-bit archs.
 
 ## Version 1.2.1.0
 
