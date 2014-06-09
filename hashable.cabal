@@ -29,10 +29,12 @@ Flag integer-gmp
 Flag sse2
   Description: Do we want to assume that a target supports SSE 2?
   Default: True
+  Manual: True
 
 Flag sse41
   Description: Do we want to assume that a target supports SSE 4.1?
   Default: False
+  Manual: True
 
 Library
   Exposed-modules:   Data.Hashable
