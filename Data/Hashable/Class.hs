@@ -90,6 +90,15 @@ import qualified Data.ByteString.Short.Internal as BSI
 #ifdef VERSION_integer_gmp
 import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
+# if MIN_VERSION_integer_gmp(1,0,0)
+import GHC.Exts (sizeofByteArray#)
+import GHC.Integer.GMP.Internals (BigNat(BN#))
+# endif
+#endif
+
+#if MIN_VERSION_base(4,8,0)
+import GHC.Natural (Natural(..))
+import GHC.Exts (Word(..))
 #endif
 
 #include "MachDeps.h"
@@ -241,8 +250,43 @@ instance Hashable Char where
     hash = fromEnum
     hashWithSalt = defaultHashWithSalt
 
+#if defined(VERSION_integer_gmp)
+# if MIN_VERSION_integer_gmp(1,0,0)
+instance Hashable BigNat where
+    hashWithSalt salt (BN# ba) = hashByteArrayWithSalt ba 0 numBytes salt
+                                 `hashWithSalt` size
+      where
+        size     = numBytes `quot` SIZEOF_HSWORD
+        numBytes = I# (sizeofByteArray# ba)
+# endif
+#endif
+
+#if MIN_VERSION_base(4,8,0)
+instance Hashable Natural where
+# if MIN_VERSION_integer_gmp(1,0,0)
+    hash (NatS# n)   = hash (W# n)
+    hash (NatJ# bn)  = hash bn
+
+    hashWithSalt salt (NatS# n)   = hashWithSalt salt (W# n)
+    hashWithSalt salt (NatJ# bn)  = hashWithSalt salt bn
+# else
+    hash (Natural n) = hash n
+
+    hashWithSalt salt (Natural n) = hashWithSalt salt n
+# endif
+#endif
+
 instance Hashable Integer where
 #if defined(VERSION_integer_gmp)
+# if MIN_VERSION_integer_gmp(1,0,0)
+    hash (S# n)   = (I# n)
+    hash (Jp# bn) = hash bn
+    hash (Jn# bn) = negate (hash bn)
+
+    hashWithSalt salt (S# n)   = hashWithSalt salt (I# n)
+    hashWithSalt salt (Jp# bn) = hashWithSalt salt bn
+    hashWithSalt salt (Jn# bn) = negate (hashWithSalt salt bn)
+# else
     hash (S# int) = I# int
     hash n@(J# size# byteArray)
         | n >= minInt && n <= maxInt = fromInteger n :: Int
@@ -262,6 +306,7 @@ instance Hashable Integer where
                          `hashWithSalt` size
       where minInt = fromIntegral (minBound :: Int)
             maxInt = fromIntegral (maxBound :: Int)
+# endif
 #else
     hashWithSalt salt = foldl' hashWithSalt salt . go
       where
