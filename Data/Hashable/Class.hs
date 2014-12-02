@@ -112,7 +112,7 @@ infixl 0 `hashWithSalt`
 -- | A default salt used in the implementation of 'hash'.
 defaultSalt :: Int
 #if WORD_SIZE_IN_BITS == 64
-defaultSalt = 0xdc36d1615b7400a4
+defaultSalt = -2578643520546668380  -- 0xdc36d1615b7400a4
 #else
 defaultSalt = 0x087fc72c
 #endif
