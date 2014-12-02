@@ -97,6 +97,7 @@ import GHC.Integer.GMP.Internals (BigNat(BN#))
 #endif
 
 #if MIN_VERSION_base(4,8,0)
+import Data.Void (Void, absurd)
 import GHC.Natural (Natural(..))
 import GHC.Exts (Word(..))
 #endif
@@ -463,6 +464,11 @@ instance Hashable TypeRep where
     hash = hashTypeRep
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
+
+#if MIN_VERSION_base(4,8,0)
+instance Hashable Void where
+    hashWithSalt _ = absurd
+#endif
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
