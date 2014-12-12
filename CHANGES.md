@@ -1,3 +1,15 @@
+## Version 1.2.3.0
+
+ * Silence integer literal overflow warning
+
+ * Add support for GHC 7.10 `integer-gmp2` & `Natural`
+
+ * Add instance for Data.Void
+
+ * Make the SSE .cabal flags manual
+
+ * Add an upper bound on bytestring
+
 ## Version 1.2.2.0
 
  * Add instances for `Data.ByteString.Short`
