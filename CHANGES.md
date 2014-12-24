@@ -1,3 +1,7 @@
+## Version 1.2.3.1
+
+ * Added support for random 1.1.*.
+
 ## Version 1.2.3.0
 
  * Silence integer literal overflow warning
