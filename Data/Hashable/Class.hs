@@ -455,7 +455,7 @@ hashTypeRep :: TypeRep -> Int
 {-# INLINE hashTypeRep #-}
 #if __GLASGOW_HASKELL__ >= 710
 -- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep tr = let Fingerprint x _ = typeRepHash tr in fromIntegral x
+hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
 #elif __GLASGOW_HASKELL__ >= 702
 -- Fingerprint is just the MD5, so taking any Int from it is fine
 hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
