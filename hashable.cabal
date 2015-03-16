@@ -1,5 +1,5 @@
 Name:                hashable
-Version:             1.2.3.1
+Version:             1.2.3.2
 Synopsis:            A class for types that can be converted to a hash value
 Description:         This package defines a class, 'Hashable', for types that
                      can be converted to a hash value.  This class
@@ -39,7 +39,7 @@ Flag sse41
 Library
   Exposed-modules:   Data.Hashable
   Other-modules:     Data.Hashable.Class
-  Build-depends:     base >= 4.0 && < 5.0,
+  Build-depends:     base >= 4.0 && < 4.9,
                      bytestring >= 0.9 && < 0.11
   if impl(ghc)
     Build-depends:   ghc-prim,
