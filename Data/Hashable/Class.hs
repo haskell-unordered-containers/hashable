@@ -90,9 +90,14 @@ import qualified Data.ByteString.Short.Internal as BSI
 #endif
 
 #ifdef VERSION_integer_gmp
+
+# if MIN_VERSION_integer_gmp(1,0,0)
+#  define MIN_VERSION_integer_gmp_1_0_0
+# endif
+
 import GHC.Exts (Int(..))
 import GHC.Integer.GMP.Internals (Integer(..))
-# if MIN_VERSION_integer_gmp(1,0,0)
+# if defined(MIN_VERSION_integer_gmp_1_0_0)
 import GHC.Exts (sizeofByteArray#)
 import GHC.Integer.GMP.Internals (BigNat(BN#))
 # endif
@@ -253,20 +258,18 @@ instance Hashable Char where
     hash = fromEnum
     hashWithSalt = defaultHashWithSalt
 
-#if defined(VERSION_integer_gmp)
-# if MIN_VERSION_integer_gmp(1,0,0)
+#if defined(MIN_VERSION_integer_gmp_1_0_0)
 instance Hashable BigNat where
     hashWithSalt salt (BN# ba) = hashByteArrayWithSalt ba 0 numBytes salt
                                  `hashWithSalt` size
       where
         size     = numBytes `quot` SIZEOF_HSWORD
         numBytes = I# (sizeofByteArray# ba)
-# endif
 #endif
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Natural where
-# if MIN_VERSION_integer_gmp(1,0,0)
+# if defined(MIN_VERSION_integer_gmp_1_0_0)
     hash (NatS# n)   = hash (W# n)
     hash (NatJ# bn)  = hash bn
 
@@ -281,7 +284,7 @@ instance Hashable Natural where
 
 instance Hashable Integer where
 #if defined(VERSION_integer_gmp)
-# if MIN_VERSION_integer_gmp(1,0,0)
+# if defined(MIN_VERSION_integer_gmp_1_0_0)
     hash (S# n)   = (I# n)
     hash (Jp# bn) = hash bn
     hash (Jn# bn) = negate (hash bn)
