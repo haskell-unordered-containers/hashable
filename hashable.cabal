@@ -82,6 +82,7 @@ Test-suite tests
   if !os(windows)
     Build-depends:   unix
     CPP-options:     -DHAVE_MMAP
+    C-sources:       cbits/mmap.c
     Other-modules:   Regress.Mmap
 
   Ghc-options:       -Wall -fno-warn-orphans

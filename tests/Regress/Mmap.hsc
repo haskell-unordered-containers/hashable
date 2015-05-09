@@ -60,7 +60,7 @@ mprotect :: Ptr a -> CSize -> CInt -> IO ()
 mprotect addr len prot =
     throwErrnoIfMinus1_ "mprotect" $ c_mprotect addr len prot
 
-foreign import ccall unsafe "sys/mman.h mmap"
+foreign import ccall unsafe "hashable_mmap"
     c_mmap :: Ptr a -> CSize -> CInt -> CInt -> CInt -> COff -> IO (Ptr a)
 
 foreign import ccall unsafe "sys/mman.h munmap"
