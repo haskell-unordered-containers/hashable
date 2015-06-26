@@ -1,3 +1,7 @@
+## Version 1.2.3.3
+
+ * Support integer-simple.
+
 ## Version 1.2.3.2
 
  * Add support for GHC 7.10 typeRepFingerprint
