@@ -38,7 +38,7 @@ module Data.Hashable.Class
     ) where
 
 import Control.Exception (assert)
-import Data.Bits (bitSize, shiftL, shiftR, xor)
+import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Lazy as BL
@@ -51,7 +51,7 @@ import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
 import Data.Typeable
-import Data.Word (Word, Word8, Word16, Word32, Word64)
+import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, castPtr)
@@ -79,6 +79,16 @@ import Foreign.C.Types (CInt(..))
 #else
 import Foreign.C (CLong)
 import Foreign.C.Types (CInt)
+#endif
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Word (Word)
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+import Data.Bits (finiteBitSize)
+#else
+import Data.Bits (bitSize)
 #endif
 
 #if !MIN_VERSION_bytestring(0,10,0)
@@ -215,7 +225,11 @@ instance Hashable Int32 where
 
 instance Hashable Int64 where
     hash n
+#if MIN_VERSION_base(4,7,0)
+        | finiteBitSize (undefined :: Int) == 64 = fromIntegral n
+#else
         | bitSize (undefined :: Int) == 64 = fromIntegral n
+#endif
         | otherwise = fromIntegral (fromIntegral n `xor`
                                    (fromIntegral n `shiftR` 32 :: Word64))
     hashWithSalt = defaultHashWithSalt
@@ -238,7 +252,11 @@ instance Hashable Word32 where
 
 instance Hashable Word64 where
     hash n
+#if MIN_VERSION_base(4,7,0)
+        | finiteBitSize (undefined :: Int) == 64 = fromIntegral n
+#else
         | bitSize (undefined :: Int) == 64 = fromIntegral n
+#endif
         | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
     hashWithSalt = defaultHashWithSalt
 
