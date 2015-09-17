@@ -108,6 +108,15 @@ script:
    else
       echo "expected '$SRC_TGZ' not found";
       exit 1;
+   fi;
+   cd ../
+
+ # Try to compile tests and benchmarks, run tests
+ # For some reason doesn't work with old cabal
+ - if [ ! $CABALVER = "1.16" ]; then
+     cabal install HUnit QuickCheck criterion random siphash test-framework test-framework-hunit test-framework-quickcheck2;
+     cabal configure -v2 --enable-tests --enable-benchmarks;
+     cabal test;
    fi
 
 # EOF
