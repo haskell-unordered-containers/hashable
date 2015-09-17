@@ -98,13 +98,13 @@ main = do
         withForeignPtr fp1Mb $ \ p1Mb ->
         defaultMain
         [ bgroup "hashPtr"
-          [ bench "5" $ hashPtr p5 5
-          , bench "8" $ hashPtr p8 8
-          , bench "11" $ hashPtr p11 11
-          , bench "40" $ hashPtr p40 40
-          , bench "128" $ hashPtr p128 128
-          , bench "512" $ hashPtr p512 512
-          , bench "2^20" $ hashPtr p1Mb mb
+          [ bench "5" $ whnfIO $ hashPtr p5 5
+          , bench "8" $ whnfIO $ hashPtr p8 8
+          , bench "11" $ whnfIO $ hashPtr p11 11
+          , bench "40" $ whnfIO $ hashPtr p40 40
+          , bench "128" $ whnfIO $ hashPtr p128 128
+          , bench "512" $ whnfIO $ hashPtr p512 512
+          , bench "2^20" $ whnfIO $ hashPtr p1Mb mb
           ]
         , bgroup "hashByteArray"
           [ bench "5" $ whnf (hashByteArray ba5 0) 5

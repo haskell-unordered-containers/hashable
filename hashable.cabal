@@ -104,7 +104,7 @@ benchmark benchmarks
   build-depends:
     base,
     bytestring,
-    criterion,
+    criterion >= 1.0,
     ghc-prim,
     siphash,
     text
