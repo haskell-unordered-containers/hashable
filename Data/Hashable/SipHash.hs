@@ -153,7 +153,7 @@ peekLE64 p = do
   return (fromWord64 w)
 #endif
 
-#if !MIN_VERSION_base(4,5,0)
+#if !(MIN_VERSION_base(4,5,0))
 unsafeShiftL :: Word64 -> Int -> Word64
 unsafeShiftL = shiftL
 #endif

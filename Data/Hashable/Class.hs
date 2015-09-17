@@ -81,7 +81,7 @@ import Foreign.C (CLong)
 import Foreign.C.Types (CInt)
 #endif
 
-#if !MIN_VERSION_base(4,8,0)
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Word (Word)
 #endif
 
@@ -91,7 +91,7 @@ import Data.Bits (finiteBitSize)
 import Data.Bits (bitSize)
 #endif
 
-#if !MIN_VERSION_bytestring(0,10,0)
+#if !(MIN_VERSION_bytestring(0,10,0))
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
 
