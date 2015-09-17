@@ -439,9 +439,15 @@ instance Hashable (StableName a) where
     hash = hashStableName
     hashWithSalt = defaultHashWithSalt
 
+-- Auxillary type for Hashable [a] definition
+data SPInt = SP !Int !Int
+
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
-    hashWithSalt = foldl' hashWithSalt
+    hashWithSalt salt arr = finalise (foldl' step (SP salt 0) arr)
+      where
+        finalise (SP s l) = hashWithSalt s l
+        step (SP s l) x   = SP (hashWithSalt s x) (l + 1)
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $
