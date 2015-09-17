@@ -51,6 +51,7 @@ import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
 import Data.Typeable
+import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
 import Foreign.Marshal.Utils (with)
@@ -61,6 +62,14 @@ import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Unique (Unique, hashUnique)
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+import Data.Fixed (Fixed(..))
+#endif
 
 #ifdef GENERICS
 import GHC.Generics
@@ -551,3 +560,18 @@ foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
 -- identity.
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 * 16777619) `xor` h2
+
+#if MIN_VERSION_base(4,8,0)
+instance Hashable Unique where
+    hash = hashUnique
+    hashWithSalt = defaultHashWithSalt
+#endif
+
+instance Hashable Version where
+    hashWithSalt salt (Version branch tags) =
+        salt `hashWithSalt` branch `hashWithSalt` tags
+
+#if MIN_VERSION_base(4,7,0)
+instance Hashable (Fixed a) where
+    hashWithSalt salt (MkFixed i) = hashWithSalt salt i
+#endif
