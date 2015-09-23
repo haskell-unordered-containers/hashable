@@ -62,10 +62,7 @@ import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName
-
-#if MIN_VERSION_base(4,8,0)
 import Data.Unique (Unique, hashUnique)
-#endif
 
 #if MIN_VERSION_base(4,7,0)
 import Data.Fixed (Fixed(..))
@@ -567,11 +564,9 @@ foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
 combine :: Int -> Int -> Int
 combine h1 h2 = (h1 * 16777619) `xor` h2
 
-#if MIN_VERSION_base(4,8,0)
 instance Hashable Unique where
     hash = hashUnique
     hashWithSalt = defaultHashWithSalt
-#endif
 
 instance Hashable Version where
     hashWithSalt salt (Version branch tags) =
