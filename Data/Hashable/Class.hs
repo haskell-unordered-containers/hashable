@@ -37,6 +37,7 @@ module Data.Hashable.Class
     , hashByteArrayWithSalt
     ) where
 
+import Control.Applicative (Const(..))
 import Control.Exception (assert)
 import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
@@ -66,6 +67,10 @@ import Data.Unique (Unique, hashUnique)
 
 #if MIN_VERSION_base(4,7,0)
 import Data.Fixed (Fixed(..))
+#endif
+
+#if MIN_VERSION_base(4,8,0)
+import Data.Functor.Identity (Identity(..))
 #endif
 
 #ifdef GENERICS
@@ -576,3 +581,11 @@ instance Hashable Version where
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
 #endif
+
+#if MIN_VERSION_base(4,8,0)
+instance Hashable a => Hashable (Identity a) where
+    hashWithSalt salt (Identity x) = hashWithSalt salt x
+#endif
+
+instance Hashable a => Hashable (Const a b) where
+    hashWithSalt salt (Const x) = hashWithSalt salt x
