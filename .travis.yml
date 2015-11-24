@@ -7,13 +7,13 @@
 # release of a major GHC version. Setting HPVER implictly sets
 # GHCVER. Omit lines with versions you don't need/want testing for.
 env:
-# - CABALVER=1.16 GHCVER=6.12.3
+# - CABALVER=1.22 GHCVER=6.12.3 NOTESTS=YES
 # - CABALVER=1.16 GHCVER=7.0.1
 # - CABALVER=1.16 GHCVER=7.0.2
 # - CABALVER=1.16 GHCVER=7.0.3
-# - CABALVER=1.16 GHCVER=7.0.4
+ - CABALVER=1.16 GHCVER=7.0.4
 # - CABALVER=1.16 GHCVER=7.2.1
-# - CABALVER=1.16 GHCVER=7.2.2
+ - CABALVER=1.16 GHCVER=7.2.2
 # - CABALVER=1.16 GHCVER=7.4.1
  - CABALVER=1.16 GHCVER=7.4.2
 # - CABALVER=1.16 GHCVER=7.6.1
@@ -113,7 +113,7 @@ script:
 
  # Try to compile tests and benchmarks, run tests
  # For some reason doesn't work with old cabal
- - if [ ! $CABALVER = "1.16" ]; then
+ - if [ ! $CABALVER = "1.16" -o "$NOTESTS" = "YES" ]; then
      cabal install HUnit QuickCheck criterion random siphash test-framework test-framework-hunit test-framework-quickcheck2;
      cabal configure -v2 --enable-tests --enable-benchmarks;
      cabal test;
