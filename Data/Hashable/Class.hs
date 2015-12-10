@@ -125,6 +125,11 @@ import GHC.Natural (Natural(..))
 import GHC.Exts (Word(..))
 #endif
 
+#if MIN_VERSION_base(4,9,0)
+import qualified Data.List.NonEmpty as NE
+import Data.Semigroup
+#endif
+
 #include "MachDeps.h"
 
 infixl 0 `hashWithSalt`
@@ -580,4 +585,31 @@ instance Hashable Version where
 #if MIN_VERSION_base(4,7,0)
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
+#endif
+
+-- instances formerly provided by 'semigroups' package
+#if MIN_VERSION_base(4,9,0)
+instance Hashable a => Hashable (NE.NonEmpty a) where
+    hashWithSalt p (a NE.:| as) = p `hashWithSalt` a `hashWithSalt` as
+
+instance Hashable a => Hashable (Min a) where
+    hashWithSalt p (Min a) = hashWithSalt p a
+
+instance Hashable a => Hashable (Max a) where
+    hashWithSalt p (Max a) = hashWithSalt p a
+
+instance (Hashable a, Hashable b) => Hashable (Arg a b) where
+    hashWithSalt p (Arg a b) = hashWithSalt p a `hashWithSalt` b
+
+instance Hashable a => Hashable (First a) where
+    hashWithSalt p (First a) = hashWithSalt p a
+
+instance Hashable a => Hashable (Last a) where
+    hashWithSalt p (Last a) = hashWithSalt p a
+
+instance Hashable a => Hashable (WrappedMonoid a) where
+    hashWithSalt p (WrapMonoid a) = hashWithSalt p a
+
+instance Hashable a => Hashable (Option a) where
+    hashWithSalt p (Option a) = hashWithSalt p a
 #endif
