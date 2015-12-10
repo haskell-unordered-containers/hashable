@@ -43,12 +43,11 @@ instance Hashable a => GHashable (K1 i a) where
 class GSum f where
     hashSum :: Int -> Int -> Int -> f a -> Int
 
-instance (GSum a, GSum b, GHashable a, GHashable b,
-          SumSize a, SumSize b) => GHashable (a :+: b) where
+instance (GSum a, GSum b, SumSize a, SumSize b) => GHashable (a :+: b) where
     ghashWithSalt salt = hashSum salt 0 size
         where size = unTagged (sumSize :: Tagged (a :+: b))
 
-instance (GSum a, GSum b, GHashable a, GHashable b) => GSum (a :+: b) where
+instance (GSum a, GSum b) => GSum (a :+: b) where
     hashSum !salt !code !size s = case s of
                                     L1 x -> hashSum salt code           sizeL x
                                     R1 x -> hashSum salt (code + sizeL) sizeR x

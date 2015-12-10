@@ -346,7 +346,12 @@ instance Hashable Integer where
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
 #endif
 
+#if MIN_VERSION_base(4,9,0)
+-- Starting with base-4.9, numerator/denominator don't need 'Integral' anymore
+instance Hashable a => Hashable (Ratio a) where
+#else
 instance (Integral a, Hashable a) => Hashable (Ratio a) where
+#endif
     {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
     hash a = hash (numerator a) `hashWithSalt` denominator a
     hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
