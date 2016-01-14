@@ -1,3 +1,10 @@
+## Version 1.2.4.0
+
+ * Add instances for: Unique, Version, Fixed, NonEmpty, Min, Max, Arg,
+   First, Last, WrappedMonoid, Option
+
+ * Support GHC 8.0
+
 ## Version 1.2.3.3
 
  * Support integer-simple.
