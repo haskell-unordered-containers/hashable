@@ -2,6 +2,7 @@
 #define _hashable_siphash_h
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef uint64_t u64;
 typedef uint32_t u32;

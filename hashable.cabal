@@ -115,6 +115,12 @@ benchmark benchmarks
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
+  include-dirs:
+    benchmarks/cbits
+
+  includes:
+    siphash.h
+
   c-sources:
     benchmarks/cbits/inthash.c
     benchmarks/cbits/siphash.c
