@@ -20,7 +20,8 @@ Cabal-version:       >=1.8
 -- tests/Properties.hs shouldn't have to go here, but the source files
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
 Extra-source-files:
-  CHANGES.md, README.md, tests/Properties.hs, benchmarks/Benchmarks.hs
+  CHANGES.md, README.md, tests/Properties.hs,
+  benchmarks/Benchmarks.hs, benchmarks/cbits/*.c, benchmarks/cbits/*.h
 
 Flag integer-gmp
   Description: Are we using integer-gmp to provide fast Integer instances?
@@ -114,6 +115,12 @@ benchmark benchmarks
                      text >= 0.11.0.5
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
+
+  include-dirs:
+    benchmarks/cbits
+
+  includes:
+    siphash.h
 
   c-sources:
     benchmarks/cbits/inthash.c
