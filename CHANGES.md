@@ -1,3 +1,5 @@
+ * Add instances for: Ptr, FunPtr, IntPtr, WordPtr
+
 ## Version 1.2.4.0
 
  * Add instances for: Unique, Version, Fixed, NonEmpty, Min, Max, Arg,

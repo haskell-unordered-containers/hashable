@@ -56,7 +56,7 @@ import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
 import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr, castPtr)
+import Foreign.Ptr (Ptr, FunPtr, IntPtr, WordPtr, castPtr, castFunPtrToPtr, ptrToIntPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
@@ -496,6 +496,20 @@ foreign import ccall unsafe "rts_getThreadId" getThreadId
 
 instance Hashable ThreadId where
     hash = hashThreadId
+    hashWithSalt = defaultHashWithSalt
+
+instance Hashable (Ptr a) where
+    hashWithSalt salt p = hashWithSalt salt $ ptrToIntPtr p
+
+instance Hashable (FunPtr a) where
+    hashWithSalt salt p = hashWithSalt salt $ castFunPtrToPtr p
+
+instance Hashable IntPtr where
+    hash n = fromIntegral n
+    hashWithSalt = defaultHashWithSalt
+
+instance Hashable WordPtr where
+    hash n = fromIntegral n
     hashWithSalt = defaultHashWithSalt
 
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
