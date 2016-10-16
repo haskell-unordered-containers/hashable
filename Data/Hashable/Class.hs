@@ -35,6 +35,7 @@ module Data.Hashable.Class
     , hashPtrWithSalt
     , hashByteArray
     , hashByteArrayWithSalt
+    , defaultHashWithSalt
     ) where
 
 import Control.Applicative (Const(..))
