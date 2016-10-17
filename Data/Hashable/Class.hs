@@ -50,6 +50,8 @@ module Data.Hashable.Class
     , Hashed
     , hashed
     , unhashed
+    , mapHashed
+    , traverseHashed
     ) where
 
 import Control.Applicative (Const(..))
@@ -90,6 +92,8 @@ import Data.Fixed (Fixed(..))
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Functor.Identity (Identity(..))
+#else
+import Data.Foldable (Foldable (..))
 #endif
 
 #ifdef GENERICS
@@ -844,6 +848,14 @@ instance (IsString a, Hashable a) => IsString (Hashed a) where
 
 instance Foldable Hashed where
   foldr f acc (Hashed a _) = f a acc
+
+-- | 'Hashed' cannot be 'Functor'
+mapHashed :: Hashable b => (a -> b) -> Hashed a -> Hashed b
+mapHashed f (Hashed a _) = hashed (f a)
+
+-- | 'Hashed' cannot be 'Traversable'
+traverseHashed :: (Hashable b, Functor f) => (a -> f b) -> Hashed a -> f (Hashed b)
+traverseHashed f (Hashed a _) = fmap hashed (f a)
 
 -- instances for @Data.Functor.Classes@ higher rank typeclasses
 -- in base-4.9 and onward.

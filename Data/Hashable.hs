@@ -68,6 +68,8 @@ module Data.Hashable
     , Hashed
     , hashed
     , unhashed
+    , mapHashed
+    , traverseHashed
     ) where
 
 import Data.Hashable.Class
@@ -209,4 +211,3 @@ import Data.Hashable.Generic ()
 -- >                                 (1::Int) `hashWithSalt` n
 -- >     hashWithSalt s (Months n) = s `hashWithSalt`
 -- >                                 (2::Int) `hashWithSalt` n
-
