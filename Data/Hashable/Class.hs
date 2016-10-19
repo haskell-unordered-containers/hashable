@@ -144,6 +144,10 @@ import GHC.Exts (Word(..))
 #if MIN_VERSION_base(4,9,0)
 import qualified Data.List.NonEmpty as NE
 import Data.Semigroup
+
+import Data.Functor.Compose (Compose(..))
+import qualified Data.Functor.Product as FP
+import qualified Data.Functor.Sum as FS
 #endif
 
 #include "MachDeps.h"
@@ -687,6 +691,13 @@ instance Hashable a => Hashable1 (Const a) where
 instance Hashable2 Const where
     liftHashWithSalt2 f _ salt (Const x) = f salt x
 
+instance Hashable (Proxy a) where
+    hash _ = 0
+    hashWithSalt s _ = s
+
+instance Hashable1 Proxy where
+    liftHashWithSalt _ s _ = s
+
 -- instances formerly provided by 'semigroups' package
 #if MIN_VERSION_base(4,9,0)
 instance Hashable a => Hashable (NE.NonEmpty a) where
@@ -713,3 +724,24 @@ instance Hashable a => Hashable (WrappedMonoid a) where
 instance Hashable a => Hashable (Option a) where
     hashWithSalt p (Option a) = hashWithSalt p a
 #endif
+
+-- instances for @Data.Functor.{Product,Sum,Compose}@, present
+-- in base-4.9 and onward.
+#if MIN_VERSION_base(4,9,0)
+-- | In general, @hash (Compose x) ≠ hash x@. However, @hashWithSalt@ satisfies
+-- its variant of this equivalence.
+instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (Compose f g a) where
+    hashWithSalt s (Compose v) = liftHashWithSalt (liftHashWithSalt hashWithSalt) s v
+
+instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FP.Product f g a) where
+    hashWithSalt s (FP.Pair a b) = liftHashWithSalt
+      hashWithSalt
+      (liftHashWithSalt hashWithSalt s a)
+      b
+
+instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
+    hashWithSalt s (FS.InL a) = liftHashWithSalt hashWithSalt (s `combine` 0) a
+    hashWithSalt s (FS.InR a) = liftHashWithSalt hashWithSalt (s `combine` distinguisher) a
+#endif
+
+
