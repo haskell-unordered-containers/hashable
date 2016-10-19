@@ -24,6 +24,8 @@ module Data.Hashable.Class
     (
       -- * Computing hash values
       Hashable(..)
+    , Hashable1(..)
+    , Hashable2(..)
 #ifdef GENERICS
       -- ** Support for generics
     , GHashable(..)
@@ -35,6 +37,11 @@ module Data.Hashable.Class
     , hashPtrWithSalt
     , hashByteArray
     , hashByteArrayWithSalt
+      -- * Higher Rank Functions
+    , hash1
+    , hashWithSalt1
+    , hash2
+    , hashWithSalt2
     ) where
 
 import Control.Applicative (Const(..))
@@ -194,6 +201,30 @@ class Hashable a where
 class GHashable f where
     ghashWithSalt :: Int -> f a -> Int
 #endif
+
+class Hashable1 t where
+  liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
+  liftHash :: (a -> Int) -> t a -> Int
+  -- Figure out how to write this
+  -- liftHash f = liftHashWithSalt f defaultSalt
+
+class Hashable2 t where
+  liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
+  liftHash2 :: (a -> Int) -> (b -> Int) -> t a b -> Int
+  -- Figure out how to write this
+  -- liftHash2 f g = liftHashWithSalt2 f g defaultSalt
+
+hash1 :: (Hashable1 f, Hashable a) => f a -> Int
+hash1 = liftHash hash
+
+hashWithSalt1 :: (Hashable1 f, Hashable a) => Int -> f a -> Int
+hashWithSalt1 = liftHashWithSalt hashWithSalt
+
+hash2 :: (Hashable2 f, Hashable a, Hashable b) => f a b -> Int
+hash2 = liftHash2 hash hash
+
+hashWithSalt2 :: (Hashable2 f, Hashable a, Hashable b) => Int -> f a b -> Int
+hashWithSalt2 = liftHashWithSalt2 hashWithSalt hashWithSalt
 
 -- Since we support a generic implementation of 'hashWithSalt' we
 -- cannot also provide a default implementation for that method for
@@ -460,6 +491,12 @@ instance Hashable a => Hashable [a] where
       where
         finalise (SP s l) = hashWithSalt s l
         step (SP s l) x   = SP (hashWithSalt s x) (l + 1)
+
+-- instance Hashable1 [] where
+--     liftHashWithSalt h salt arr = finalise (foldl' step (SP salt 0) arr)
+--       where
+--         finalise (SP s l) = hashWithSalt s l
+--         step (SP s l) x   = SP (h s x) (l + 1)
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $
