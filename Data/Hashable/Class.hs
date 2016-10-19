@@ -731,17 +731,23 @@ instance Hashable a => Hashable (Option a) where
 -- | In general, @hash (Compose x) ≠ hash x@. However, @hashWithSalt@ satisfies
 -- its variant of this equivalence.
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (Compose f g a) where
-    hashWithSalt s (Compose v) = liftHashWithSalt (liftHashWithSalt hashWithSalt) s v
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable1 f, Hashable1 g) => Hashable1 (Compose f g) where
+    liftHashWithSalt h s = liftHashWithSalt (liftHashWithSalt h) s . getCompose
+
+instance (Hashable1 f, Hashable1 g) => Hashable1 (FP.Product f g) where
+    liftHashWithSalt h s (FP.Pair a b) = liftHashWithSalt h (liftHashWithSalt h s a) b
 
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FP.Product f g a) where
-    hashWithSalt s (FP.Pair a b) = liftHashWithSalt
-      hashWithSalt
-      (liftHashWithSalt hashWithSalt s a)
-      b
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
+    liftHashWithSalt h s (FS.InL a) = liftHashWithSalt h (s `combine` 0) a
+    liftHashWithSalt h s (FS.InR a) = liftHashWithSalt h (s `combine` distinguisher) a
 
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
-    hashWithSalt s (FS.InL a) = liftHashWithSalt hashWithSalt (s `combine` 0) a
-    hashWithSalt s (FS.InR a) = liftHashWithSalt hashWithSalt (s `combine` distinguisher) a
+    hashWithSalt = hashWithSalt1
 #endif
 
 
