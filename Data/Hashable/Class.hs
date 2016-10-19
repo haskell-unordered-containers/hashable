@@ -38,10 +38,9 @@ module Data.Hashable.Class
     , hashByteArray
     , hashByteArrayWithSalt
       -- * Higher Rank Functions
-    , hash1
     , hashWithSalt1
-    , hash2
     , hashWithSalt2
+    , defaultLiftHashWithSalt
     ) where
 
 import Control.Applicative (Const(..))
@@ -203,28 +202,30 @@ class GHashable f where
 #endif
 
 class Hashable1 t where
-  liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
-  liftHash :: (a -> Int) -> t a -> Int
-  -- Figure out how to write this
-  -- liftHash f = liftHashWithSalt f defaultSalt
+    -- | Lift a hashing function through the type constructor.
+    liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 
 class Hashable2 t where
-  liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
-  liftHash2 :: (a -> Int) -> (b -> Int) -> t a b -> Int
-  -- Figure out how to write this
-  -- liftHash2 f g = liftHashWithSalt2 f g defaultSalt
+    -- | Lift a hashing function through the binary type constructor.
+    liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
 
-hash1 :: (Hashable1 f, Hashable a) => f a -> Int
-hash1 = liftHash hash
-
+-- | Lift the 'hashWithSalt' function through the type constructor.
+--
+-- > hashWithSalt1 = liftHashWithSalt hashWithSalt
 hashWithSalt1 :: (Hashable1 f, Hashable a) => Int -> f a -> Int
 hashWithSalt1 = liftHashWithSalt hashWithSalt
 
-hash2 :: (Hashable2 f, Hashable a, Hashable b) => f a b -> Int
-hash2 = liftHash2 hash hash
-
+-- | Lift the 'hashWithSalt' function through the type constructor.
+--
+-- > hashWithSalt2 = liftHashWithSalt2 hashWithSalt hashWithSalt
 hashWithSalt2 :: (Hashable2 f, Hashable a, Hashable b) => Int -> f a b -> Int
 hashWithSalt2 = liftHashWithSalt2 hashWithSalt hashWithSalt
+
+-- | Lift the 'hashWithSalt' function halfway through the type constructor.
+-- This function makes a suitable default implementation of 'liftHashWithSalt',
+-- given that the type constructor @t@ in question can unify with @f a@.
+defaultLiftHashWithSalt :: (Hashable2 f, Hashable a) => (Int -> b -> Int) -> Int -> f a b -> Int
+defaultLiftHashWithSalt h = liftHashWithSalt2 hashWithSalt h
 
 -- Since we support a generic implementation of 'hashWithSalt' we
 -- cannot also provide a default implementation for that method for
@@ -425,14 +426,23 @@ distinguisher = fromIntegral $ (maxBound :: Word) `quot` 3
 instance Hashable a => Hashable (Maybe a) where
     hash Nothing = 0
     hash (Just a) = distinguisher `hashWithSalt` a
-    hashWithSalt s Nothing = s `combine` 0
-    hashWithSalt s (Just a) = s `combine` distinguisher `hashWithSalt` a
+    hashWithSalt = hashWithSalt1
+
+instance Hashable1 Maybe where
+    liftHashWithSalt _ s Nothing = s `combine` 0
+    liftHashWithSalt h s (Just a) = s `combine` distinguisher `h` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hash (Left a)  = 0 `hashWithSalt` a
     hash (Right b) = distinguisher `hashWithSalt` b
-    hashWithSalt s (Left a)  = s `combine` 0 `hashWithSalt` a
-    hashWithSalt s (Right b) = s `combine` distinguisher `hashWithSalt` b
+    hashWithSalt = hashWithSalt1
+
+instance Hashable a => Hashable1 (Either a) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance Hashable2 Either where
+    liftHashWithSalt2 h _ s (Left a) = s `combine` 0 `h` a
+    liftHashWithSalt2 _ h s (Right b) = s `combine` distinguisher `h` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
@@ -487,16 +497,13 @@ data SPInt = SP !Int !Int
 
 instance Hashable a => Hashable [a] where
     {-# SPECIALIZE instance Hashable [Char] #-}
-    hashWithSalt salt arr = finalise (foldl' step (SP salt 0) arr)
+    hashWithSalt = hashWithSalt1
+
+instance Hashable1 [] where
+    liftHashWithSalt h salt arr = finalise (foldl' step (SP salt 0) arr)
       where
         finalise (SP s l) = hashWithSalt s l
-        step (SP s l) x   = SP (hashWithSalt s x) (l + 1)
-
--- instance Hashable1 [] where
---     liftHashWithSalt h salt arr = finalise (foldl' step (SP salt 0) arr)
---       where
---         finalise (SP s l) = hashWithSalt s l
---         step (SP s l) x   = SP (h s x) (l + 1)
+        step (SP s l) x   = SP (h s x) (l + 1)
 
 instance Hashable B.ByteString where
     hashWithSalt salt bs = B.inlinePerformIO $
@@ -639,17 +646,29 @@ instance Hashable Version where
         salt `hashWithSalt` branch `hashWithSalt` tags
 
 #if MIN_VERSION_base(4,7,0)
+-- Using hashWithSalt1 would cause needless constraint
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
+instance Hashable1 Fixed where
+    liftHashWithSalt _ salt (MkFixed i) = hashWithSalt salt i
 #endif
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable a => Hashable (Identity a) where
-    hashWithSalt salt (Identity x) = hashWithSalt salt x
+    hashWithSalt = hashWithSalt1
+instance Hashable1 Identity where
+    liftHashWithSalt h salt (Identity x) = h salt x
 #endif
 
+-- Using hashWithSalt1 would cause needless constraint
 instance Hashable a => Hashable (Const a b) where
     hashWithSalt salt (Const x) = hashWithSalt salt x
+
+instance Hashable a => Hashable1 (Const a) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance Hashable2 Const where
+    liftHashWithSalt2 f _ salt (Const x) = f salt x
 
 -- instances formerly provided by 'semigroups' package
 #if MIN_VERSION_base(4,9,0)
