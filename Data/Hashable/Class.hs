@@ -41,6 +41,7 @@ module Data.Hashable.Class
     , hashPtrWithSalt
     , hashByteArray
     , hashByteArrayWithSalt
+    , defaultHashWithSalt
       -- * Higher Rank Functions
     , hashWithSalt1
     , hashWithSalt2
