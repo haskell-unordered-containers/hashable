@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, FlexibleInstances, KindSignatures,
              ScopedTypeVariables, TypeOperators,
-             MultiParamTypeClasses, GADTs #-}
+             MultiParamTypeClasses, GADTs, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 ------------------------------------------------------------------------
@@ -49,6 +49,9 @@ instance GHashable One Par1 where
 instance Hashable1 f => GHashable One (Rec1 f) where
     ghashWithSalt (HashArgs1 h) salt = liftHashWithSalt h salt . unRec1
 
+instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
+    ghashWithSalt targs salt = liftHashWithSalt (ghashWithSalt targs) salt . unComp1
+
 class GSum arity f where
     hashSum :: HashArgs arity a -> Int -> Int -> Int -> f a -> Int
 
@@ -67,11 +70,6 @@ instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
 
 instance GHashable arity a => GSum arity (C1 c a) where
     hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
-    {-# INLINE hashSum #-}
-
-instance GSum One Par1 where
-    hashSum (HashArgs1 h) !salt !code _ (Par1 x) =
-      h (hashWithSalt salt code) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
