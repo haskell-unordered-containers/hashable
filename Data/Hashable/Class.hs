@@ -30,7 +30,7 @@ module Data.Hashable.Class
 #ifdef GENERICS
       -- ** Support for generics
     , GHashable(..)
-    , ToHash(..)
+    , HashArgs(..)
     , Zero
     , One
 #endif
@@ -199,18 +199,18 @@ class Hashable a where
 
 #ifdef GENERICS
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
-    hashWithSalt salt = ghashWithSalt ToHash0 salt . from
+    hashWithSalt salt = ghashWithSalt HashArgs0 salt . from
 
 data Zero = Zero
 data One = One
 
-data ToHash arity a where
-    ToHash0 :: ToHash Zero a
-    ToHash1 :: (Int -> a -> Int) -> ToHash One a
+data HashArgs arity a where
+    HashArgs0 :: HashArgs Zero a
+    HashArgs1 :: (Int -> a -> Int) -> HashArgs One a
 
 -- | The class of types that can be generically hashed.
 class GHashable arity f where
-    ghashWithSalt :: ToHash arity a -> Int -> f a -> Int
+    ghashWithSalt :: HashArgs arity a -> Int -> f a -> Int
 
 #endif
 
@@ -219,7 +219,7 @@ class Hashable1 t where
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 #ifdef GENERICS
     default liftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
-    liftHashWithSalt h salt = ghashWithSalt (ToHash1 h) salt . from1
+    liftHashWithSalt h salt = ghashWithSalt (HashArgs1 h) salt . from1
 #endif
 
 class Hashable2 t where

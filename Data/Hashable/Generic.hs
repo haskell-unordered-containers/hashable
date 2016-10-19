@@ -44,13 +44,13 @@ instance Hashable a => GHashable arity (K1 i a) where
     ghashWithSalt _ = hashUsing unK1
 
 instance GHashable One Par1 where
-    ghashWithSalt (ToHash1 h) salt = h salt . unPar1
+    ghashWithSalt (HashArgs1 h) salt = h salt . unPar1
 
 instance Hashable1 f => GHashable One (Rec1 f) where
-    ghashWithSalt (ToHash1 h) salt = liftHashWithSalt h salt . unRec1
+    ghashWithSalt (HashArgs1 h) salt = liftHashWithSalt h salt . unRec1
 
 class GSum arity f where
-    hashSum :: ToHash arity a -> Int -> Int -> Int -> f a -> Int
+    hashSum :: HashArgs arity a -> Int -> Int -> Int -> f a -> Int
 
 instance (GSum arity a, GSum arity b, SumSize a, SumSize b) => GHashable arity (a :+: b) where
     ghashWithSalt toHash salt = hashSum toHash salt 0 size
@@ -70,7 +70,7 @@ instance GHashable arity a => GSum arity (C1 c a) where
     {-# INLINE hashSum #-}
 
 instance GSum One Par1 where
-    hashSum (ToHash1 h) !salt !code _ (Par1 x) =
+    hashSum (HashArgs1 h) !salt !code _ (Par1 x) =
       h (hashWithSalt salt code) x
     {-# INLINE hashSum #-}
 
