@@ -72,6 +72,7 @@ module Data.Hashable
 
 import Data.String (IsString(..))
 import Data.Typeable (Typeable)
+import Data.Foldable (Foldable(foldr))
 import Data.Hashable.Class
 #ifdef GENERICS
 import Data.Hashable.Generic ()
@@ -223,7 +224,7 @@ hashed a = Hashed a (hash a)
 unhashed :: Hashed a -> a
 unhashed (Hashed a _) = a
 
--- | Uses precomputed hash detect inequality faster
+-- | Uses precomputed hash to detect inequality faster
 instance Eq a => Eq (Hashed a) where
   Hashed a ha == Hashed b hb = ha == hb && a == b
 
