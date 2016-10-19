@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns, FlexibleInstances, KindSignatures,
-             ScopedTypeVariables, TypeOperators #-}
+             ScopedTypeVariables, TypeOperators,
+             MultiParamTypeClasses, GADTs #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 ------------------------------------------------------------------------
@@ -21,43 +22,56 @@ import Data.Bits (shiftR)
 import Data.Hashable.Class
 import GHC.Generics
 
+
 -- Type without constructors
-instance GHashable V1 where
-    ghashWithSalt salt _ = hashWithSalt salt ()
+instance GHashable arity V1 where
+    ghashWithSalt _ salt _ = hashWithSalt salt ()
 
 -- Constructor without arguments
-instance GHashable U1 where
-    ghashWithSalt salt U1 = hashWithSalt salt ()
+instance GHashable arity U1 where
+    ghashWithSalt _ salt U1 = hashWithSalt salt ()
 
-instance (GHashable a, GHashable b) => GHashable (a :*: b) where
-    ghashWithSalt salt (x :*: y) = salt `ghashWithSalt` x `ghashWithSalt` y
+instance (GHashable arity a, GHashable arity b) => GHashable arity (a :*: b) where
+    ghashWithSalt toHash salt (x :*: y) =
+      (ghashWithSalt toHash (ghashWithSalt toHash salt x) y)
 
 -- Metadata (constructor name, etc)
-instance GHashable a => GHashable (M1 i c a) where
-    ghashWithSalt salt = ghashWithSalt salt . unM1
+instance GHashable arity a => GHashable arity (M1 i c a) where
+    ghashWithSalt targs salt = ghashWithSalt targs salt . unM1
 
 -- Constants, additional parameters, and rank-1 recursion
-instance Hashable a => GHashable (K1 i a) where
-    ghashWithSalt = hashUsing unK1
+instance Hashable a => GHashable arity (K1 i a) where
+    ghashWithSalt _ = hashUsing unK1
 
-class GSum f where
-    hashSum :: Int -> Int -> Int -> f a -> Int
+instance GHashable One Par1 where
+    ghashWithSalt (ToHash1 h) salt = h salt . unPar1
 
-instance (GSum a, GSum b, SumSize a, SumSize b) => GHashable (a :+: b) where
-    ghashWithSalt salt = hashSum salt 0 size
+instance Hashable1 f => GHashable One (Rec1 f) where
+    ghashWithSalt (ToHash1 h) salt = liftHashWithSalt h salt . unRec1
+
+class GSum arity f where
+    hashSum :: ToHash arity a -> Int -> Int -> Int -> f a -> Int
+
+instance (GSum arity a, GSum arity b, SumSize a, SumSize b) => GHashable arity (a :+: b) where
+    ghashWithSalt toHash salt = hashSum toHash salt 0 size
         where size = unTagged (sumSize :: Tagged (a :+: b))
 
-instance (GSum a, GSum b) => GSum (a :+: b) where
-    hashSum !salt !code !size s = case s of
-                                    L1 x -> hashSum salt code           sizeL x
-                                    R1 x -> hashSum salt (code + sizeL) sizeR x
-        where
-          sizeL = size `shiftR` 1
-          sizeR = size - sizeL
+instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
+    hashSum toHash !salt !code !size s = case s of
+        L1 x -> hashSum toHash salt code           sizeL x
+        R1 x -> hashSum toHash salt (code + sizeL) sizeR x
+      where
+        sizeL = size `shiftR` 1
+        sizeR = size - sizeL
     {-# INLINE hashSum #-}
 
-instance GHashable a => GSum (C1 c a) where
-    hashSum !salt !code _ x = salt `hashWithSalt` code `ghashWithSalt` x
+instance GHashable arity a => GSum arity (C1 c a) where
+    hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
+    {-# INLINE hashSum #-}
+
+instance GSum One Par1 where
+    hashSum (ToHash1 h) !salt !code _ (Par1 x) =
+      h (hashWithSalt salt code) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
@@ -71,3 +85,4 @@ instance (SumSize a, SumSize b) => SumSize (a :+: b) where
 
 instance SumSize (C1 c a) where
     sumSize = Tagged 1
+

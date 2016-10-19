@@ -1,7 +1,8 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
              ScopedTypeVariables, UnliftedFFITypes #-}
 #ifdef GENERICS
-{-# LANGUAGE DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
+    MultiParamTypeClasses #-}
 #endif
 
 ------------------------------------------------------------------------
@@ -29,6 +30,9 @@ module Data.Hashable.Class
 #ifdef GENERICS
       -- ** Support for generics
     , GHashable(..)
+    , ToHash(..)
+    , Zero
+    , One
 #endif
 
       -- * Creating new instances
@@ -193,17 +197,29 @@ class Hashable a where
     hash = hashWithSalt defaultSalt
 
 #ifdef GENERICS
-    default hashWithSalt :: (Generic a, GHashable (Rep a)) => Int -> a -> Int
-    hashWithSalt salt = ghashWithSalt salt . from
+    default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
+    hashWithSalt salt = ghashWithSalt ToHash0 salt . from
+
+data Zero = Zero
+data One = One
+
+data ToHash arity a where
+    ToHash0 :: ToHash Zero a
+    ToHash1 :: (Int -> a -> Int) -> ToHash One a
 
 -- | The class of types that can be generically hashed.
-class GHashable f where
-    ghashWithSalt :: Int -> f a -> Int
+class GHashable arity f where
+    ghashWithSalt :: ToHash arity a -> Int -> f a -> Int
+
 #endif
 
 class Hashable1 t where
     -- | Lift a hashing function through the type constructor.
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
+#ifdef GENERICS
+    default liftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
+    liftHashWithSalt h salt = ghashWithSalt (ToHash1 h) salt . from1
+#endif
 
 class Hashable2 t where
     -- | Lift a hashing function through the binary type constructor.
