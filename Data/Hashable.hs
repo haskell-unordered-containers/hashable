@@ -235,6 +235,12 @@ instance Hashable a => Hashable (Hashed a) where
   hashWithSalt = defaultHashWithSalt
   hash (Hashed _ h) = h
 
+-- This instance is a little unsettling. It is unusal for
+-- 'liftHashWithSalt' to ignore its first argument when a
+-- value is actually available for it to work on.
+instance Hashable1 Hashed where
+  liftHashWithSalt _ s (Hashed _ h) = defaultHashWithSalt s h
+
 instance (IsString a, Hashable a) => IsString (Hashed a) where
   fromString s = let r = fromString s in Hashed r (hash r)
 
