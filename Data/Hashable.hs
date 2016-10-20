@@ -78,6 +78,10 @@ import Data.Hashable.Class
 import Data.Foldable (Foldable(foldr))
 #endif
 
+#if MIN_VERSION_base(4,9,0)
+import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..))
+#endif
+
 #ifdef GENERICS
 import Data.Hashable.Generic ()
 #endif
@@ -218,7 +222,7 @@ import Data.Hashable.Generic ()
 
 -- | A hashable value along with the result of the 'hash' function.
 data Hashed a = Hashed a {-# UNPACK #-} !Int
-  deriving (Typeable,Show)
+  deriving (Typeable)
 
 -- | Wrap a hashable value, caching the 'hash' function result.
 hashed :: Hashable a => a -> Hashed a
@@ -235,6 +239,9 @@ instance Eq a => Eq (Hashed a) where
 instance Ord a => Ord (Hashed a) where
   Hashed a _ `compare` Hashed b _ = a `compare` b
 
+instance Show a => Show (Hashed a) where
+  showsPrec d (Hashed a _) = showsUnaryWith showsPrec "hashed" d a
+
 instance Hashable a => Hashable (Hashed a) where
   hashWithSalt = defaultHashWithSalt
   hash (Hashed _ h) = h
@@ -250,4 +257,24 @@ instance (IsString a, Hashable a) => IsString (Hashed a) where
 
 instance Foldable Hashed where
   foldr f acc (Hashed a _) = f a acc
+
+-- instances for @Data.Functor.Classes@ higher rank typeclasses
+-- in base-4.9 and onward.
+#if MIN_VERSION_base(4,9,0)
+instance Eq1 Hashed where
+  liftEq f (Hashed a ha) (Hashed b hb) = ha == hb && f a b
+
+instance Ord1 Hashed where
+  liftCompare f (Hashed a _) (Hashed b _) = f a b
+
+instance Show1 Hashed where
+  liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
+#endif
+
+-- This function is copied from Data.Functor.Classes, which does
+-- not export it.
+showsUnaryWith :: (Int -> a -> ShowS) -> String -> Int -> a -> ShowS
+showsUnaryWith sp name d x = showParen (d > 10) $
+    showString name . showChar ' ' . sp 11 x
+
 
