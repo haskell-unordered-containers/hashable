@@ -242,7 +242,7 @@ instance Ord a => Ord (Hashed a) where
 instance Show a => Show (Hashed a) where
   showsPrec d (Hashed a _) = showsUnaryWith showsPrec "hashed" d a
 
-instance Hashable a => Hashable (Hashed a) where
+instance Hashable (Hashed a) where
   hashWithSalt = defaultHashWithSalt
   hash (Hashed _ h) = h
 
