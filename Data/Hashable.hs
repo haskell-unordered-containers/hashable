@@ -79,7 +79,7 @@ import Data.Foldable (Foldable(foldr))
 #endif
 
 #if MIN_VERSION_base(4,9,0)
-import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..))
+import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..),showsUnaryWith)
 #endif
 
 #ifdef GENERICS
@@ -240,7 +240,8 @@ instance Ord a => Ord (Hashed a) where
   Hashed a _ `compare` Hashed b _ = a `compare` b
 
 instance Show a => Show (Hashed a) where
-  showsPrec d (Hashed a _) = showsUnaryWith showsPrec "hashed" d a
+  showsPrec d (Hashed a _) = showParen (d > 10) $
+    showString "hashed" . showChar ' ' . showsPrec 11 a
 
 instance Hashable (Hashed a) where
   hashWithSalt = defaultHashWithSalt
@@ -270,11 +271,4 @@ instance Ord1 Hashed where
 instance Show1 Hashed where
   liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
 #endif
-
--- This function is copied from Data.Functor.Classes, which does
--- not export it.
-showsUnaryWith :: (Int -> a -> ShowS) -> String -> Int -> a -> ShowS
-showsUnaryWith sp name d x = showParen (d > 10) $
-    showString name . showChar ' ' . sp 11 x
-
 
