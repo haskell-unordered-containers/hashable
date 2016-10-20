@@ -72,8 +72,12 @@ module Data.Hashable
 
 import Data.String (IsString(..))
 import Data.Typeable (Typeable)
-import Data.Foldable (Foldable(foldr))
 import Data.Hashable.Class
+
+#if !(MIN_VERSION_base(4,8,0))
+import Data.Foldable (Foldable(foldr))
+#endif
+
 #ifdef GENERICS
 import Data.Hashable.Generic ()
 #endif

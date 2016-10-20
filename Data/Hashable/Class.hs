@@ -2,7 +2,7 @@
              ScopedTypeVariables, UnliftedFFITypes #-}
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
-    MultiParamTypeClasses #-}
+    MultiParamTypeClasses, EmptyDataDecls #-}
 #endif
 
 ------------------------------------------------------------------------
@@ -75,6 +75,10 @@ import GHC.Prim (ThreadId#)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
+
+#if !(MIN_VERSION_base(4,7,0))
+import Data.Proxy (Proxy)
+#endif
 
 #if MIN_VERSION_base(4,7,0)
 import Data.Fixed (Fixed(..))
@@ -205,8 +209,8 @@ class Hashable a where
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
     hashWithSalt salt = ghashWithSalt HashArgs0 salt . from
 
-data Zero = Zero
-data One = One
+data Zero
+data One
 
 data HashArgs arity a where
     HashArgs0 :: HashArgs Zero a
