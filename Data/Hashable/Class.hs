@@ -471,37 +471,73 @@ instance Hashable2 Either where
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
-    hashWithSalt s (a1, a2) = s `hashWithSalt` a1 `hashWithSalt` a2
+    hashWithSalt = hashWithSalt1
+
+instance Hashable a1 => Hashable1 ((,) a1) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance Hashable2 (,) where
+    liftHashWithSalt2 h1 h2 s (a1, a2) = s `h1` a1 `h2` a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
     hash (a1, a2, a3) = hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-    hashWithSalt s (a1, a2, a3) = s `hashWithSalt` a1 `hashWithSalt` a2
-                        `hashWithSalt` a3
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable a1, Hashable a2) => Hashable1 ((,,) a1 a2) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance Hashable a1 => Hashable2 ((,,) a1) where
+    liftHashWithSalt2 h1 h2 s (a1, a2, a3) =
+      (s `hashWithSalt` a1) `h1` a2 `h2` a3
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
     hash (a1, a2, a3, a4) = hash a1 `hashWithSalt` a2
                             `hashWithSalt` a3 `hashWithSalt` a4
-    hashWithSalt s (a1, a2, a3, a4) = s `hashWithSalt` a1 `hashWithSalt` a2
-                            `hashWithSalt` a3 `hashWithSalt` a4
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable a1, Hashable a2, Hashable a3) => Hashable1 ((,,,) a1 a2 a3) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance (Hashable a1, Hashable a2) => Hashable2 ((,,,) a1 a2) where
+    liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4) =
+      (s `hashWithSalt` a1 `hashWithSalt` a2) `h1` a3 `h2` a4
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
     hash (a1, a2, a3, a4, a5) =
         hash a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5
-    hashWithSalt s (a1, a2, a3, a4, a5) =
-        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable a1, Hashable a2, Hashable a3,
+          Hashable a4) => Hashable1 ((,,,,) a1 a2 a3 a4) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance (Hashable a1, Hashable a2, Hashable a3)
+      => Hashable2 ((,,,,) a1 a2 a3) where
+    liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5) =
+      (s `hashWithSalt` a1 `hashWithSalt` a2
+         `hashWithSalt` a3) `h1` a4 `h2` a5
+
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
     hash (a1, a2, a3, a4, a5, a6) =
         hash a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
-    hashWithSalt s (a1, a2, a3, a4, a5, a6) =
-        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
+    hashWithSalt = hashWithSalt1
+
+instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4,
+          Hashable a5) => Hashable1 ((,,,,,) a1 a2 a3 a4 a5) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance (Hashable a1, Hashable a2, Hashable a3,
+          Hashable a4) => Hashable2 ((,,,,,) a1 a2 a3 a4) where
+    liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5, a6) =
+      (s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+         `hashWithSalt` a4) `h1` a5 `h2` a6
+
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
@@ -512,6 +548,15 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
     hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
+
+instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5, Hashable a6) => Hashable1 ((,,,,,,) a1 a2 a3 a4 a5 a6) where
+    liftHashWithSalt = defaultLiftHashWithSalt
+
+instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4,
+          Hashable a5) => Hashable2 ((,,,,,,) a1 a2 a3 a4 a5) where
+    liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5, a6, a7) =
+      (s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+         `hashWithSalt` a4 `hashWithSalt` a5) `h1` a6 `h2` a7
 
 instance Hashable (StableName a) where
     hash = hashStableName
