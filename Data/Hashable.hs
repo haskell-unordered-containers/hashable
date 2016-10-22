@@ -70,17 +70,7 @@ module Data.Hashable
     , unhashed
     ) where
 
-import Data.String (IsString(..))
-import Data.Typeable (Typeable)
 import Data.Hashable.Class
-
-#if !(MIN_VERSION_base(4,8,0))
-import Data.Foldable (Foldable(foldr))
-#endif
-
-#if MIN_VERSION_base(4,9,0)
-import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..),showsUnaryWith)
-#endif
 
 #ifdef GENERICS
 import Data.Hashable.Generic ()
@@ -219,56 +209,4 @@ import Data.Hashable.Generic ()
 -- >                                 (1::Int) `hashWithSalt` n
 -- >     hashWithSalt s (Months n) = s `hashWithSalt`
 -- >                                 (2::Int) `hashWithSalt` n
-
--- | A hashable value along with the result of the 'hash' function.
-data Hashed a = Hashed a {-# UNPACK #-} !Int
-  deriving (Typeable)
-
--- | Wrap a hashable value, caching the 'hash' function result.
-hashed :: Hashable a => a -> Hashed a
-hashed a = Hashed a (hash a)
-
--- | Unwrap hashed value.
-unhashed :: Hashed a -> a
-unhashed (Hashed a _) = a
-
--- | Uses precomputed hash to detect inequality faster
-instance Eq a => Eq (Hashed a) where
-  Hashed a ha == Hashed b hb = ha == hb && a == b
-
-instance Ord a => Ord (Hashed a) where
-  Hashed a _ `compare` Hashed b _ = a `compare` b
-
-instance Show a => Show (Hashed a) where
-  showsPrec d (Hashed a _) = showParen (d > 10) $
-    showString "hashed" . showChar ' ' . showsPrec 11 a
-
-instance Hashable (Hashed a) where
-  hashWithSalt = defaultHashWithSalt
-  hash (Hashed _ h) = h
-
--- This instance is a little unsettling. It is unusal for
--- 'liftHashWithSalt' to ignore its first argument when a
--- value is actually available for it to work on.
-instance Hashable1 Hashed where
-  liftHashWithSalt _ s (Hashed _ h) = defaultHashWithSalt s h
-
-instance (IsString a, Hashable a) => IsString (Hashed a) where
-  fromString s = let r = fromString s in Hashed r (hash r)
-
-instance Foldable Hashed where
-  foldr f acc (Hashed a _) = f a acc
-
--- instances for @Data.Functor.Classes@ higher rank typeclasses
--- in base-4.9 and onward.
-#if MIN_VERSION_base(4,9,0)
-instance Eq1 Hashed where
-  liftEq f (Hashed a ha) (Hashed b hb) = ha == hb && f a b
-
-instance Ord1 Hashed where
-  liftCompare f (Hashed a _) (Hashed b _) = f a b
-
-instance Show1 Hashed where
-  liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
-#endif
 
