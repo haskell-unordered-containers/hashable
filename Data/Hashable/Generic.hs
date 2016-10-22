@@ -69,7 +69,8 @@ instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
     {-# INLINE hashSum #-}
 
 instance GHashable arity a => GSum arity (C1 c a) where
-    hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
+    -- hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
+    hashSum toHash !salt !code _ (M1 x) = hashWithSalt salt (ghashWithSalt toHash code x)
     {-# INLINE hashSum #-}
 
 class SumSize f where
