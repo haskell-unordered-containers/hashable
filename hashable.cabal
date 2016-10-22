@@ -122,6 +122,9 @@ benchmark benchmarks
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
+
   include-dirs:
     benchmarks/cbits
 
