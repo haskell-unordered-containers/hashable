@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-    UnboxedTuples #-}
+    UnboxedTuples, DeriveGeneric #-}
 
 module Main (main) where
 
@@ -15,6 +15,7 @@ import Data.Word
 import Foreign.C.Types (CInt(..), CLong(..), CSize(..))
 import Foreign.Ptr
 import Data.ByteString.Internal
+import GHC.Generics (Generic)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -34,6 +35,10 @@ main = do
     fp512 <- mallocForeignPtrBytes 512
     let !mb = 2^(20 :: Int)  -- 1 Mb
     fp1Mb <- mallocForeignPtrBytes mb
+
+    let exP = P 22.0203 234.19 'x' 6424
+        exS = S3
+        exPS = PS3 'z' 7715
 
     -- We don't care about the contents of these either.
     let !ba5 = new 5;     !ba8 = new 8;     !ba11 = new 11; !ba40 = new 40
@@ -251,6 +256,11 @@ main = do
           , bench "jenkins32a" $ whnf hash_jenkins_32a 0xdeadbeef
           , bench "jenkins32b" $ whnf hash_jenkins_32b 0xdeadbeef
           ]
+        , bgroup "Generic"
+          [ bench "product" $ whnf hash exP
+          , bench "sum" $ whnf hash exS
+          , bench "product and sum" $ whnf hash exPS
+          ]
         ]
 
 data ByteArray = BA { unBA :: !ByteArray# }
@@ -285,3 +295,20 @@ foreign import ccall unsafe "hash_jenkins_32a" hash_jenkins_32a
     :: Word32 -> Word32
 foreign import ccall unsafe "hash_jenkins_32b" hash_jenkins_32b
     :: Word32 -> Word32
+
+data PS
+  = PS1 Int Char Bool
+  | PS2 String ()
+  | PS3 Char Int
+  deriving (Generic)
+
+data P = P Double Float Char Int
+  deriving (Generic)
+
+data S = S1 | S2 | S3 | S4 | S5
+  deriving (Generic)
+
+instance Hashable PS
+instance Hashable P
+instance Hashable S
+

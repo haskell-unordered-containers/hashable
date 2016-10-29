@@ -9,7 +9,9 @@
 
 module Properties (properties) where
 
-import Data.Hashable (Hashable, hash, hashByteArray, hashPtr)
+import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
+         Hashed, hashed, unhashed, hashWithSalt)
+import Data.Hashable.Lifted (hashWithSalt1)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
@@ -208,6 +210,13 @@ pSum3_differ x = nub hs == hs
 
 #endif
 
+instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
+  arbitrary = fmap hashed arbitrary
+  shrink xs = map hashed $ shrink $ unhashed xs
+
+pLiftedHashed :: Int -> Hashed (Either Int String) -> Bool
+pLiftedHashed s h = hashWithSalt s h == hashWithSalt1 s h
+
 properties :: [Test]
 properties =
     [ testProperty "bernstein" pHash
@@ -239,6 +248,9 @@ properties =
       , testProperty "sum3_differ" pSum3_differ
       ]
 #endif
+    , testGroup "lifted law"
+      [ testProperty "Hashed" pLiftedHashed
+      ]
     ]
 
 ------------------------------------------------------------------------

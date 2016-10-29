@@ -37,8 +37,14 @@ Flag sse41
   Default: False
   Manual: True
 
+Flag examples
+  Description: Build example modules
+  Default: False
+  Manual: True
+
 Library
   Exposed-modules:   Data.Hashable
+                     Data.Hashable.Lifted
   Other-modules:     Data.Hashable.Class
   Build-depends:     base >= 4.0 && < 4.10,
                      bytestring >= 0.9 && < 0.11
@@ -116,6 +122,9 @@ benchmark benchmarks
   if impl(ghc) && flag(integer-gmp)
     Build-depends:   integer-gmp >= 0.2
 
+  if impl(ghc >= 7.2.1)
+    CPP-Options:     -DGENERICS
+
   include-dirs:
     benchmarks/cbits
 
@@ -146,6 +155,15 @@ benchmark benchmarks
     other-modules:     Data.Hashable.RandomSource
     if os(windows)
       extra-libraries: advapi32
+
+
+Executable hashable-examples
+  if flag(examples)
+    build-depends: base, hashable
+  else
+    buildable: False
+  hs-source-dirs: examples
+  main-is: Main.hs
 
 source-repository head
   type:     git

@@ -70,10 +70,8 @@ module Data.Hashable
     , unhashed
     ) where
 
-import Data.String (IsString(..))
-import Data.Typeable (Typeable)
-import Data.Foldable (Foldable(foldr))
 import Data.Hashable.Class
+
 #ifdef GENERICS
 import Data.Hashable.Generic ()
 #endif
@@ -211,33 +209,4 @@ import Data.Hashable.Generic ()
 -- >                                 (1::Int) `hashWithSalt` n
 -- >     hashWithSalt s (Months n) = s `hashWithSalt`
 -- >                                 (2::Int) `hashWithSalt` n
-
--- | A hashable value along with the result of the 'hash' function.
-data Hashed a = Hashed a {-# UNPACK #-} !Int
-  deriving (Typeable,Show)
-
--- | Wrap a hashable value, caching the 'hash' function result.
-hashed :: Hashable a => a -> Hashed a
-hashed a = Hashed a (hash a)
-
--- | Unwrap hashed value.
-unhashed :: Hashed a -> a
-unhashed (Hashed a _) = a
-
--- | Uses precomputed hash to detect inequality faster
-instance Eq a => Eq (Hashed a) where
-  Hashed a ha == Hashed b hb = ha == hb && a == b
-
-instance Ord a => Ord (Hashed a) where
-  Hashed a _ `compare` Hashed b _ = a `compare` b
-
-instance Hashable a => Hashable (Hashed a) where
-  hashWithSalt = defaultHashWithSalt
-  hash (Hashed _ h) = h
-
-instance (IsString a, Hashable a) => IsString (Hashed a) where
-  fromString s = let r = fromString s in Hashed r (hash r)
-
-instance Foldable Hashed where
-  foldr f acc (Hashed a _) = f a acc
 
