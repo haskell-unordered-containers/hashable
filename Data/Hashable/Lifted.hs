@@ -43,7 +43,7 @@ import Data.Hashable.Class
 -- > instance (Hashable w, Hashable1 m) => Hashable1 (WriterT w m) where
 -- >     liftHashWithSalt h s (WriterT m) =
 -- >         liftHashWithSalt (liftHashWithSalt2 h hashWithSalt) s m
--- > instance (Hashable1 f, Functor f) => Hashable1 (Free f) where
+-- > instance Hashable1 f => Hashable1 (Free f) where
 -- >     liftHashWithSalt h = go where
 -- >         go s x = case x of
 -- >             Pure a -> h s a
@@ -54,7 +54,7 @@ import Data.Hashable.Class
 --
 -- > instance (Hashable w, Hashable1 m, Hashable a) => Hashable (WriterT w m a) where
 -- >     hashWithSalt = hashWithSalt1
--- > instance (Hashable1 f, Functor f, Hashable a) => Hashable (Free f a) where
+-- > instance (Hashable1 f, Hashable a) => Hashable (Free f a) where
 -- >     hashWithSalt = hashWithSalt1
 
 --
