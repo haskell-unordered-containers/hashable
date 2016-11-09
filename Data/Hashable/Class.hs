@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes #-}
+             ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable #-}
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
     MultiParamTypeClasses, EmptyDataDecls #-}
@@ -50,6 +50,8 @@ module Data.Hashable.Class
     , Hashed
     , hashed
     , unhashed
+    , mapHashed
+    , traverseHashed
     ) where
 
 import Control.Applicative (Const(..))
@@ -66,7 +68,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-import Data.Typeable
+import Data.Typeable (Typeable, TypeRep)
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
@@ -80,7 +82,10 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 
-#if !(MIN_VERSION_base(4,7,0))
+-- As we use qualified F.Foldable, we don't get warnings with newer base
+import qualified Data.Foldable as F
+
+#if MIN_VERSION_base(4,7,0)
 import Data.Proxy (Proxy)
 #endif
 
@@ -97,10 +102,13 @@ import GHC.Generics
 #endif
 
 #if __GLASGOW_HASKELL__ >= 710
+import Data.Typeable (typeRepFingerprint)
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 702
-import Data.Typeable.Internal(TypeRep(..))
+import Data.Typeable.Internal (TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
+#elif __GLASGOW_HASKELL__ >= 606
+import Data.Typeable (typeRepKey)
 #endif
 
 #if __GLASGOW_HASKELL__ >= 703
@@ -747,12 +755,14 @@ instance Hashable a => Hashable1 (Const a) where
 instance Hashable2 Const where
     liftHashWithSalt2 f _ salt (Const x) = f salt x
 
+#if MIN_VERSION_base(4,7,0)
 instance Hashable (Proxy a) where
     hash _ = 0
     hashWithSalt s _ = s
 
 instance Hashable1 Proxy where
     liftHashWithSalt _ s _ = s
+#endif
 
 -- instances formerly provided by 'semigroups' package
 #if MIN_VERSION_base(4,9,0)
@@ -842,8 +852,16 @@ instance Hashable1 Hashed where
 instance (IsString a, Hashable a) => IsString (Hashed a) where
   fromString s = let r = fromString s in Hashed r (hash r)
 
-instance Foldable Hashed where
+instance F.Foldable Hashed where
   foldr f acc (Hashed a _) = f a acc
+
+-- | 'Hashed' cannot be 'Functor'
+mapHashed :: Hashable b => (a -> b) -> Hashed a -> Hashed b
+mapHashed f (Hashed a _) = hashed (f a)
+
+-- | 'Hashed' cannot be 'Traversable'
+traverseHashed :: (Hashable b, Functor f) => (a -> f b) -> Hashed a -> f (Hashed b)
+traverseHashed f (Hashed a _) = fmap hashed (f a)
 
 -- instances for @Data.Functor.Classes@ higher rank typeclasses
 -- in base-4.9 and onward.
