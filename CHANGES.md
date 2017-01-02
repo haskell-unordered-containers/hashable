@@ -1,4 +1,10 @@
- * Add instances for: Ptr, FunPtr, IntPtr, WordPtr
+## Version 1.2.5.0
+
+  * Add `Hashable1` and `Hashable2`
+
+  * Add instances for: `Eq1`, `Ord1`, `Show1`, `Ptr`, `FunPtr`, `IntPtr`, `WordPtr`
+
+  * Add `Hashed` type for caching the `hash` function result.
 
 ## Version 1.2.4.0
 
