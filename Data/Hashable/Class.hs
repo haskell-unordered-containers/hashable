@@ -267,11 +267,10 @@ hashWithSalt2 = liftHashWithSalt2 hashWithSalt hashWithSalt
 defaultLiftHashWithSalt :: (Hashable2 f, Hashable a) => (Int -> b -> Int) -> Int -> f a b -> Int
 defaultLiftHashWithSalt h = liftHashWithSalt2 hashWithSalt h
 
--- Since we support a generic implementation of 'hashWithSalt' we
+-- | Since we support a generic implementation of 'hashWithSalt' we
 -- cannot also provide a default implementation for that method for
 -- the non-generic instance use case. Instead we provide
 -- 'defaultHashWith'.
-
 defaultHashWithSalt :: Hashable a => Int -> a -> Int
 defaultHashWithSalt salt x = salt `combine` hash x
 
