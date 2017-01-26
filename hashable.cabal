@@ -46,7 +46,7 @@ Library
   Exposed-modules:   Data.Hashable
                      Data.Hashable.Lifted
   Other-modules:     Data.Hashable.Class
-  Build-depends:     base >= 4.0 && < 4.10,
+  Build-depends:     base >= 4.0 && < 4.11,
                      bytestring >= 0.9 && < 0.11
   if impl(ghc)
     Build-depends:   ghc-prim,
