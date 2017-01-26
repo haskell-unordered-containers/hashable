@@ -2,6 +2,8 @@
 
   * Export `Hashable1` and `Hashable2`
 
+  * Support GHC 8.1
+
 ## Version 1.2.5.0
 
   * Add `Hashable1` and `Hashable2`
