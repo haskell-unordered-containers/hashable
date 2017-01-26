@@ -36,8 +36,7 @@ module Data.Hashable
 
       -- * Computing hash values
       Hashable(..)
-    , Hashable1(..)
-    , Hashable2(..)
+
       -- * Creating new instances
       -- | There are two ways to create new instances: by deriving
       -- instances automatically using GHC's generic programming
@@ -65,10 +64,6 @@ module Data.Hashable
     , hashByteArray
     , hashByteArrayWithSalt
 #endif
-      -- * Higher Rank Functions
-    , hashWithSalt1
-    , hashWithSalt2
-    , defaultLiftHashWithSalt
     -- * Caching hashes
     , Hashed
     , hashed
