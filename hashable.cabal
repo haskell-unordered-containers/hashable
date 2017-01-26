@@ -47,7 +47,8 @@ Library
                      Data.Hashable.Lifted
   Other-modules:     Data.Hashable.Class
   Build-depends:     base >= 4.0 && < 4.10,
-                     bytestring >= 0.9 && < 0.11
+                     bytestring >= 0.9 && < 0.11,
+                     deepseq >= 1.3
   if impl(ghc)
     Build-depends:   ghc-prim,
                      text >= 0.11.0.5

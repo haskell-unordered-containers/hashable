@@ -56,6 +56,7 @@ module Data.Hashable.Class
 
 import Control.Applicative (Const(..))
 import Control.Exception (assert)
+import Control.DeepSeq (NFData(rnf))
 import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
@@ -853,6 +854,9 @@ instance (IsString a, Hashable a) => IsString (Hashed a) where
 
 instance F.Foldable Hashed where
   foldr f acc (Hashed a _) = f a acc
+
+instance NFData a => NFData (Hashed a) where
+  rnf = rnf . unhashed
 
 -- | 'Hashed' cannot be 'Functor'
 mapHashed :: Hashable b => (a -> b) -> Hashed a -> Hashed b
