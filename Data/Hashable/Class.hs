@@ -1,5 +1,10 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable #-}
+             ScopedTypeVariables, UnliftedFFITypes #-}
+
+#if __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE PolyKinds #-} -- For TypeRep instances
+#endif
+
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
     MultiParamTypeClasses, EmptyDataDecls #-}
@@ -69,7 +74,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-import Data.Typeable (Typeable, TypeRep)
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
@@ -102,14 +106,17 @@ import Data.Functor.Identity (Identity(..))
 import GHC.Generics
 #endif
 
-#if __GLASGOW_HASKELL__ >= 710
-import Data.Typeable (typeRepFingerprint)
+#if   __GLASGOW_HASKELL__ >= 801
+import Type.Reflection (typeRepFingerprint, Typeable, TypeRep, SomeTypeRep(..))
+import GHC.Fingerprint.Type(Fingerprint(..))
+#elif __GLASGOW_HASKELL__ >= 710
+import Data.Typeable (typeRepFingerprint, Typeable, TypeRep)
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 702
-import Data.Typeable.Internal (TypeRep (..))
+import Data.Typeable.Internal (Typeable, TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 606
-import Data.Typeable (typeRepKey)
+import Data.Typeable (typeRepKey, Typeable, TypeRep)
 #endif
 
 #if __GLASGOW_HASKELL__ >= 703
@@ -641,6 +648,7 @@ instance Hashable WordPtr where
     hash n = fromIntegral n
     hashWithSalt = defaultHashWithSalt
 
+#if __GLASGOW_HASKELL__ < 801
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
 {-# INLINE hashTypeRep #-}
@@ -660,6 +668,23 @@ instance Hashable TypeRep where
     hash = hashTypeRep
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
+
+#else
+
+hashTypeRep :: Type.Reflection.TypeRep a -> Int
+hashTypeRep tr =
+    let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
+
+instance Hashable Type.Reflection.SomeTypeRep where
+    hash (Type.Reflection.SomeTypeRep r) = hashTypeRep r
+    hashWithSalt = defaultHashWithSalt
+    {-# INLINE hash #-}
+
+instance Hashable (Type.Reflection.TypeRep a) where
+    hash = hashTypeRep
+    hashWithSalt = defaultHashWithSalt
+    {-# INLINE hash #-}
+#endif
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Void where
