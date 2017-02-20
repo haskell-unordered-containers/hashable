@@ -64,7 +64,6 @@ import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -83,7 +82,7 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 
@@ -450,7 +449,7 @@ instance Hashable Float where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word32)
+            hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word32)
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -459,7 +458,7 @@ instance Hashable Double where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
+            hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word64)
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -598,7 +597,7 @@ instance Hashable1 [] where
         step (SP s l) x   = SP (h s x) (l + 1)
 
 instance Hashable B.ByteString where
-    hashWithSalt salt bs = B.inlinePerformIO $
+    hashWithSalt salt bs = unsafeDupablePerformIO $
                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
                            hashPtrWithSalt p (fromIntegral len) salt
 
@@ -659,7 +658,7 @@ hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
 -- Fingerprint is just the MD5, so taking any Int from it is fine
 hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
 #elif __GLASGOW_HASKELL__ >= 606
-hashTypeRep = B.inlinePerformIO . typeRepKey
+hashTypeRep = unsafeDupablePerformIO . typeRepKey
 #else
 hashTypeRep = hash . show
 #endif
