@@ -1,6 +1,10 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
              ScopedTypeVariables, UnliftedFFITypes #-}
 
+#if __GLASGOW_HASKELL__ < 710
+{-# LANGUAGE DeriveDataTypeable #-}
+#endif
+
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PolyKinds #-} -- For TypeRep instances
 #endif
