@@ -22,7 +22,6 @@ import Data.Bits (shiftR)
 import Data.Hashable.Class
 import GHC.Generics
 
-
 -- Type without constructors
 instance GHashable arity V1 where
     ghashWithSalt _ salt _ = hashWithSalt salt ()
@@ -52,25 +51,23 @@ instance Hashable1 f => GHashable One (Rec1 f) where
 instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
     ghashWithSalt targs salt = liftHashWithSalt (ghashWithSalt targs) salt . unComp1
 
-class GSum arity f where
-    hashSum :: HashArgs arity a -> Int -> Int -> Int -> f a -> Int
+class SumSize f => GSum arity f where
+    hashSum :: HashArgs arity a -> Int -> Int -> f a -> Int
+    -- hashSum args salt offset value = ...
 
-instance (GSum arity a, GSum arity b, SumSize a, SumSize b) => GHashable arity (a :+: b) where
-    ghashWithSalt toHash salt = hashSum toHash salt 0 size
-        where size = unTagged (sumSize :: Tagged (a :+: b))
+instance (GSum arity a, GSum arity b) => GHashable arity (a :+: b) where
+    ghashWithSalt toHash salt = hashSum toHash salt 0
 
 instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
-    hashSum toHash !salt !code !size s = case s of
-        L1 x -> hashSum toHash salt code           sizeL x
-        R1 x -> hashSum toHash salt (code + sizeL) sizeR x
+    hashSum toHash !salt !offset s = case s of
+        L1 x -> hashSum toHash salt offset x
+        R1 x -> hashSum toHash salt (offset + sizeL) x
       where
-        sizeL = size `shiftR` 1
-        sizeR = size - sizeL
+        sizeL = unTagged (sumSize :: Tagged a)
     {-# INLINE hashSum #-}
 
 instance GHashable arity a => GSum arity (C1 c a) where
-    -- hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
-    hashSum toHash !salt !code _ (M1 x) = hashWithSalt salt (ghashWithSalt toHash code x)
+    hashSum toHash !salt !offset (M1 x) = ghashWithSalt toHash (hashWithSalt salt offset) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
