@@ -53,21 +53,62 @@ instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
 
 class SumSize f => GSum arity f where
     hashSum :: HashArgs arity a -> Int -> Int -> f a -> Int
-    -- hashSum args salt offset value = ...
+    -- hashSum args salt index value = ...
 
+-- [Note: Hashing a sum type]
+--
+-- The tree structure is used in GHC.Generics to represent the sum (and
+-- product) part of the generic represention of the type, e.g.:
+--
+--   (C0 ... :+: C1 ...) :+: (C2 ... :+: (C3 ... :+: C4 ...))
+--
+-- The value constructed with C2 constructor is represented as (R1 (L1 ...)).
+-- Yet, if we think that this tree is a flat (heterogenous) list:
+--
+--   [C0 ..., C1 ..., C2 ..., C3 ..., C4... ]
+--
+-- then the value constructed with C2 is a (dependent) pair (2, ...), and
+-- hashing it is simple:
+--
+--   salt `hashWithSalt` (2 :: Int) `hashWithSalt` ...
+--
+-- This is what we do below. When drilling down the tree, we count how many
+-- leafs are to the left (`index` variable). At the leaf case C1, we'll have an
+-- actual index into the sum.
+--
+-- This works well for balanced data. However for recursive types like:
+--
+--   data Nat = Z | S Nat
+--
+-- the `hashWithSalt salt (S (S (S Z)))` is
+--
+--   salt `hashWithSalt` (1 :: Int) -- first S
+--        `hashWithSalt` (1 :: Int) -- second S
+--        `hashWithSalt` (1 :: Int) -- third S
+--        `hashWithSalt` (0 :: Int) -- Z
+--        `hashWithSalt` ()         -- U1
+--
+-- For that type the manual implementation:
+--
+--    instance Hashable Nat where
+--        hashWithSalt salt n = hashWithSalt salt (natToInteger n)
+--
+-- would be better performing CPU and hash-quality wise (assuming that
+-- Integer's Hashable is of high quality).
+--
 instance (GSum arity a, GSum arity b) => GHashable arity (a :+: b) where
     ghashWithSalt toHash salt = hashSum toHash salt 0
 
 instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
-    hashSum toHash !salt !offset s = case s of
-        L1 x -> hashSum toHash salt offset x
-        R1 x -> hashSum toHash salt (offset + sizeL) x
+    hashSum toHash !salt !index s = case s of
+        L1 x -> hashSum toHash salt index x
+        R1 x -> hashSum toHash salt (index + sizeL) x
       where
         sizeL = unTagged (sumSize :: Tagged a)
     {-# INLINE hashSum #-}
 
 instance GHashable arity a => GSum arity (C1 c a) where
-    hashSum toHash !salt !offset (M1 x) = ghashWithSalt toHash (hashWithSalt salt offset) x
+    hashSum toHash !salt !index (M1 x) = ghashWithSalt toHash (hashWithSalt salt index) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
