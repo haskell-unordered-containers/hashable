@@ -22,7 +22,6 @@ import Data.Bits (shiftR)
 import Data.Hashable.Class
 import GHC.Generics
 
-
 -- Type without constructors
 instance GHashable arity V1 where
     ghashWithSalt _ salt _ = hashWithSalt salt ()
@@ -52,25 +51,64 @@ instance Hashable1 f => GHashable One (Rec1 f) where
 instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
     ghashWithSalt targs salt = liftHashWithSalt (ghashWithSalt targs) salt . unComp1
 
-class GSum arity f where
-    hashSum :: HashArgs arity a -> Int -> Int -> Int -> f a -> Int
+class SumSize f => GSum arity f where
+    hashSum :: HashArgs arity a -> Int -> Int -> f a -> Int
+    -- hashSum args salt index value = ...
 
-instance (GSum arity a, GSum arity b, SumSize a, SumSize b) => GHashable arity (a :+: b) where
-    ghashWithSalt toHash salt = hashSum toHash salt 0 size
-        where size = unTagged (sumSize :: Tagged (a :+: b))
+-- [Note: Hashing a sum type]
+--
+-- The tree structure is used in GHC.Generics to represent the sum (and
+-- product) part of the generic represention of the type, e.g.:
+--
+--   (C0 ... :+: C1 ...) :+: (C2 ... :+: (C3 ... :+: C4 ...))
+--
+-- The value constructed with C2 constructor is represented as (R1 (L1 ...)).
+-- Yet, if we think that this tree is a flat (heterogenous) list:
+--
+--   [C0 ..., C1 ..., C2 ..., C3 ..., C4... ]
+--
+-- then the value constructed with C2 is a (dependent) pair (2, ...), and
+-- hashing it is simple:
+--
+--   salt `hashWithSalt` (2 :: Int) `hashWithSalt` ...
+--
+-- This is what we do below. When drilling down the tree, we count how many
+-- leafs are to the left (`index` variable). At the leaf case C1, we'll have an
+-- actual index into the sum.
+--
+-- This works well for balanced data. However for recursive types like:
+--
+--   data Nat = Z | S Nat
+--
+-- the `hashWithSalt salt (S (S (S Z)))` is
+--
+--   salt `hashWithSalt` (1 :: Int) -- first S
+--        `hashWithSalt` (1 :: Int) -- second S
+--        `hashWithSalt` (1 :: Int) -- third S
+--        `hashWithSalt` (0 :: Int) -- Z
+--        `hashWithSalt` ()         -- U1
+--
+-- For that type the manual implementation:
+--
+--    instance Hashable Nat where
+--        hashWithSalt salt n = hashWithSalt salt (natToInteger n)
+--
+-- would be better performing CPU and hash-quality wise (assuming that
+-- Integer's Hashable is of high quality).
+--
+instance (GSum arity a, GSum arity b) => GHashable arity (a :+: b) where
+    ghashWithSalt toHash salt = hashSum toHash salt 0
 
 instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
-    hashSum toHash !salt !code !size s = case s of
-        L1 x -> hashSum toHash salt code           sizeL x
-        R1 x -> hashSum toHash salt (code + sizeL) sizeR x
+    hashSum toHash !salt !index s = case s of
+        L1 x -> hashSum toHash salt index x
+        R1 x -> hashSum toHash salt (index + sizeL) x
       where
-        sizeL = size `shiftR` 1
-        sizeR = size - sizeL
+        sizeL = unTagged (sumSize :: Tagged a)
     {-# INLINE hashSum #-}
 
 instance GHashable arity a => GSum arity (C1 c a) where
-    -- hashSum toHash !salt !code _ (M1 x) = ghashWithSalt toHash (hashWithSalt salt code) x
-    hashSum toHash !salt !code _ (M1 x) = hashWithSalt salt (ghashWithSalt toHash code x)
+    hashSum toHash !salt !index (M1 x) = ghashWithSalt toHash (hashWithSalt salt index) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
