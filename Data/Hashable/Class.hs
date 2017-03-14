@@ -1,5 +1,14 @@
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable #-}
+             ScopedTypeVariables, UnliftedFFITypes #-}
+
+#if __GLASGOW_HASKELL__ < 710
+{-# LANGUAGE DeriveDataTypeable #-}
+#endif
+
+#if __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE PolyKinds #-} -- For TypeRep instances
+#endif
+
 #ifdef GENERICS
 {-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
     MultiParamTypeClasses, EmptyDataDecls #-}
@@ -59,7 +68,6 @@ import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Internal as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -69,7 +77,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
-import Data.Typeable (Typeable, TypeRep)
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.C (CString)
@@ -79,7 +86,7 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 
@@ -102,14 +109,17 @@ import Data.Functor.Identity (Identity(..))
 import GHC.Generics
 #endif
 
-#if __GLASGOW_HASKELL__ >= 710
-import Data.Typeable (typeRepFingerprint)
+#if   __GLASGOW_HASKELL__ >= 801
+import Type.Reflection (typeRepFingerprint, Typeable, TypeRep, SomeTypeRep(..))
+import GHC.Fingerprint.Type(Fingerprint(..))
+#elif __GLASGOW_HASKELL__ >= 710
+import Data.Typeable (typeRepFingerprint, Typeable, TypeRep)
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 702
-import Data.Typeable.Internal (TypeRep (..))
+import Data.Typeable.Internal (Typeable, TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 606
-import Data.Typeable (typeRepKey)
+import Data.Typeable (typeRepKey, Typeable, TypeRep)
 #endif
 
 #if __GLASGOW_HASKELL__ >= 703
@@ -443,7 +453,7 @@ instance Hashable Float where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word32)
+            hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word32)
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -452,7 +462,7 @@ instance Hashable Double where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
-            hash ((unsafePerformIO $ with x $ peek . castPtr) :: Word64)
+            hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word64)
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -591,7 +601,7 @@ instance Hashable1 [] where
         step (SP s l) x   = SP (h s x) (l + 1)
 
 instance Hashable B.ByteString where
-    hashWithSalt salt bs = B.inlinePerformIO $
+    hashWithSalt salt bs = unsafeDupablePerformIO $
                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
                            hashPtrWithSalt p (fromIntegral len) salt
 
@@ -641,6 +651,7 @@ instance Hashable WordPtr where
     hash n = fromIntegral n
     hashWithSalt = defaultHashWithSalt
 
+#if __GLASGOW_HASKELL__ < 801
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
 {-# INLINE hashTypeRep #-}
@@ -651,7 +662,7 @@ hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
 -- Fingerprint is just the MD5, so taking any Int from it is fine
 hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
 #elif __GLASGOW_HASKELL__ >= 606
-hashTypeRep = B.inlinePerformIO . typeRepKey
+hashTypeRep = unsafeDupablePerformIO . typeRepKey
 #else
 hashTypeRep = hash . show
 #endif
@@ -660,6 +671,23 @@ instance Hashable TypeRep where
     hash = hashTypeRep
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
+
+#else
+
+hashTypeRep :: Type.Reflection.TypeRep a -> Int
+hashTypeRep tr =
+    let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
+
+instance Hashable Type.Reflection.SomeTypeRep where
+    hash (Type.Reflection.SomeTypeRep r) = hashTypeRep r
+    hashWithSalt = defaultHashWithSalt
+    {-# INLINE hash #-}
+
+instance Hashable (Type.Reflection.TypeRep a) where
+    hash = hashTypeRep
+    hashWithSalt = defaultHashWithSalt
+    {-# INLINE hash #-}
+#endif
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Void where
