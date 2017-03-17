@@ -1,3 +1,9 @@
+## Version 1.2.6.0
+
+ * Add support for type-indexed `Typeable`.
+
+ * Rework the `Generic` hashable for sums.
+
 ## Version 1.2.5.0
 
   * Add `Hashable1` and `Hashable2`
