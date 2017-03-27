@@ -200,6 +200,8 @@ defaultSalt = 0x087fc72c
 --
 -- Minimal implementation: 'hashWithSalt'.
 class Hashable a where
+    {-# MINIMAL hashWithSalt #-}
+
     -- | Return a hash value for the argument, using the given salt.
     --
     -- The general contract of 'hashWithSalt' is:
