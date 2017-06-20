@@ -110,7 +110,8 @@ import GHC.Generics
 #endif
 
 #if   __GLASGOW_HASKELL__ >= 801
-import Type.Reflection (typeRepFingerprint, Typeable, TypeRep, SomeTypeRep(..))
+import Type.Reflection (Typeable, TypeRep, SomeTypeRep(..))
+import Type.Reflection.Unsafe (typeRepFingerprint)
 import GHC.Fingerprint.Type(Fingerprint(..))
 #elif __GLASGOW_HASKELL__ >= 710
 import Data.Typeable (typeRepFingerprint, Typeable, TypeRep)
