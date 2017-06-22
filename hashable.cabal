@@ -1,5 +1,5 @@
 Name:                hashable
-Version:             1.2.6.0
+Version:             1.2.6.1
 Synopsis:            A class for types that can be converted to a hash value
 Description:         This package defines a class, 'Hashable', for types that
                      can be converted to a hash value.  This class

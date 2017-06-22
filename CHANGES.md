@@ -1,3 +1,9 @@
+## Version 1.2.6.1
+
+ * Use typeRepFingerprint from Type.Reflection.Unsafe
+
+ * Bump minimum version of base to 4.4.
+
 ## Version 1.2.6.0
 
  * Add support for type-indexed `Typeable`.
