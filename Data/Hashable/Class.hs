@@ -70,6 +70,7 @@ import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
+import Data.Complex (Complex(..))
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (foldl')
 import Data.Ratio (Ratio, denominator, numerator)
@@ -438,6 +439,12 @@ instance Hashable Integer where
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
 #endif
+
+instance Hashable a => Hashable (Complex a) where
+    {-# SPECIALIZE instance Hashable (Complex Double) #-}
+    {-# SPECIALIZE instance Hashable (Complex Float)  #-}
+    hash (r :+ i) = hash r `hashWithSalt` i
+    hashWithSalt s (r :+ i) = s `hashWithSalt` r `hashWithSalt` i
 
 #if MIN_VERSION_base(4,9,0)
 -- Starting with base-4.9, numerator/denominator don't need 'Integral' anymore
