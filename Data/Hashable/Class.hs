@@ -444,7 +444,9 @@ instance Hashable a => Hashable (Complex a) where
     {-# SPECIALIZE instance Hashable (Complex Double) #-}
     {-# SPECIALIZE instance Hashable (Complex Float)  #-}
     hash (r :+ i) = hash r `hashWithSalt` i
-    hashWithSalt s (r :+ i) = s `hashWithSalt` r `hashWithSalt` i
+    hashWithSalt = hashWithSalt1
+instance Hashable1 Complex where
+    liftHashWithSalt h s (r :+ i) = s `h` r `h` i
 
 #if MIN_VERSION_base(4,9,0)
 -- Starting with base-4.9, numerator/denominator don't need 'Integral' anymore
