@@ -1,3 +1,10 @@
+## Version 1.2.7.0
+
+ * Add `Hashable` and `Hashable1` instances for `Complex`
+
+ * Fix undefined behavior in `hashable_fn_hash()` implementation
+   due to signed integer overflow (#152)
+
 ## Version 1.2.6.1
 
  * Use typeRepFingerprint from Type.Reflection.Unsafe
