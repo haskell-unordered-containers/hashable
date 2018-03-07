@@ -5,7 +5,7 @@
 
 ------------------------------------------------------------------------
 -- |
--- Module      :  Data.Hashable.Class
+-- Module      :  Data.Hashable.Lifted
 -- Copyright   :  (c) Milan Straka 2010
 --                (c) Johan Tibell 2011
 --                (c) Bryan O'Sullivan 2011, 2012
