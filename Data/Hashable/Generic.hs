@@ -18,7 +18,6 @@ module Data.Hashable.Generic
     (
     ) where
 
-import Data.Bits (shiftR)
 import Data.Hashable.Class
 import GHC.Generics
 
