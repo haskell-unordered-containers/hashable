@@ -19,6 +19,8 @@ Build-type:          Simple
 Cabal-version:       >=1.8
 -- tests/Properties.hs shouldn't have to go here, but the source files
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
+tested-with:         GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2, GHC==7.2.2
+
 Extra-source-files:
   CHANGES.md, README.md, tests/Properties.hs,
   benchmarks/Benchmarks.hs, benchmarks/cbits/*.c, benchmarks/cbits/*.h
