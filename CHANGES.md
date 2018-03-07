@@ -5,6 +5,8 @@
  * Fix undefined behavior in `hashable_fn_hash()` implementation
    due to signed integer overflow (#152)
 
+ * Mark `Data.Hashable.Lifted` as `Trustworthy` (re SafeHaskell)
+
 ## Version 1.2.6.1
 
  * Use typeRepFingerprint from Type.Reflection.Unsafe
