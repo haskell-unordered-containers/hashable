@@ -7,6 +7,8 @@
 
  * Mark `Data.Hashable.Lifted` as `Trustworthy` (re SafeHaskell)
 
+ * Support GHC 8.4
+
 ## Version 1.2.6.1
 
  * Use typeRepFingerprint from Type.Reflection.Unsafe
