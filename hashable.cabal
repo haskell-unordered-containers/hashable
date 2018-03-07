@@ -19,7 +19,7 @@ Build-type:          Simple
 Cabal-version:       >=1.8
 -- tests/Properties.hs shouldn't have to go here, but the source files
 -- for the test-suite stanzas don't get picked up by `cabal sdist`.
-tested-with:         GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2, GHC==7.2.2
+tested-with:         GHC==8.4.1, GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2, GHC==7.2.2
 
 Extra-source-files:
   CHANGES.md, README.md, tests/Properties.hs,
@@ -48,9 +48,9 @@ Library
   Exposed-modules:   Data.Hashable
                      Data.Hashable.Lifted
   Other-modules:     Data.Hashable.Class
-  Build-depends:     base >= 4.4 && < 4.11,
+  Build-depends:     base >= 4.4 && < 4.12,
                      bytestring >= 0.9 && < 0.11,
-                     deepseq >= 1.3
+                     deepseq >= 1.3 && < 1.5
   if impl(ghc)
     Build-depends:   ghc-prim,
                      text >= 0.11.0.5
