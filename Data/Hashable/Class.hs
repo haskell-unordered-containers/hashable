@@ -699,6 +699,13 @@ instance Hashable (Type.Reflection.TypeRep a) where
     {-# INLINE hash #-}
 #endif
 
+#if __GLASGOW_HASKELL__ >= 710
+instance Hashable Fingerprint where
+    hash (Fingerprint x _) = fromIntegral x
+    hashWithSalt = defaultHashWithSalt
+    {-# INLINE hash #-}
+#endif
+
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Void where
     hashWithSalt _ = absurd
