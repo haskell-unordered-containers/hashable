@@ -5,6 +5,8 @@ dist
 /dist-newstyle/
 *.o
 *.hi
+.ghc.environment.*
+*.swp
 
 # Executables
 benchmarks/bench
