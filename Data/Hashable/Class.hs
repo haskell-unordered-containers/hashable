@@ -1,5 +1,5 @@
-{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes #-}
+{-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, ForeignFunctionInterface, MagicHash,
+             ScopedTypeVariables, StandaloneDeriving, UnliftedFFITypes #-}
 
 #if __GLASGOW_HASKELL__ < 710
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -90,6 +90,7 @@ import GHC.Prim (ThreadId#)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
+import Data.Time.Calendar(Day(..))
 
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
@@ -439,6 +440,8 @@ instance Hashable Integer where
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
 #endif
+
+deriving instance Hashable Day 
 
 instance Hashable a => Hashable (Complex a) where
     {-# SPECIALIZE instance Hashable (Complex Double) #-}
