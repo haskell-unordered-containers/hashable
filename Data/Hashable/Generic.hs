@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, FlexibleInstances, KindSignatures,
+{-# LANGUAGE CPP, BangPatterns, FlexibleInstances, KindSignatures,
              ScopedTypeVariables, TypeOperators,
              MultiParamTypeClasses, GADTs, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -19,6 +19,9 @@ module Data.Hashable.Generic
     ) where
 
 import Data.Hashable.Class
+#if __GLASGOW_HASKELL__ > 804
+import Data.Kind
+#endif
 import GHC.Generics
 
 -- Type without constructors
@@ -113,7 +116,11 @@ instance GHashable arity a => GSum arity (C1 c a) where
 class SumSize f where
     sumSize :: Tagged f
 
+#if __GLASGOW_HASKELL__ > 804
+newtype Tagged (s :: Type -> Type) = Tagged {unTagged :: Int}
+#else
 newtype Tagged (s :: * -> *) = Tagged {unTagged :: Int}
+#endif
 
 instance (SumSize a, SumSize b) => SumSize (a :+: b) where
     sumSize = Tagged $ unTagged (sumSize :: Tagged a) +
