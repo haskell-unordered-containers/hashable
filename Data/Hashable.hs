@@ -36,6 +36,9 @@ module Data.Hashable
 
       -- * Computing hash values
       Hashable(..)
+#ifdef GENERICS
+      , GHashable(..)
+#endif
 
       -- * Creating new instances
       -- | There are two ways to create new instances: by deriving
