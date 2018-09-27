@@ -813,8 +813,8 @@ instance Hashable a => Hashable (Min a) where
 instance Hashable a => Hashable (Max a) where
     hashWithSalt p (Max a) = hashWithSalt p a
 
-instance (Hashable a, Hashable b) => Hashable (Arg a b) where
-    hashWithSalt p (Arg a b) = hashWithSalt p a `hashWithSalt` b
+instance Hashable a => Hashable (Arg a b) where
+    hashWithSalt p (Arg a _) = hashWithSalt p a
 
 instance Hashable a => Hashable (First a) where
     hashWithSalt p (First a) = hashWithSalt p a
