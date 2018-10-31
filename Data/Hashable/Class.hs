@@ -661,6 +661,13 @@ instance Hashable WordPtr where
     hash n = fromIntegral n
     hashWithSalt = defaultHashWithSalt
 
+instance Hashable Fingerprint where
+    -- Is this too conservative? In some contexts (e.g., TypeRep), the
+    -- whole Fingerprint represents a single value, so picking just one
+    -- word should avoid collisions pretty well. But I'm not sure that's
+    -- true of all other contexts where fingerprints occur.
+    hashWithSalt s (Fingerprint x y) = s `hashWithSalt` x `hashWithSalt` y
+
 #if __GLASGOW_HASKELL__ < 801
 -- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
 hashTypeRep :: TypeRep -> Int
