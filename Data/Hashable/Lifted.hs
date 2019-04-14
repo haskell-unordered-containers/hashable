@@ -77,7 +77,7 @@ import Data.Hashable.Class
 -- given a 'liftHash' method:
 --
 -- > class Hashable1 t where
--- >     liftHash :: (Int -> a) -> t a -> Int
+-- >     liftHash :: (a -> Int) -> t a -> Int
 -- >     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 --
 -- Even for a type as simple as 'Maybe', the problem manifests itself. The
