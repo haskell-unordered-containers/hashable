@@ -89,7 +89,7 @@ Test-suite tests
                      test-framework-quickcheck2 >= 0.2.9,
                      HUnit,
                      QuickCheck >= 2.4.0.1,
-                     random >= 1.0 && < 1.2,
+                     random >= 1.0 && < 1.4,
                      text >= 0.11.0.5
   if !os(windows)
     Build-depends:   unix
