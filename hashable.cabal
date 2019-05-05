@@ -47,8 +47,8 @@ Flag examples
 Library
   Exposed-modules:   Data.Hashable
                      Data.Hashable.Lifted
-  Other-modules:     Data.Hashable.Class
                      Data.Hashable.Generic
+  Other-modules:     Data.Hashable.Class
 
   C-sources:         cbits/fnv.c
 
@@ -104,9 +104,6 @@ Test-suite tests
     Other-Extensions: CApiFFI
 
   Ghc-options:       -Wall -fno-warn-orphans
-  if impl(ghc >= 7.2.1)
-    CPP-Options:     -DGENERICS
-
   Default-Language:  Haskell2010
 
 benchmark benchmarks

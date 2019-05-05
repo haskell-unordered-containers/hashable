@@ -31,6 +31,8 @@ module Data.Hashable.Class
     , Hashable2(..)
 
       -- ** Support for generics
+    , genericHashWithSalt
+    , genericLiftHashWithSalt
     , GHashable(..)
     , HashArgs(..)
     , Zero
@@ -222,7 +224,13 @@ class Hashable a where
     hash = hashWithSalt defaultSalt
 
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
-    hashWithSalt salt = ghashWithSalt HashArgs0 salt . from
+    hashWithSalt = genericHashWithSalt
+    {-# INLINE hashWithSalt #-}
+ 
+-- | Generic 'hashWithSalt'.
+genericHashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
+genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
+{-# INLINE genericHashWithSalt #-}
 
 data Zero
 data One
@@ -240,8 +248,13 @@ class Hashable1 t where
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 
     default liftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
-    liftHashWithSalt h salt = ghashWithSalt (HashArgs1 h) salt . from1
+    liftHashWithSalt = genericLiftHashWithSalt
+    {-# INLINE liftHashWithSalt #-}
 
+-- | Generic 'liftHashWithSalt'.
+genericLiftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
+genericLiftHashWithSalt = \h salt -> ghashWithSalt (HashArgs1 h) salt . from1
+{-# INLINE genericLiftHashWithSalt #-}
 
 class Hashable2 t where
     -- | Lift a hashing function through the binary type constructor.

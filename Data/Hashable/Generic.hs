@@ -16,6 +16,14 @@
 
 module Data.Hashable.Generic
     (
+    -- * Implementation using Generics.
+      genericHashWithSalt
+    , genericLiftHashWithSalt
+    -- * Constraints
+    , GHashable (..)
+    , One
+    , Zero
+    , HashArgs (..)
     ) where
 
 import Data.Hashable.Class

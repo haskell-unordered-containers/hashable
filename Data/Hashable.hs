@@ -41,6 +41,9 @@ module Data.Hashable
 
       -- ** Generic instances
       -- $generics
+    , genericHashWithSalt
+    , genericLiftHashWithSalt
+
 
       -- *** Understanding a compiler error
       -- $generic_err
@@ -88,9 +91,9 @@ import Data.Hashable.Generic ()
 
 -- $generics
 --
--- Beginning with GHC 7.2, the recommended way to make instances of
+-- The recommended way to make instances of
 -- 'Hashable' for most types is to use the compiler's support for
--- automatically generating default instances.
+-- automatically generating default instances using "GHC.Generics".
 --
 -- > {-# LANGUAGE DeriveGeneric #-}
 -- >
@@ -110,6 +113,11 @@ import Data.Hashable.Generic ()
 -- If you omit a body for the instance declaration, GHC will generate
 -- a default instance that correctly and efficiently hashes every
 -- constructor and parameter.
+--
+-- The default implementation are provided by
+-- 'genericHashWithSalt' and 'genericLiftHashWithSalt'.
+-- The generic type class 'GHashable' and auxiliary functions are exported
+-- from "Data.Hashable.Generic" module.
 
 -- $generic_err
 --

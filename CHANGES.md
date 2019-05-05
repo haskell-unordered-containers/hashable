@@ -8,6 +8,9 @@
 
  * Bump minimum version requirement of `base` to 4.5
 
+ * Add `genericHashWithSalt` and `genericLiftHashWithSalt`;
+   export Generics internals from `Data.Hashable.Generic` module.
+
 ## Version 1.2.7.0
 
  * Add `Hashable` and `Hashable1` instances for `Complex`
