@@ -1,8 +1,5 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy #-}
-#endif
 
 ------------------------------------------------------------------------
 -- |
@@ -20,7 +17,7 @@
 -- hashing-based data structures.  The module provides instances for
 -- most standard types.  Efficient instances for other types can be
 -- generated automatically and effortlessly using the generics support
--- in GHC 7.2 and above.
+-- in GHC 7.4 and above.
 --
 -- The easiest way to get started is to use the 'hash' function. Here
 -- is an example session with @ghci@.
@@ -60,10 +57,9 @@ module Data.Hashable
     , hashUsing
     , hashPtr
     , hashPtrWithSalt
-#if defined(__GLASGOW_HASKELL__)
     , hashByteArray
     , hashByteArrayWithSalt
-#endif
+
     -- * Caching hashes
     , Hashed
     , hashed
@@ -73,10 +69,7 @@ module Data.Hashable
     ) where
 
 import Data.Hashable.Class
-
-#ifdef GENERICS
 import Data.Hashable.Generic ()
-#endif
 
 -- $security
 -- #security#

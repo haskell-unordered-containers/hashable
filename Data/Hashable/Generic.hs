@@ -10,7 +10,7 @@
 -- License     :  BSD-style
 -- Maintainer  :  bos@serpentine.com
 -- Stability   :  provisional
--- Portability :  GHC >= 7.2
+-- Portability :  GHC >= 7.4
 --
 -- Hashable support for GHC generics.
 
@@ -121,4 +121,3 @@ instance (SumSize a, SumSize b) => SumSize (a :+: b) where
 
 instance SumSize (C1 c a) where
     sumSize = Tagged 1
-

@@ -1,17 +1,10 @@
-{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes #-}
-
-#if __GLASGOW_HASKELL__ < 710
-{-# LANGUAGE DeriveDataTypeable #-}
-#endif
+{-# LANGUAGE BangPatterns, CPP, MagicHash,
+             ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable,
+             DefaultSignatures, FlexibleContexts, GADTs,
+             MultiParamTypeClasses #-}
 
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PolyKinds #-} -- For TypeRep instances
-#endif
-
-#ifdef GENERICS
-{-# LANGUAGE DefaultSignatures, FlexibleContexts, GADTs,
-    MultiParamTypeClasses, EmptyDataDecls #-}
 #endif
 
 ------------------------------------------------------------------------
@@ -36,13 +29,12 @@ module Data.Hashable.Class
       Hashable(..)
     , Hashable1(..)
     , Hashable2(..)
-#ifdef GENERICS
+
       -- ** Support for generics
     , GHashable(..)
     , HashArgs(..)
     , Zero
     , One
-#endif
 
       -- * Creating new instances
     , hashUsing
@@ -106,25 +98,21 @@ import Data.Fixed (Fixed(..))
 import Data.Functor.Identity (Identity(..))
 #endif
 
-#ifdef GENERICS
 import GHC.Generics
-#endif
 
-#if   __GLASGOW_HASKELL__ >= 801
+#if   MIN_VERSION_base(4,10,0)
 import Type.Reflection (Typeable, TypeRep, SomeTypeRep(..))
 import Type.Reflection.Unsafe (typeRepFingerprint)
 import GHC.Fingerprint.Type(Fingerprint(..))
-#elif __GLASGOW_HASKELL__ >= 710
+#elif MIN_VERSION_base(4,8,0)
 import Data.Typeable (typeRepFingerprint, Typeable, TypeRep)
 import GHC.Fingerprint.Type(Fingerprint(..))
-#elif __GLASGOW_HASKELL__ >= 702
+#else
 import Data.Typeable.Internal (Typeable, TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
-#elif __GLASGOW_HASKELL__ >= 606
-import Data.Typeable (typeRepKey, Typeable, TypeRep)
 #endif
 
-#if __GLASGOW_HASKELL__ >= 703
+#if MIN_VERSION_base(4,5,0)
 import Foreign.C (CLong(..))
 import Foreign.C.Types (CInt(..))
 #else
@@ -233,7 +221,6 @@ class Hashable a where
     hash :: a -> Int
     hash = hashWithSalt defaultSalt
 
-#ifdef GENERICS
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
     hashWithSalt salt = ghashWithSalt HashArgs0 salt . from
 
@@ -248,15 +235,13 @@ data HashArgs arity a where
 class GHashable arity f where
     ghashWithSalt :: HashArgs arity a -> Int -> f a -> Int
 
-#endif
-
 class Hashable1 t where
     -- | Lift a hashing function through the type constructor.
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
-#ifdef GENERICS
+
     default liftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
     liftHashWithSalt h salt = ghashWithSalt (HashArgs1 h) salt . from1
-#endif
+
 
 class Hashable2 t where
     -- | Lift a hashing function through the binary type constructor.
@@ -620,11 +605,7 @@ instance Hashable BL.ByteString where
 
 #if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
-#if MIN_VERSION_base(4,3,0)
     hashWithSalt salt sbs@(BSI.SBS ba) =
-#else
-    hashWithSalt salt sbs@(BSI.SBS ba _) =
-#endif
         hashByteArrayWithSalt ba 0 (BSI.length sbs) salt
 #endif
 
@@ -661,28 +642,15 @@ instance Hashable WordPtr where
     hash n = fromIntegral n
     hashWithSalt = defaultHashWithSalt
 
-#if __GLASGOW_HASKELL__ < 801
--- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
-hashTypeRep :: TypeRep -> Int
-{-# INLINE hashTypeRep #-}
-#if __GLASGOW_HASKELL__ >= 710
--- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
-#elif __GLASGOW_HASKELL__ >= 702
--- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
-#elif __GLASGOW_HASKELL__ >= 606
-hashTypeRep = unsafeDupablePerformIO . typeRepKey
-#else
-hashTypeRep = hash . show
-#endif
+----------------------------------------------------------------------------
+-- Fingerprint & TypeRep instances
 
-instance Hashable TypeRep where
-    hash = hashTypeRep
+instance Hashable Fingerprint where
+    hash (Fingerprint x _) = fromIntegral x
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
 
-#else
+#if MIN_VERSION_base(4,10,0)
 
 hashTypeRep :: Type.Reflection.TypeRep a -> Int
 hashTypeRep tr =
@@ -697,14 +665,28 @@ instance Hashable (Type.Reflection.TypeRep a) where
     hash = hashTypeRep
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
+
+#else
+
+-- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
+hashTypeRep :: TypeRep -> Int
+{-# INLINE hashTypeRep #-}
+#if   MIN_VERSION_base(4,8,0)
+-- Fingerprint is just the MD5, so taking any Int from it is fine
+hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
+#else
+-- Fingerprint is just the MD5, so taking any Int from it is fine
+hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
 #endif
 
-#if __GLASGOW_HASKELL__ >= 702
-instance Hashable Fingerprint where
-    hash (Fingerprint x _) = fromIntegral x
+instance Hashable TypeRep where
+    hash = hashTypeRep
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
+
 #endif
+
+----------------------------------------------------------------------------
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Void where
@@ -923,5 +905,3 @@ instance Ord1 Hashed where
 instance Show1 Hashed where
   liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
 #endif
-
-
