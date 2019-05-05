@@ -6,10 +6,10 @@
 
  * Add `Hashable` instance for `Fingeprint` (#156)
 
- * Bump minimum version requirement of `base` to 4.5
-
  * Add `genericHashWithSalt` and `genericLiftHashWithSalt`;
-   export Generics internals from `Data.Hashable.Generic` module.
+   export Generics internals from the `Data.Hashable.Generic` module.
+
+ * Bump minimum version requirement of `base` to 4.5
 
 ## Version 1.2.7.0
 

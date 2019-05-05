@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP, MagicHash,
              ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable,
-             DefaultSignatures, FlexibleContexts, GADTs,
+             DefaultSignatures, FlexibleContexts, TypeFamilies,
              MultiParamTypeClasses #-}
 
 #if __GLASGOW_HASKELL__ >= 801
@@ -226,7 +226,7 @@ class Hashable a where
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
     hashWithSalt = genericHashWithSalt
     {-# INLINE hashWithSalt #-}
- 
+
 -- | Generic 'hashWithSalt'.
 genericHashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
 genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
@@ -235,9 +235,9 @@ genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
 data Zero
 data One
 
-data HashArgs arity a where
-    HashArgs0 :: HashArgs Zero a
-    HashArgs1 :: (Int -> a -> Int) -> HashArgs One a
+data family HashArgs arity a :: *
+data instance HashArgs Zero a = HashArgs0
+newtype instance HashArgs One  a = HashArgs1 (Int -> a -> Int)
 
 -- | The class of types that can be generically hashed.
 class GHashable arity f where
