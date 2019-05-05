@@ -1,3 +1,13 @@
+## Version 1.3.0.0
+
+ * Semantic change of `Hashable Arg` instance to *not* hash the second argument of `Arg` in order to be consistent with `Eq Arg` (#171)
+
+ * Semantic change of `Hashable Float` and `Hashable Double` instances to hash `-0.0` and `0.0` to the same value (#173)
+
+ * Add `Hashable` instance for `Fingeprint` (#156)
+
+ * Bump minimum version requirement of `base` to 4.5
+
 ## Version 1.2.7.0
 
  * Add `Hashable` and `Hashable1` instances for `Complex`
