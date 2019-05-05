@@ -1,8 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, MagicHash,
     Rank2Types, UnboxedTuples #-}
-#ifdef GENERICS
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
-#endif
 
 -- | QuickCheck tests for the 'Data.Hashable' module.  We test
 -- functions by comparing the C and Haskell implementations.
@@ -10,7 +8,7 @@
 module Properties (properties) where
 
 import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
-         Hashed, hashed, unhashed, hashWithSalt)
+         Hashed, hashed, unhashed, hashWithSalt, genericHashWithSalt)
 import Data.Hashable.Lifted (hashWithSalt1)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -27,9 +25,7 @@ import GHC.Word (Word8(..))
 import Test.QuickCheck hiding ((.&.))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-#ifdef GENERICS
 import GHC.Generics
-#endif
 
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as BS
@@ -156,8 +152,6 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
 
 -- Generics
 
-#ifdef GENERICS
-
 data Product2 a b = Product2 a b
                     deriving (Generic)
 
@@ -191,6 +185,13 @@ instance (Hashable a, Hashable b) => Hashable (Sum2 a b)
 data Sum3 a b c = S3a a | S3b b | S3c c
                   deriving (Eq, Ord, Show, Generic)
 
+instance (Arbitrary a, Arbitrary b, Arbitrary c) => Arbitrary (Sum3 a b c) where
+  arbitrary = oneof
+    [ fmap S3a arbitrary
+    , fmap S3b arbitrary
+    , fmap S3c arbitrary
+    ]
+
 instance (Hashable a, Hashable b, Hashable c) => Hashable (Sum3 a b c)
 
 -- Hashes of the same parameter, but with different sum constructors,
@@ -208,7 +209,8 @@ pSum3_differ x = nub hs == hs
              , hash (S3b x :: Sum3 Int Int Int)
              , hash (S3c x :: Sum3 Int Int Int) ]
 
-#endif
+pGeneric :: Sum3 Int Bool String -> Int -> Bool
+pGeneric x salt = hashWithSalt salt x == genericHashWithSalt salt x
 
 instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
   arbitrary = fmap hashed arbitrary
@@ -235,7 +237,6 @@ properties =
       , testProperty "bytestring/rechunk" pBSRechunk
       , testProperty "bytestring/rechunked" pBSLazyRechunked
       ]
-#ifdef GENERICS
     , testGroup "generics"
       [
       -- Note: "product2" and "product3" have been temporarily
@@ -246,8 +247,8 @@ properties =
       -- "product3" pProduct3
         testProperty "sum2_differ" pSum2_differ
       , testProperty "sum3_differ" pSum3_differ
+      , testProperty "genericHashWithSalt" pGeneric
       ]
-#endif
     , testGroup "lifted law"
       [ testProperty "Hashed" pLiftedHashed
       ]
