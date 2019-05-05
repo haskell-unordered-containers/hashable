@@ -1,10 +1,11 @@
-.cabal-sandbox/
-cabal.project.local
-cabal.sandbox.config
-dist
+/.cabal-sandbox/
+/cabal.project.local
+/cabal.sandbox.config
+/dist
 /dist-newstyle/
 *.o
 *.hi
+/.ghc.environment.*
 
 # Executables
 benchmarks/bench
