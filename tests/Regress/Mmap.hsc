@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE CApiFFI #-}
 
 module Regress.Mmap (regressions) where
 
@@ -60,14 +60,14 @@ mprotect :: Ptr a -> CSize -> CInt -> IO ()
 mprotect addr len prot =
     throwErrnoIfMinus1_ "mprotect" $ c_mprotect addr len prot
 
-foreign import ccall unsafe "sys/mman.h mmap"
+foreign import capi unsafe "sys/mman.h mmap"
     c_mmap :: Ptr a -> CSize -> CInt -> CInt -> CInt -> COff -> IO (Ptr a)
 
-foreign import ccall unsafe "sys/mman.h munmap"
+foreign import capi unsafe "sys/mman.h munmap"
     c_munmap :: Ptr a -> CSize -> IO CInt
 
-foreign import ccall unsafe "sys/mman.h mprotect"
+foreign import capi unsafe "sys/mman.h mprotect"
     c_mprotect :: Ptr a -> CSize -> CInt -> IO CInt
 
-foreign import ccall unsafe "unistd.h getpagesize"
+foreign import capi unsafe "unistd.h getpagesize"
     getPageSize :: IO CInt

@@ -101,6 +101,7 @@ Test-suite tests
     Build-depends:   unix
     CPP-options:     -DHAVE_MMAP
     Other-modules:   Regress.Mmap
+    Other-Extensions: CApiFFI
 
   Ghc-options:       -Wall -fno-warn-orphans
   if impl(ghc >= 7.2.1)
