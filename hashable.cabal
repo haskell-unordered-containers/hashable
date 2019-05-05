@@ -49,6 +49,7 @@ Library
                      Data.Hashable.Lifted
                      Data.Hashable.Generic
   Other-modules:     Data.Hashable.Class
+                     Data.Hashable.Generic.Instances
 
   C-sources:         cbits/fnv.c
 

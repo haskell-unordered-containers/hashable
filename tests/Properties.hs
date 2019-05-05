@@ -8,7 +8,8 @@
 module Properties (properties) where
 
 import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
-         Hashed, hashed, unhashed, hashWithSalt, genericHashWithSalt)
+         Hashed, hashed, unhashed, hashWithSalt)
+import Data.Hashable.Generic (genericHashWithSalt)
 import Data.Hashable.Lifted (hashWithSalt1)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
