@@ -13,7 +13,8 @@
 -- Portability :  GHC >= 7.4
 --
 -- Hashable support for GHC generics.
-
+--
+-- @since 1.3.0.0
 module Data.Hashable.Generic
     (
     -- * Implementation using Generics.

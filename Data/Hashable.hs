@@ -41,9 +41,6 @@ module Data.Hashable
 
       -- ** Generic instances
       -- $generics
-    , genericHashWithSalt
-    , genericLiftHashWithSalt
-
 
       -- *** Understanding a compiler error
       -- $generic_err
@@ -115,8 +112,8 @@ import Data.Hashable.Generic ()
 -- constructor and parameter.
 --
 -- The default implementations are provided by
--- 'genericHashWithSalt' and 'genericLiftHashWithSalt'.
--- The generic type class 'GHashable' and auxiliary functions are exported
+-- 'genericHashWithSalt' and 'genericLiftHashWithSalt'; those together with
+-- the generic type class 'GHashable' and auxiliary functions are exported
 -- from the "Data.Hashable.Generic" module.
 
 -- $generic_err

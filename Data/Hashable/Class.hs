@@ -228,6 +228,8 @@ class Hashable a where
     {-# INLINE hashWithSalt #-}
 
 -- | Generic 'hashWithSalt'.
+--
+-- @since 1.3.0.0
 genericHashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
 genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
 {-# INLINE genericHashWithSalt #-}
@@ -252,6 +254,8 @@ class Hashable1 t where
     {-# INLINE liftHashWithSalt #-}
 
 -- | Generic 'liftHashWithSalt'.
+--
+-- @since 1.3.0.0
 genericLiftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> Int) -> Int -> t a -> Int
 genericLiftHashWithSalt = \h salt -> ghashWithSalt (HashArgs1 h) salt . from1
 {-# INLINE genericLiftHashWithSalt #-}
