@@ -657,6 +657,7 @@ instance Hashable WordPtr where
 ----------------------------------------------------------------------------
 -- Fingerprint & TypeRep instances
 
+-- | @since 1.3.0.0
 instance Hashable Fingerprint where
     hash (Fingerprint x _) = fromIntegral x
     hashWithSalt = defaultHashWithSalt
