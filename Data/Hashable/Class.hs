@@ -814,6 +814,9 @@ instance Hashable a => Hashable (Min a) where
 instance Hashable a => Hashable (Max a) where
     hashWithSalt p (Max a) = hashWithSalt p a
 
+-- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
+--
+-- @since 1.3.0.0
 instance Hashable a => Hashable (Arg a b) where
     hashWithSalt p (Arg a _) = hashWithSalt p a
 
