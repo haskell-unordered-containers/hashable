@@ -443,8 +443,14 @@ instance (Integral a, Hashable a) => Hashable (Ratio a) where
     hash a = hash (numerator a) `hashWithSalt` denominator a
     hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
 
+-- | __Note__: prior to @hashable-1.3.0.0@, @hash 0.0 /= hash (-0.0)@
+--
+-- The 'hash' of NaN is not well defined.
+--
+-- @since 1.3.0.0
 instance Hashable Float where
     hash x
+        | x == -0.0 || x == 0.0 = 0 -- see note in 'Hashable Double'
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
@@ -452,8 +458,14 @@ instance Hashable Float where
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
+-- | __Note__: prior to @hashable-1.3.0.0@, @hash 0.0 /= hash (-0.0)@
+--
+-- The 'hash' of NaN is not well defined.
+--
+-- @since 1.3.0.0
 instance Hashable Double where
     hash x
+        | x == -0.0 || x == 0.0 = 0 -- s.t. @hash -0.0 == hash 0.0@ ; see #173
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
