@@ -114,10 +114,10 @@ import Data.Hashable.Generic ()
 -- a default instance that correctly and efficiently hashes every
 -- constructor and parameter.
 --
--- The default implementation are provided by
+-- The default implementations are provided by
 -- 'genericHashWithSalt' and 'genericLiftHashWithSalt'.
 -- The generic type class 'GHashable' and auxiliary functions are exported
--- from "Data.Hashable.Generic" module.
+-- from the "Data.Hashable.Generic" module.
 
 -- $generic_err
 --
