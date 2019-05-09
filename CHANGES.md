@@ -1,15 +1,22 @@
+See also https://pvp.haskell.org/faq
+
 ## Version 1.3.0.0
 
- * Semantic change of `Hashable Arg` instance to *not* hash the second argument of `Arg` in order to be consistent with `Eq Arg` (#171)
+ * Semantic change of `Hashable Arg` instance to *not* hash the second
+   argument of `Arg` in order to be consistent with `Eq Arg` (#171)
 
- * Semantic change of `Hashable Float` and `Hashable Double` instances to hash `-0.0` and `0.0` to the same value (#173)
+ * Semantic change of `Hashable Float` and `Hashable Double` instances
+   to hash `-0.0` and `0.0` to the same value (#173)
 
  * Add `Hashable` instance for `Fingeprint` (#156)
 
- * Add new `Data.Hashable.Generic` module providing the default implementations `genericHashWithSalt` and `genericLiftHashWithSalt`
+ * Add new `Data.Hashable.Generic` module providing the default
+   implementations `genericHashWithSalt` and `genericLiftHashWithSalt`
    together with other Generics support helpers (#148, #178)
 
- * Bump minimum version requirement of `base` to 4.5
+ * Bump minimum version requirement of `base` to `base-4.5` (i.e. GHC >= 7.4)
+
+----
 
 ## Version 1.2.7.0
 
@@ -124,14 +131,14 @@
 
  * Fix bug where code relied on rewrite rules firing for correctness.
 
-## Version1.2.0.4
+## Version 1.2.0.4
 
  * Update docs to match code.
 
  * Work around bug in GHCi runtime linker, which never call static
    initializers.
 
-## Version1.2.0.3
+## Version 1.2.0.3
 
  * Make building of SSE 4.1 code conditional, as it doesn't work on all
    platforms.
@@ -139,17 +146,17 @@
  * Use a fixed salt, but allow random salting. Random salting by
    default broke people's code.
 
-## Version1.2.0.2
+## Version 1.2.0.2
 
  * Work around ghci linker bug on Windows.
 
-## Version1.2.0.1
+## Version 1.2.0.1
 
  * Fix performance bug in SSE implementation of SipHash.
 
  * Fix segfault due to incorrect stack alignment on Windows.
 
-## Version1.2.0.0
+## Version 1.2.0.0
 
  * Switch string hashing from FNV-1 to SipHash, in an effort to
    prevent collision attacks.
@@ -165,11 +172,13 @@
 
  * Add instance for Ordering.
 
-## Version1.1.2.5
+----
+
+## Version 1.1.2.5
 
  * Bug fix for bytestring < 0.10.0.
 
-## Version1.1.2.4
+## Version 1.1.2.4
 
  * Switch string hashing from Bernstein to FNV-1
 
@@ -179,36 +188,36 @@
 
  * Now works with GHC 7.6.
 
-## Version1.1.2.3
+## Version 1.1.2.3
 
  * Add instance for TypeRep.
 
  * Update dependency on test-framework.
 
-## Version1.1.2.2
+## Version 1.1.2.2
 
  * Bug fix for GHC 7.4
 
-## Version1.1.2.1
+## Version 1.1.2.1
 
  * Update dependency on test-framework.
 
  * Improve documentation of combine.
 
-## Version1.1.2.0
+## Version 1.1.2.0
 
  * Add instances for Interger, Ratio, Float, Double, and StableName.
 
  * Fix hash collision issues for lists and tuples when using a
    user-specified salt.
 
-## Version1.1.1.0
+## Version 1.1.1.0
 
  * Improved instances for tuples and lists.
 
  * Add instances for StableName, Float, Double, Integer, and Ratio.
 
-## Version1.1.1.0
+## Version 1.1.1.0
 
  * Add hashWithSalt, which allows the user to create different hash
    values for the same input by providing different seeds. This is
@@ -220,7 +229,7 @@
 
  * Improved resilience to leading zero in the input being hashed.
 
-## Version1.1.0.0
+## Version 1.1.0.0
 
  * Add instance for: strict and lazy Texts, ThreadId
 
@@ -233,17 +242,19 @@
  * Fix ByteString hashing to work correctly on both 32 and 64-bit
    platforms.
 
-## Version1.0.1.1
+## Version 1.0.1.1
 
  * Fix bug in Hashable instance for lazy ByteStrings where differences
    in the internal structure of the ByteString could cause different
    hash values for ByteStrings that are equal according to ==.
 
-## Version1.0.1.0
+## Version 1.0.1.0
 
  * Add two helpers for creating Hashable instances: hashPtr and
    hashByteArray.
 
-## Version1.0.0
+----
+
+## Version 1.0.0
 
  * Separate Hashable class to its own package from hashmap 1.0.0.3.
