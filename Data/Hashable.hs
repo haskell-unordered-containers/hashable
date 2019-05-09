@@ -7,7 +7,7 @@
 -- Copyright   :  (c) Milan Straka 2010
 --                (c) Johan Tibell 2011
 --                (c) Bryan O'Sullivan 2011, 2012
--- License     :  BSD-style
+-- SPDX-License-Identifier : BSD-3-Clause
 -- Maintainer  :  johan.tibell@gmail.com
 -- Stability   :  provisional
 -- Portability :  portable

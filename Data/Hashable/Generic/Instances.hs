@@ -7,7 +7,7 @@
 -- |
 -- Module      :  Data.Hashable.Generic.Instances
 -- Copyright   :  (c) Bryan O'Sullivan 2012
--- License     :  BSD-style
+-- SPDX-License-Identifier : BSD-3-Clause
 -- Maintainer  :  bos@serpentine.com
 -- Stability   :  provisional
 -- Portability :  GHC >= 7.4

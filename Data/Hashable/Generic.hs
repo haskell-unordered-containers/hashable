@@ -2,7 +2,7 @@
 
 -- |
 -- Module      :  Data.Hashable.Generic
--- License     :  BSD-style
+-- SPDX-License-Identifier : BSD-3-Clause
 -- Stability   :  provisional
 -- Portability :  GHC >= 7.4
 --
