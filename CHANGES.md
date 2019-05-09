@@ -8,7 +8,7 @@ See also https://pvp.haskell.org/faq
  * Semantic change of `Hashable Float` and `Hashable Double` instances
    to hash `-0.0` and `0.0` to the same value (#173)
 
- * Add `Hashable` instance for `Fingeprint` (#156)
+ * Add `Hashable` instance for `Fingerprint` (#156)
 
  * Add new `Data.Hashable.Generic` module providing the default
    implementations `genericHashWithSalt` and `genericLiftHashWithSalt`
@@ -206,25 +206,19 @@ See also https://pvp.haskell.org/faq
 
 ## Version 1.1.2.0
 
- * Add instances for Interger, Ratio, Float, Double, and StableName.
-
  * Fix hash collision issues for lists and tuples when using a
    user-specified salt.
 
-## Version 1.1.1.0
+ * Add instances for `Integer`, `Ratio`, `Float`, `Double`, and `StableName`.
 
  * Improved instances for tuples and lists.
 
- * Add instances for StableName, Float, Double, Integer, and Ratio.
-
-## Version 1.1.1.0
-
- * Add hashWithSalt, which allows the user to create different hash
+ * Add `hashWithSalt`, which allows the user to create different hash
    values for the same input by providing different seeds. This is
    useful for application like Cuckoo hashing which need a family of
    hash functions.
 
- * Fix a bug in the Hashable instance for Int64/Word64 on 32-bit
+ * Fix a bug in the `Hashable` instance for `Int64`/`Word64` on 32-bit
    platforms.
 
  * Improved resilience to leading zero in the input being hashed.
