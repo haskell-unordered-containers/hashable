@@ -213,6 +213,8 @@ See also https://pvp.haskell.org/faq
 
  * Improved instances for tuples and lists.
 
+## Version 1.1.1.0
+
  * Add `hashWithSalt`, which allows the user to create different hash
    values for the same input by providing different seeds. This is
    useful for application like Cuckoo hashing which need a family of
