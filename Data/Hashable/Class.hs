@@ -66,6 +66,9 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
 import Data.Complex (Complex(..))
 import Data.Int (Int8, Int16, Int32, Int64)
+#if __GLASGOW_HASKELL__ >= 801
+import Data.Kind (Type)
+#endif
 import Data.List (foldl')
 import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
@@ -237,7 +240,12 @@ genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
 data Zero
 data One
 
-data family HashArgs arity a :: *
+data family HashArgs arity a
+#if __GLASGOW_HASKELL__ >= 801
+  :: Type
+#else
+  :: *
+#endif
 data instance HashArgs Zero a = HashArgs0
 newtype instance HashArgs One  a = HashArgs1 (Int -> a -> Int)
 

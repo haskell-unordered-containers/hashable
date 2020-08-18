@@ -51,14 +51,14 @@ Library
 
   C-sources:         cbits/fnv.c
 
-  Build-depends:     base       >= 4.5      && < 4.15
+  Build-depends:     base       >= 4.5      && < 4.16
                    , bytestring >= 0.9      && < 0.11
                    , deepseq    >= 1.3      && < 1.5
                    , text       >= 0.12     && < 1.3
                    , ghc-prim
 
   if flag(integer-gmp)
-    Build-depends:   integer-gmp >= 0.4 && < 1.1
+    Build-depends:   integer-gmp >= 0.4 && < 1.2
   else
     -- this is needed for the automatic flag to be well-balanced
     Build-depends:   integer-simple
@@ -94,7 +94,7 @@ Test-suite tests
                      test-framework-quickcheck2 >= 0.2.9,
                      HUnit,
                      QuickCheck >= 2.4.0.1,
-                     random >= 1.0 && < 1.2,
+                     random >= 1.0 && < 1.3,
                      text >= 0.11.0.5
   if !os(windows)
     Build-depends:   unix
