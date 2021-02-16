@@ -50,6 +50,7 @@ Library
                      Data.Hashable.Generic.Instances
 
   C-sources:         cbits/fnv.c
+  hs-source-dirs:    src
 
   Build-depends:     base       >= 4.5      && < 4.16
                    , bytestring >= 0.9      && < 0.12
@@ -111,7 +112,7 @@ Test-suite hashable-tests
 benchmark benchmarks
   -- We cannot depend on the hashable library directly as that creates
   -- a dependency cycle.
-  hs-source-dirs: . benchmarks
+  hs-source-dirs: src benchmarks
 
   main-is: Benchmarks.hs
   other-modules:
