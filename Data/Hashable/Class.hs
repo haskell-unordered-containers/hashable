@@ -7,6 +7,8 @@
 {-# LANGUAGE PolyKinds #-} -- For TypeRep instances
 #endif
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 ------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Hashable.Class
@@ -140,6 +142,13 @@ import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 import qualified Data.ByteString.Short.Internal as BSI
 #endif
 
+#ifdef VERSION_ghc_bignum
+import GHC.Num.BigNat (BigNat (..))
+import GHC.Num.Integer (Integer (..))
+import GHC.Num.Natural (Natural (..))
+import GHC.Exts (Int (..), sizeofByteArray#)
+#endif
+
 #ifdef VERSION_integer_gmp
 
 # if MIN_VERSION_integer_gmp(1,0,0)
@@ -156,8 +165,10 @@ import GHC.Integer.GMP.Internals (BigNat(BN#))
 
 #if MIN_VERSION_base(4,8,0)
 import Data.Void (Void, absurd)
-import GHC.Natural (Natural(..))
 import GHC.Exts (Word(..))
+#ifndef VERSION_ghc_bignum
+import GHC.Natural (Natural(..))
+#endif
 #endif
 
 #if MIN_VERSION_base(4,9,0)
@@ -171,6 +182,12 @@ import qualified Data.Functor.Sum as FS
 #endif
 
 import Data.String (IsString(..))
+
+#if MIN_VERSION_base(4,9,0)
+import Data.Kind (Type)
+#else
+#define Type *
+#endif
 
 #include "MachDeps.h"
 
@@ -237,7 +254,7 @@ genericHashWithSalt = \salt -> ghashWithSalt HashArgs0 salt . from
 data Zero
 data One
 
-data family HashArgs arity a :: *
+data family HashArgs arity a :: Type
 data instance HashArgs Zero a = HashArgs0
 newtype instance HashArgs One  a = HashArgs1 (Int -> a -> Int)
 
@@ -378,7 +395,7 @@ instance Hashable Char where
     hash = fromEnum
     hashWithSalt = defaultHashWithSalt
 
-#if defined(MIN_VERSION_integer_gmp_1_0_0)
+#if defined(MIN_VERSION_integer_gmp_1_0_0) || defined(VERSION_ghc_bignum)
 instance Hashable BigNat where
     hashWithSalt salt (BN# ba) = hashByteArrayWithSalt ba 0 numBytes salt
                                  `hashWithSalt` size
@@ -389,6 +406,13 @@ instance Hashable BigNat where
 
 #if MIN_VERSION_base(4,8,0)
 instance Hashable Natural where
+# if defined(VERSION_ghc_bignum)
+    hash (NS n)   = hash (W# n)
+    hash (NB bn)  = hash (BN# bn)
+
+    hashWithSalt salt (NS n)  = hashWithSalt salt (W# n)
+    hashWithSalt salt (NB bn) = hashWithSalt salt (BN# bn)
+# else
 # if defined(MIN_VERSION_integer_gmp_1_0_0)
     hash (NatS# n)   = hash (W# n)
     hash (NatJ# bn)  = hash bn
@@ -400,9 +424,19 @@ instance Hashable Natural where
 
     hashWithSalt salt (Natural n) = hashWithSalt salt n
 # endif
+# endif
 #endif
 
 instance Hashable Integer where
+#if defined(VERSION_ghc_bignum)
+    hash (IS n)  = I# n
+    hash (IP bn) = hash (BN# bn)
+    hash (IN bn) = negate (hash (BN# bn))
+
+    hashWithSalt salt (IS n)  = hashWithSalt salt (I# n)
+    hashWithSalt salt (IP bn) = hashWithSalt salt (BN# bn)
+    hashWithSalt salt (IN bn) = negate (hashWithSalt salt (BN# bn))
+#else
 #if defined(VERSION_integer_gmp)
 # if defined(MIN_VERSION_integer_gmp_1_0_0)
     hash (S# n)   = (I# n)
@@ -440,6 +474,7 @@ instance Hashable Integer where
              | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
+#endif
 #endif
 
 instance Hashable a => Hashable (Complex a) where
