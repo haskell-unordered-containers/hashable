@@ -826,15 +826,21 @@ instance Hashable1 Proxy where
 instance Hashable a => Hashable (NE.NonEmpty a) where
     hashWithSalt p (a NE.:| as) = p `hashWithSalt` a `hashWithSalt` as
 
--- | @since UNRELEASED
+-- | @since 1.3.1.0
 instance Hashable1 NE.NonEmpty where
     liftHashWithSalt h salt (a NE.:| as) = liftHashWithSalt h (h salt a) as
 
 instance Hashable a => Hashable (Min a) where
     hashWithSalt p (Min a) = hashWithSalt p a
 
+-- | @since 1.3.1.0
+instance Hashable1 Min where liftHashWithSalt h salt (Min a) = h salt a
+
 instance Hashable a => Hashable (Max a) where
     hashWithSalt p (Max a) = hashWithSalt p a
+
+-- | @since 1.3.1.0
+instance Hashable1 Max where liftHashWithSalt h salt (Max a) = h salt a
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
@@ -845,14 +851,26 @@ instance Hashable a => Hashable (Arg a b) where
 instance Hashable a => Hashable (First a) where
     hashWithSalt p (First a) = hashWithSalt p a
 
+-- | @since 1.3.1.0
+instance Hashable1 First where liftHashWithSalt h salt (First a) = h salt a
+
 instance Hashable a => Hashable (Last a) where
     hashWithSalt p (Last a) = hashWithSalt p a
+
+-- | @since 1.3.1.0
+instance Hashable1 Last where liftHashWithSalt h salt (Last a) = h salt a
 
 instance Hashable a => Hashable (WrappedMonoid a) where
     hashWithSalt p (WrapMonoid a) = hashWithSalt p a
 
+-- | @since 1.3.1.0
+instance Hashable1 WrappedMonoid where liftHashWithSalt h salt (WrapMonoid a) = h salt a
+
 instance Hashable a => Hashable (Option a) where
     hashWithSalt p (Option a) = hashWithSalt p a
+
+-- | @since 1.3.1.0
+instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
 
 -- instances for @Data.Functor.{Product,Sum,Compose}@, present
