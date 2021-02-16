@@ -4,6 +4,8 @@ See also https://pvp.haskell.org/faq
 
  * Add `Hashable1` instances to `semigroups` types.
 
+ * Use `ghc-bignum` with GHC-9.0
+
 ## Version 1.3.0.0
 
  * Semantic change of `Hashable Arg` instance to *not* hash the second
