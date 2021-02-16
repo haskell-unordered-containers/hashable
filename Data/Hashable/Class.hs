@@ -826,6 +826,10 @@ instance Hashable1 Proxy where
 instance Hashable a => Hashable (NE.NonEmpty a) where
     hashWithSalt p (a NE.:| as) = p `hashWithSalt` a `hashWithSalt` as
 
+-- | @since UNRELEASED
+instance Hashable1 NE.NonEmpty where
+    liftHashWithSalt h salt (a NE.:| as) = liftHashWithSalt h (h salt a) as
+
 instance Hashable a => Hashable (Min a) where
     hashWithSalt p (Min a) = hashWithSalt p a
 
