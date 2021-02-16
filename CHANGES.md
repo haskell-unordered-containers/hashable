@@ -6,6 +6,8 @@ See also https://pvp.haskell.org/faq
 
  * Use `ghc-bignum` with GHC-9.0
 
+ * Use FNV-1 constants.
+
 ## Version 1.3.0.0
 
  * Semantic change of `Hashable Arg` instance to *not* hash the second
