@@ -31,6 +31,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "MachDeps.h"
+
+#if WORD_SIZE_IN_BITS == 64
+#define FNV_PRIME 1099511628211
+#else
+#define FNV_PRIME 16777619
+#endif
+
 /* FNV-1 hash
  *
  * The FNV-1 hash description: http://isthe.com/chongo/tech/comp/fnv/
