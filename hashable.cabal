@@ -13,8 +13,8 @@ License:             BSD3
 License-file:        LICENSE
 Author:              Milan Straka <fox@ucw.cz>
                      Johan Tibell <johan.tibell@gmail.com>
-Maintainer:          johan.tibell@gmail.com
-bug-reports:         https://github.com/tibbe/hashable/issues
+Maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
+bug-reports:         https://github.com/haskell-unordered-containers/hashable/issues
 Stability:           Provisional
 Category:            Data
 Build-type:          Simple
@@ -183,4 +183,4 @@ Executable hashable-examples
 
 source-repository head
   type:     git
-  location: https://github.com/tibbe/hashable.git
+  location: https://github.com/haskell-unordered-containers/hashable.git
