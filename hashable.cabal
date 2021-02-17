@@ -37,11 +37,6 @@ Flag sse41
   Default: False
   Manual: True
 
-Flag examples
-  Description: Build example modules
-  Default: False
-  Manual: True
-
 Library
   Exposed-modules:   Data.Hashable
                      Data.Hashable.Lifted
@@ -172,11 +167,9 @@ benchmark benchmarks
 
   Default-Language:  Haskell2010
 
-Executable hashable-examples
-  if flag(examples)
-    build-depends: base, hashable
-  else
-    buildable: False
+test-suite hashable-examples
+  type:              exitcode-stdio-1.0
+  build-depends: base, hashable, ghc-prim
   hs-source-dirs: examples
   main-is: Main.hs
   Default-Language:  Haskell2010
