@@ -8,6 +8,8 @@ See also https://pvp.haskell.org/faq
 
  * Use FNV-1 constants.
 
+ * Make `hashable-examples` a test-suite
+
 ## Version 1.3.0.0
 
  * Semantic change of `Hashable Arg` instance to *not* hash the second
