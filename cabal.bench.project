@@ -1,0 +1,4 @@
+-- separate package for benchmarks
+-- this way we can build criterion
+packages:   hashable-bench
+benchmarks: True

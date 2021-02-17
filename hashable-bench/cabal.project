@@ -1,0 +1,3 @@
+-- this project files is here, so you could work just in
+-- the haskell-bench directory
+packages: .
