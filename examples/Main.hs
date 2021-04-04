@@ -6,12 +6,12 @@ import GHC.Generics (Generic)
 data Foo
   = Foo1 Int Char Bool
   | Foo2 String ()
-  deriving (Generic)
+  deriving (Eq, Generic)
 
 instance Hashable Foo
 
 data Bar = Bar Double Float
-  deriving (Generic)
+  deriving (Eq, Generic)
 
 instance Hashable Bar
 
@@ -31,6 +31,8 @@ main = do
 -- Higher Rank Hashable Examples --
 -----------------------------------
 
+{- TODO:
+
 newtype WriterT w m a = WriterT { runWriterT :: m (a, w) }
 data Free f a = Pure a | Free (f (Free f a))
 
@@ -47,4 +49,4 @@ instance (Hashable w, Hashable1 m, Hashable a) => Hashable (WriterT w m a) where
     hashWithSalt = hashWithSalt1
 instance (Hashable1 f, Hashable a) => Hashable (Free f a) where
     hashWithSalt = hashWithSalt1
-
+-}

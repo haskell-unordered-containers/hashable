@@ -300,15 +300,14 @@ data PS
   = PS1 Int Char Bool
   | PS2 String ()
   | PS3 Char Int
-  deriving (Generic)
+  deriving (Eq, Generic)
 
 data P = P Double Float Char Int
-  deriving (Generic)
+  deriving (Eq, Generic)
 
 data S = S1 | S2 | S3 | S4 | S5
-  deriving (Generic)
+  deriving (Eq, Generic)
 
 instance Hashable PS
 instance Hashable P
 instance Hashable S
-
