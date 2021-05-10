@@ -1,135 +1,148 @@
-Cabal-version:       1.12
-Name:                hashable-bench
-Version:             0
-Synopsis:            hashable benchmarks
-Description:         hashable benchmarks.
-Homepage:            http://github.com/haskell-unordered-containers/hashable
+cabal-version:      1.12
+name:               hashable-bench
+version:            0
+synopsis:           hashable benchmarks
+description:        hashable benchmarks.
+homepage:           http://github.com/haskell-unordered-containers/hashable
+
 -- SPDX-License-Identifier : BSD-3-Clause
-License:             BSD3
-License-file:        LICENSE
-Author:              Milan Straka <fox@ucw.cz>
-                     Johan Tibell <johan.tibell@gmail.com>
-Maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
-bug-reports:         https://github.com/haskell-unordered-containers/hashable/issues
-Stability:           Provisional
-Category:            Data
-Build-type:          Simple
-tested-with:         GHC==8.10.3, GHC==8.8.3, GHC==8.6.5, GHC==8.4.4, GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2
-extra-source-files:  benchmarks/cbits/*.h
+license:            BSD3
+license-file:       LICENSE
+author:
+  Milan Straka <fox@ucw.cz>
+  Johan Tibell <johan.tibell@gmail.com>
 
-Flag integer-gmp
-  Description: Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
-  Default: True
+maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
+bug-reports:
+  https://github.com/haskell-unordered-containers/hashable/issues
 
-Flag sse2
-  Description: Do we want to assume that a target supports SSE 2?
-  Default: True
-  Manual: True
+stability:          Provisional
+category:           Data
+build-type:         Simple
+tested-with:
+  GHC ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.3
+   || ==8.10.3
 
-Flag sse41
-  Description: Do we want to assume that a target supports SSE 4.1?
-  Default: False
-  Manual: True
+extra-source-files: benchmarks/cbits/*.h
 
-Library
-  Exposed-modules:   Data.Hashable
-                     Data.Hashable.Lifted
-                     Data.Hashable.Generic
-  Other-modules:     Data.Hashable.Class
-                     Data.Hashable.Generic.Instances
+flag integer-gmp
+  description:
+    Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
 
-  -- this are only for benchmark
-  Exposed-modules:   Data.Hashable.SipHash
-  c-sources:         cbits/getRandomBytes.c
-  other-modules:     Data.Hashable.RandomSource
-  if os(windows)
-    extra-libraries: advapi32
+  default:     True
 
-  C-sources:         cbits/fnv.c
-  hs-source-dirs:    src
+flag sse2
+  description: Do we want to assume that a target supports SSE 2?
+  default:     True
+  manual:      True
 
-  Build-depends:     base       >= 4.5      && < 4.16
-                   , bytestring >= 0.9      && < 0.12
-                   , deepseq    >= 1.3      && < 1.5
-                   , text       >= 0.12     && < 1.3
-                   , ghc-prim
+flag sse41
+  description: Do we want to assume that a target supports SSE 4.1?
+  default:     False
+  manual:      True
 
-  if impl(ghc >= 9)
-    Build-depends:    ghc-bignum >= 1.0 && <1.1
+library
+  exposed-modules:
+    Data.Hashable
+    Data.Hashable.Generic
+    Data.Hashable.Lifted
+
+  other-modules:
+    Data.Hashable.Class
+    Data.Hashable.Generic.Instances
+
+  c-sources:        cbits/fnv.c
+  hs-source-dirs:   src
+  build-depends:
+      base        >=4.5  && <4.16
+    , bytestring  >=0.9  && <0.12
+    , deepseq     >=1.3  && <1.5
+    , ghc-prim
+    , text        >=0.12 && <1.3
+
+  if impl(ghc >=9)
+    build-depends: ghc-bignum ==1.0.*
+
   else
     if flag(integer-gmp)
-      Build-depends:   integer-gmp >= 0.4 && < 1.1
+      build-depends: integer-gmp >=0.4 && <1.1
+
     else
       -- this is needed for the automatic flag to be well-balanced
-      Build-depends:   integer-simple
+      build-depends: integer-simple
 
-  Default-Language:  Haskell2010
-  Other-Extensions:  BangPatterns
-                     CPP
-                     DeriveDataTypeable
-                     FlexibleContexts
-                     FlexibleInstances
-                     GADTs
-                     KindSignatures
-                     MagicHash
-                     MultiParamTypeClasses
-                     ScopedTypeVariables
-                     Trustworthy
-                     TypeOperators
-                     UnliftedFFITypes
+  default-language: Haskell2010
+  other-extensions:
+    BangPatterns
+    CPP
+    DeriveDataTypeable
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    KindSignatures
+    MagicHash
+    MultiParamTypeClasses
+    ScopedTypeVariables
+    Trustworthy
+    TypeOperators
+    UnliftedFFITypes
 
-  Ghc-options:       -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs
 
 benchmark hashable-benchmark
   -- We cannot depend on the hashable library directly as that creates
   -- a dependency cycle.
-  hs-source-dirs: benchmarks
-
-  main-is: Benchmarks.hs
-  type: exitcode-stdio-1.0
-
+  hs-source-dirs:   benchmarks src-siphash
+  main-is:          Benchmarks.hs
+  type:             exitcode-stdio-1.0
   build-depends:
-    hashable-bench,
-    base,
-    bytestring,
-    criterion >= 1.0,
-    ghc-prim,
-    siphash,
-    text
+      base
+    , bytestring
+    , criterion       >=1.0
+    , ghc-prim
+    , hashable-bench
+    , siphash
+    , text
 
-  if impl(ghc)
-    Build-depends:   ghc-prim,
-                     text >= 0.11.0.5
-  if impl(ghc) && flag(integer-gmp)
-    Build-depends:   integer-gmp >= 0.2
+  if impl(ghc -any)
+    build-depends:
+        ghc-prim
+      , text      >=0.11.0.5
 
-  if impl(ghc >= 7.2.1)
-    CPP-Options:     -DGENERICS
+  if (impl(ghc -any) && flag(integer-gmp))
+    build-depends: integer-gmp >=0.2
 
-  include-dirs:
-    benchmarks/cbits
+  if impl(ghc >=7.2.1)
+    cpp-options: -DGENERICS
 
-  includes:
-    siphash.h
-
+  include-dirs:     benchmarks/cbits
+  includes:         siphash.h
+  other-modules:    Data.Hashable.SipHash
   c-sources:
     benchmarks/cbits/inthash.c
     benchmarks/cbits/siphash.c
     benchmarks/cbits/wang.c
 
-  if (arch(i386) || arch(x86_64)) && flag(sse2)
+  if ((arch(i386) || arch(x86_64)) && flag(sse2))
     cpp-options: -DHAVE_SSE2
-    c-sources:
-      benchmarks/cbits/siphash-sse2.c
+    c-sources:   benchmarks/cbits/siphash-sse2.c
 
     if flag(sse41)
       cpp-options: -DHAVE_SSE41
-      c-sources:
-        benchmarks/cbits/siphash-sse41.c
+      c-sources:   benchmarks/cbits/siphash-sse41.c
 
-  Ghc-options:       -Wall -O2
-  Default-Language:  Haskell2010
+  ghc-options:      -Wall -O2
+  default-language: Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/haskell-unordered-containers/hashable.git
+  location:
+    https://github.com/haskell-unordered-containers/hashable.git
