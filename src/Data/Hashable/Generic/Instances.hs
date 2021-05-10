@@ -2,6 +2,7 @@
              ScopedTypeVariables, TypeOperators,
              MultiParamTypeClasses, GADTs, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE Trustworthy #-}
 
 ------------------------------------------------------------------------
 -- |

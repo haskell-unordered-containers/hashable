@@ -94,6 +94,10 @@ library
     UnliftedFFITypes
 
   ghc-options:      -Wall -fwarn-tabs
+  if impl(ghc >= 9.0)
+    -- these flags may abort compilation with GHC-8.10
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
+    ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
 
 test-suite hashable-tests
   type:             exitcode-stdio-1.0

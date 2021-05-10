@@ -3,6 +3,8 @@
              DefaultSignatures, FlexibleContexts, TypeFamilies,
              MultiParamTypeClasses #-}
 
+{-# LANGUAGE Trustworthy #-}
+
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PolyKinds #-} -- For TypeRep instances
 #endif
