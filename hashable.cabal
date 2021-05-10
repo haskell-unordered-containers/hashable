@@ -1,106 +1,142 @@
-Cabal-version:       1.12
-Name:                hashable
-Version:             1.3.1.0
-Synopsis:            A class for types that can be converted to a hash value
-Description:         This package defines a class, 'Hashable', for types that
-                     can be converted to a hash value.  This class
-                     exists for the benefit of hashing-based data
-                     structures.  The package provides instances for
-                     basic types and a way to combine hash values.
-Homepage:            http://github.com/haskell-unordered-containers/hashable
+cabal-version:      1.12
+name:               hashable
+version:            1.3.1.0
+synopsis:           A class for types that can be converted to a hash value
+description:
+  This package defines a class, 'Hashable', for types that
+  can be converted to a hash value.  This class
+  exists for the benefit of hashing-based data
+  structures.  The package provides instances for
+  basic types and a way to combine hash values.
+
+homepage:           http://github.com/haskell-unordered-containers/hashable
+
 -- SPDX-License-Identifier : BSD-3-Clause
-License:             BSD3
-License-file:        LICENSE
-Author:              Milan Straka <fox@ucw.cz>
-                     Johan Tibell <johan.tibell@gmail.com>
-Maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
-bug-reports:         https://github.com/haskell-unordered-containers/hashable/issues
-Stability:           Provisional
-Category:            Data
-Build-type:          Simple
-tested-with:         GHC==8.10.3, GHC==8.8.3, GHC==8.6.5, GHC==8.4.4, GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2
+license:            BSD3
+license-file:       LICENSE
+author:
+  Milan Straka <fox@ucw.cz>
+  Johan Tibell <johan.tibell@gmail.com>
 
-Extra-source-files:
-  CHANGES.md, README.md
+maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
+bug-reports:
+  https://github.com/haskell-unordered-containers/hashable/issues
 
-Flag integer-gmp
-  Description: Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
-  Default: True
+stability:          Provisional
+category:           Data
+build-type:         Simple
+tested-with:
+  GHC ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.3
+   || ==8.10.3
 
-Library
-  Exposed-modules:   Data.Hashable
-                     Data.Hashable.Lifted
-                     Data.Hashable.Generic
-  Other-modules:     Data.Hashable.Class
-                     Data.Hashable.Generic.Instances
+extra-source-files:
+  CHANGES.md
+  README.md
 
-  C-sources:         cbits/fnv.c
-  hs-source-dirs:    src
+flag integer-gmp
+  description:
+    Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
 
-  Build-depends:     base       >= 4.5      && < 4.16
-                   , bytestring >= 0.9      && < 0.12
-                   , deepseq    >= 1.3      && < 1.5
-                   , text       >= 0.12     && < 1.3
-                   , ghc-prim
+  default:     True
 
-  if impl(ghc >= 9)
-    Build-depends:    ghc-bignum >= 1.0 && <1.1
+library
+  exposed-modules:
+    Data.Hashable
+    Data.Hashable.Generic
+    Data.Hashable.Lifted
+
+  other-modules:
+    Data.Hashable.Class
+    Data.Hashable.Generic.Instances
+
+  c-sources:        cbits/fnv.c
+  hs-source-dirs:   src
+  build-depends:
+      base        >=4.5  && <4.16
+    , bytestring  >=0.9  && <0.12
+    , deepseq     >=1.3  && <1.5
+    , ghc-prim
+    , text        >=0.12 && <1.3
+
+  if impl(ghc >=9)
+    build-depends: ghc-bignum ==1.0.*
+
   else
     if flag(integer-gmp)
-      Build-depends:   integer-gmp >= 0.4 && < 1.1
+      build-depends: integer-gmp >=0.4 && <1.1
+
     else
       -- this is needed for the automatic flag to be well-balanced
-      Build-depends:   integer-simple
+      build-depends: integer-simple
 
-  Default-Language:  Haskell2010
-  Other-Extensions:  BangPatterns
-                     CPP
-                     DeriveDataTypeable
-                     FlexibleContexts
-                     FlexibleInstances
-                     GADTs
-                     KindSignatures
-                     MagicHash
-                     MultiParamTypeClasses
-                     ScopedTypeVariables
-                     Trustworthy
-                     TypeOperators
-                     UnliftedFFITypes
+  default-language: Haskell2010
+  other-extensions:
+    BangPatterns
+    CPP
+    DeriveDataTypeable
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    KindSignatures
+    MagicHash
+    MultiParamTypeClasses
+    ScopedTypeVariables
+    Trustworthy
+    TypeOperators
+    UnliftedFFITypes
 
-  Ghc-options:       -Wall -fwarn-tabs
+  ghc-options:      -Wall -fwarn-tabs
 
-Test-suite hashable-tests
-  Type:              exitcode-stdio-1.0
-  Hs-source-dirs:    tests
-  Main-is:           Main.hs
-  Other-modules:     Properties Regress
-  Build-depends:     base,
-                     bytestring,
-                     ghc-prim,
-                     hashable,
-                     test-framework >= 0.3.3,
-                     test-framework-hunit,
-                     test-framework-quickcheck2 >= 0.2.9,
-                     HUnit,
-                     QuickCheck >= 2.4.0.1,
-                     random >= 1.0 && < 1.3,
-                     text >= 0.11.0.5
+test-suite hashable-tests
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   tests
+  main-is:          Main.hs
+  other-modules:
+    Properties
+    Regress
+
+  build-depends:
+      base
+    , bytestring
+    , ghc-prim
+    , hashable
+    , HUnit
+    , QuickCheck                  >=2.4.0.1
+    , random                      >=1.0      && <1.3
+    , test-framework              >=0.3.3
+    , test-framework-hunit
+    , test-framework-quickcheck2  >=0.2.9
+    , text                        >=0.11.0.5
+
   if !os(windows)
-    Build-depends:   unix
-    CPP-options:     -DHAVE_MMAP
-    Other-modules:   Regress.Mmap
-    Other-Extensions: CApiFFI
+    build-depends:    unix
+    cpp-options:      -DHAVE_MMAP
+    other-modules:    Regress.Mmap
+    other-extensions: CApiFFI
 
-  Ghc-options:       -Wall -fno-warn-orphans
-  Default-Language:  Haskell2010
+  ghc-options:      -Wall -fno-warn-orphans
+  default-language: Haskell2010
 
 test-suite hashable-examples
-  type:              exitcode-stdio-1.0
-  build-depends: base, hashable, ghc-prim
-  hs-source-dirs: examples
-  main-is: Main.hs
-  Default-Language:  Haskell2010
+  type:             exitcode-stdio-1.0
+  build-depends:
+      base
+    , ghc-prim
+    , hashable
+
+  hs-source-dirs:   examples
+  main-is:          Main.hs
+  default-language: Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/haskell-unordered-containers/hashable.git
+  location:
+    https://github.com/haskell-unordered-containers/hashable.git
