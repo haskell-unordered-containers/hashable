@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.13.20210525
+# version: 0.12.1
 #
-# REGENDATA ("0.13.20210525",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
+# REGENDATA ("0.12.1",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
 #
 name: Benchmarks
 on:
@@ -187,3 +187,9 @@ jobs:
         run: |
           rm -f cabal.project.local
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
+      - name: prepare for constraint sets
+        run: |
+          rm -f cabal.project.local
+      - name: constraint set random-initial-seed
+        run: |
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='hashable +random-initial-seed' all

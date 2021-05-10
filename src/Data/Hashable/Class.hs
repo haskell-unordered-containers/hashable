@@ -194,6 +194,10 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
+#ifdef HASHABLE_RANDOM_SEED
+import System.IO.Unsafe (unsafePerformIO)
+#endif
+
 #include "MachDeps.h"
 
 infixl 0 `hashWithSalt`
@@ -201,14 +205,30 @@ infixl 0 `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
+#ifdef HASHABLE_RANDOM_SEED
+initialSeed :: Word64
+initialSeed = unsafePerformIO initialSeedC
+{-# NOINLINE initialSeed #-}
+
+foreign import ccall "hs_hashable_init" initialSeedC :: IO Word64
+#endif
+
 -- | A default salt used in the implementation of 'hash'.
 defaultSalt :: Int
-#if WORD_SIZE_IN_BITS == 64
-defaultSalt = -3750763034362895579 -- 14695981039346656037 :: Int64
+#ifdef HASHABLE_RANDOM_SEED
+defaultSalt = hashWithSalt defaultSalt' initialSeed
 #else
-defaultSalt = -2128831035 -- 2166136261 :: Int32
+defaultSalt = defaultSalt'
 #endif
 {-# INLINE defaultSalt #-}
+
+defaultSalt' :: Int
+#if WORD_SIZE_IN_BITS == 64
+defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
+#else
+defaultSalt' = -2128831035 -- 2166136261 :: Int32
+#endif
+{-# INLINE defaultSalt' #-}
 
 -- | The class of types that can be converted to a hash value.
 --
