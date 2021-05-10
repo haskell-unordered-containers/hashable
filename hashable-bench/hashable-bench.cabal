@@ -38,13 +38,6 @@ Library
   Other-modules:     Data.Hashable.Class
                      Data.Hashable.Generic.Instances
 
-  -- this are only for benchmark
-  Exposed-modules:   Data.Hashable.SipHash
-  c-sources:         cbits/getRandomBytes.c
-  other-modules:     Data.Hashable.RandomSource
-  if os(windows)
-    extra-libraries: advapi32
-
   C-sources:         cbits/fnv.c
   hs-source-dirs:    src
 
@@ -83,7 +76,7 @@ Library
 benchmark hashable-benchmark
   -- We cannot depend on the hashable library directly as that creates
   -- a dependency cycle.
-  hs-source-dirs: benchmarks
+  hs-source-dirs: benchmarks src-siphash
 
   main-is: Benchmarks.hs
   type: exitcode-stdio-1.0
@@ -111,6 +104,9 @@ benchmark hashable-benchmark
 
   includes:
     siphash.h
+
+  other-modules:   Data.Hashable.SipHash
+
 
   c-sources:
     benchmarks/cbits/inthash.c
