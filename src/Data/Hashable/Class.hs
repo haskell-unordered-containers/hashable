@@ -213,6 +213,14 @@ defaultSalt = -2128831035 -- 2166136261 :: Int32
 -- | The class of types that can be converted to a hash value.
 --
 -- Minimal implementation: 'hashWithSalt'.
+--
+-- /Note:/ the hash is not guaranteed to be stable across
+-- library versions, operating systems or architectures.
+-- For stable hashing use named hashes: SHA256, CRC32 etc.
+--
+-- If you are looking for 'Hashable' instance in @time@ package,
+-- check [time-compat](https://hackage.haskell.org/package/time-compat)
+--
 class Hashable a where
     -- | Return a hash value for the argument, using the given salt.
     --
@@ -236,6 +244,9 @@ class Hashable a where
     --    application of the method. This implies that any instance
     --    that defines 'hashWithSalt' /must/ make use of the salt in
     --    its implementation.
+    --
+    --  * 'hashWithSalt' may return negative 'Int' values.
+    --
     hashWithSalt :: Int -> a -> Int
 
     -- | Like 'hashWithSalt', but no salt is used. The default
