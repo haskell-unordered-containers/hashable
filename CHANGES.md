@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.3.2.0
+
+ * Add `Hashable (Fixed a)` for `base <4.7` versions.
+
 ## Version 1.3.1.0
 
  * Add `Hashable1` instances to `semigroups` types.
