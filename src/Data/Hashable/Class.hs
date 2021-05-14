@@ -98,6 +98,9 @@ import Data.Proxy (Proxy)
 
 #if MIN_VERSION_base(4,7,0)
 import Data.Fixed (Fixed(..))
+#else
+import Data.Fixed (Fixed)
+import Unsafe.Coerce (unsafeCoerce)
 #endif
 
 #if MIN_VERSION_base(4,8,0)
@@ -825,11 +828,14 @@ instance Hashable Version where
         salt `hashWithSalt` branch `hashWithSalt` tags
 
 #if MIN_VERSION_base(4,7,0)
--- Using hashWithSalt1 would cause needless constraint
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
+-- Using hashWithSalt1 would cause needless constraint
 instance Hashable1 Fixed where
     liftHashWithSalt _ salt (MkFixed i) = hashWithSalt salt i
+#else
+instance Hashable (Fixed a) where
+    hashWithSalt salt x = hashWithSalt salt (unsafeCoerce x :: Integer)
 #endif
 
 #if MIN_VERSION_base(4,8,0)

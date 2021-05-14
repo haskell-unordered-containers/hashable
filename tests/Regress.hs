@@ -8,6 +8,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@=?))
 import GHC.Generics (Generic)
 import Data.List (nub)
+import Data.Fixed (Pico)
 
 #ifdef HAVE_MMAP
 import qualified Regress.Mmap as Mmap
@@ -19,6 +20,9 @@ regressions :: [F.Test]
 regressions = [] ++
 #ifdef HAVE_MMAP
     Mmap.regressions ++
+    [ testCase "Fixed" $ do
+        (hash (1 :: Pico) == hash (2 :: Pico)) @=? False
+    ] ++
 #endif
     [ F.testGroup "Generic: sum of nullary constructors"
         [ testCase "0" $ nullaryCase 0 S0
