@@ -920,11 +920,13 @@ instance Hashable a => Hashable (WrappedMonoid a) where
 -- | @since 1.3.1.0
 instance Hashable1 WrappedMonoid where liftHashWithSalt h salt (WrapMonoid a) = h salt a
 
+#if !MIN_VERSION_base(4,16,0)
 instance Hashable a => Hashable (Option a) where
     hashWithSalt p (Option a) = hashWithSalt p a
 
 -- | @since 1.3.1.0
 instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
+#endif
 #endif
 
 -- instances for @Data.Functor.{Product,Sum,Compose}@, present
