@@ -3,6 +3,10 @@ See also https://pvp.haskell.org/faq
 ## Version 1.3.2.0
 
  * Add `Hashable (Fixed a)` for `base <4.7` versions.
+ * Add documentation:
+   - `hashable` is not a stable hash
+   - `hashWithSalt` may return negative values
+   - there is `time-compat` with `Hashable` instances for `time` types.
 
 ## Version 1.3.1.0
 
