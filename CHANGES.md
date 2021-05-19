@@ -7,8 +7,8 @@ See also https://pvp.haskell.org/faq
    - `hashable` is not a stable hash
    - `hashWithSalt` may return negative values
    - there is `time-compat` with `Hashable` instances for `time` types.
-  * Add `random-initial-seed` flag causing the initial seed
-    to be randomized on each start of an executable using `hashable`.
+ * Add `random-initial-seed` flag causing the initial seed
+   to be randomized on each start of an executable using `hashable`.
 
 ## Version 1.3.1.0
 
