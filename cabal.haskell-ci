@@ -1,3 +1,6 @@
 distribution: bionic
 branches: master
 benchmarks: False
+
+constraint-set random-initial-seed
+  constraints: hashable +random-initial-seed

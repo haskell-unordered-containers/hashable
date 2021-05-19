@@ -46,7 +46,17 @@ flag integer-gmp
   description:
     Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
 
+  manual:      False
   default:     True
+
+flag random-initial-seed
+  description:
+    Randomly initialize the initial seed on each final executable invocation
+    This is useful for catching cases when you rely on (non-existent)
+    stability of hashable's hash functions.
+
+  manual:      True
+  default:     False
 
 library
   exposed-modules:
@@ -78,6 +88,15 @@ library
       -- this is needed for the automatic flag to be well-balanced
       build-depends: integer-simple
 
+  if (flag(random-initial-seed) && impl(ghc))
+    cpp-options: -DHASHABLE_RANDOM_SEED=1
+
+    if os(windows)
+      c-sources: cbits-win/init.c
+
+    else
+      c-sources: cbits-unix/init.c
+
   default-language: Haskell2010
   other-extensions:
     BangPatterns
@@ -95,7 +114,8 @@ library
     UnliftedFFITypes
 
   ghc-options:      -Wall -fwarn-tabs
-  if impl(ghc >= 9.0)
+
+  if impl(ghc >=9.0)
     -- these flags may abort compilation with GHC-8.10
     -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
     ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
