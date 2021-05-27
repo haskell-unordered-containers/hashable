@@ -354,6 +354,8 @@ defaultHashWithSalt salt x = salt `combine` hash x
 -- >
 -- > instance Hashable Foo where
 -- >     hashWithSalt = hashUsing fromEnum
+--
+-- @since 1.2.0.0
 hashUsing :: (Hashable b) =>
              (a -> b)           -- ^ Transformation function.
           -> Int                -- ^ Salt.
