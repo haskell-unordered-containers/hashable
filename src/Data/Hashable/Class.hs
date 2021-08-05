@@ -122,10 +122,8 @@ import GHC.Fingerprint.Type(Fingerprint(..))
 #endif
 
 #if MIN_VERSION_base(4,5,0)
-import Foreign.C (CLong(..))
 import Foreign.C.Types (CInt(..))
 #else
-import Foreign.C (CLong)
 import Foreign.C.Types (CInt)
 #endif
 
@@ -816,8 +814,13 @@ hashPtrWithSalt p len salt =
     fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
+#if WORD_SIZE_IN_BITS == 64
 foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
-    :: CString -> CLong -> CLong -> IO CLong
+    :: CString -> Int64 -> Int64 -> IO Int64
+#else
+foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
+    :: CString -> Int32 -> Int32 -> IO Int32
+#endif
 
 -- | Compute a hash value for the content of this 'ByteArray#',
 -- beginning at the specified offset, using specified number of bytes.
@@ -844,8 +847,13 @@ hashByteArrayWithSalt ba !off !len !h =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h)
 
+#if WORD_SIZE_IN_BITS == 64
 foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
-    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
+    :: ByteArray# -> Int64 -> Int64 -> Int64 -> Int64
+#else
+foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
+    :: ByteArray# -> Int32 -> Int32 -> Int32 -> Int32
+#endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
