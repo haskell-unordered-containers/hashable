@@ -32,11 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "MachDeps.h"
+#include <stdint.h>
 
 #if WORD_SIZE_IN_BITS == 64
 #define FNV_PRIME 1099511628211
+#define FNV_SIGNED int64_t
+#define FNV_UNSIGNED uint64_t
 #else
 #define FNV_PRIME 16777619
+#define FNV_SIGNED int32_t
+#define FNV_UNSIGNED uint32_t
 #endif
 
 /* FNV-1 hash
@@ -44,11 +49,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * The FNV-1 hash description: http://isthe.com/chongo/tech/comp/fnv/
  * The FNV-1 hash is public domain: http://isthe.com/chongo/tech/comp/fnv/#public_domain
  */
-long hashable_fnv_hash(const unsigned char* str, long len, long salt) {
+FNV_SIGNED hashable_fnv_hash(const unsigned char* str, FNV_SIGNED len, FNV_SIGNED salt) {
 
-  unsigned long hash = salt;
+  FNV_UNSIGNED hash = salt;
   while (len--) {
-    hash = (hash * 16777619) ^ *str++;
+    hash = (hash * FNV_PRIME) ^ *str++;
   }
 
   return hash;
@@ -57,6 +62,6 @@ long hashable_fnv_hash(const unsigned char* str, long len, long salt) {
 /* Used for ByteArray#s. We can't treat them like pointers in
    native Haskell, but we can in unsafe FFI calls.
  */
-long hashable_fnv_hash_offset(const unsigned char* str, long offset, long len, long salt) {
+FNV_SIGNED hashable_fnv_hash_offset(const unsigned char* str, FNV_SIGNED offset, FNV_SIGNED len, FNV_SIGNED salt) {
   return hashable_fnv_hash(str + offset, len, salt);
 }
