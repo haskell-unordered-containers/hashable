@@ -1,11 +1,10 @@
 packages: .
+tests: True
 
-package hashable
-  tests: True
-
--- For GHC-9.0 testing:
--- allow-newer: regex-posix:base
--- allow-newer: regex-base:base
+-- For alpha/rc GHC testing:
+--
+-- allow-newer: base
+-- allow-newer: bytestring
 --
 -- repository head.hackage
 --    url: https://ghc.gitlab.haskell.org/head.hackage/
