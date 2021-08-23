@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Regress (regressions) where
 
@@ -9,12 +10,15 @@ import Test.HUnit ((@=?))
 import GHC.Generics (Generic)
 import Data.List (nub)
 import Data.Fixed (Pico)
+import Data.Text (Text)
 
 #ifdef HAVE_MMAP
 import qualified Regress.Mmap as Mmap
 #endif
 
 import Data.Hashable
+
+#include "MachDeps.h"
 
 regressions :: [F.Test]
 regressions = [] ++
@@ -35,6 +39,10 @@ regressions = [] ++
         let ns = take 20 $ iterate S Z
         let hs = map hash ns
         hs @=? nub hs
+#if WORD_SIZE_IN_BITS == 64
+    , testCase "64 bit Text" $ do
+        hash ("hello world" :: Text) @=? 6567282331143050109
+#endif
     ]
   where
     nullaryCase :: Int -> SumOfNullary -> IO ()
