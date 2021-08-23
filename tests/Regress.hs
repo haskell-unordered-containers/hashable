@@ -41,7 +41,7 @@ regressions = [] ++
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=? 6567282331143050109
+        hash ("hello world" :: Text) @=? 2668910425102664189
 #endif
     ]
   where

@@ -1,5 +1,11 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.3.3.0
+
+ * `Text` hashing uses 64-bit FNV prime
+ * Don't truncate Text hashvalues on 64bit Windows:
+   https://github.com/haskell-unordered-containers/hashable/pull/211
+
 ## Version 1.3.2.0
 
  * Add `Hashable (Fixed a)` for `base <4.7` versions.
