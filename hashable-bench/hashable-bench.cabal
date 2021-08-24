@@ -32,7 +32,9 @@ tested-with:
    || ==8.10.4
    || ==9.0.1
 
-extra-source-files: benchmarks/cbits/*.h
+extra-source-files:
+  benchmarks/cbits/*.h
+  include/HsHashable.h
 
 flag integer-gmp
   description:
@@ -61,6 +63,7 @@ library
     Data.Hashable.Generic.Instances
 
   c-sources:        cbits/fnv.c
+  include-dirs:     include
   hs-source-dirs:   src
   build-depends:
       base        >=4.5  && <4.16
@@ -113,12 +116,12 @@ benchmark hashable-benchmark
     , siphash
     , text
 
-  if impl(ghc -any)
+  if impl(ghc)
     build-depends:
         ghc-prim
       , text      >=0.11.0.5
 
-  if (impl(ghc -any) && flag(integer-gmp))
+  if (impl(ghc) && flag(integer-gmp))
     build-depends: integer-gmp >=0.2
 
   if impl(ghc >=7.2.1)

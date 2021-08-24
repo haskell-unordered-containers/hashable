@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, CPP, MagicHash,
              ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable,
              DefaultSignatures, FlexibleContexts, TypeFamilies,
-             MultiParamTypeClasses #-}
+             MultiParamTypeClasses, CApiFFI #-}
 
 {-# LANGUAGE Trustworthy #-}
 
@@ -121,13 +121,7 @@ import Data.Typeable.Internal (Typeable, TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
 #endif
 
-#if MIN_VERSION_base(4,5,0)
-import Foreign.C (CLong(..))
 import Foreign.C.Types (CInt(..))
-#else
-import Foreign.C (CLong)
-import Foreign.C.Types (CInt)
-#endif
 
 #if !(MIN_VERSION_base(4,8,0))
 import Data.Word (Word)
@@ -210,7 +204,7 @@ initialSeed :: Word64
 initialSeed = unsafePerformIO initialSeedC
 {-# NOINLINE initialSeed #-}
 
-foreign import ccall "hs_hashable_init" initialSeedC :: IO Word64
+foreign import capi "HsHashable.h hs_hashable_init" initialSeedC :: IO Word64
 #endif
 
 -- | A default salt used in the implementation of 'hash'.
@@ -723,6 +717,7 @@ instance Hashable TL.Text where
 hashThreadId :: ThreadId -> Int
 hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
 
+-- this cannot be capi, as GHC panics.
 foreign import ccall unsafe "rts_getThreadId" getThreadId
     :: ThreadId# -> CInt
 
@@ -816,8 +811,12 @@ hashPtrWithSalt p len salt =
     fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
-foreign import ccall unsafe "hashable_fnv_hash" c_hashCString
-    :: CString -> CLong -> CLong -> IO CLong
+foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString
+#if WORD_SIZE_IN_BITS == 64
+    :: CString -> Int64 -> Int64 -> IO Word64
+#else
+    :: CString -> Int32 -> Int32 -> IO Word32
+#endif
 
 -- | Compute a hash value for the content of this 'ByteArray#',
 -- beginning at the specified offset, using specified number of bytes.
@@ -844,8 +843,16 @@ hashByteArrayWithSalt ba !off !len !h =
     fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h)
 
+#if __GLASGOW_HASKELL__ >= 802
+foreign import capi unsafe "HsHashable.h hashable_fnv_hash_offset" c_hashByteArray
+#else
 foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
-    :: ByteArray# -> CLong -> CLong -> CLong -> CLong
+#endif
+#if WORD_SIZE_IN_BITS == 64
+    :: ByteArray# -> Int64 -> Int64 -> Int64 -> Word64
+#else
+    :: ByteArray# -> Int32 -> Int32 -> Int32 -> Word32
+#endif
 
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
