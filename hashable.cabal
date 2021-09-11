@@ -56,6 +56,7 @@ flag random-initial-seed
     Randomly initialize the initial seed on each final executable invocation
     This is useful for catching cases when you rely on (non-existent)
     stability of hashable's hash functions.
+    This is not a security feature.
 
   manual:      True
   default:     False
