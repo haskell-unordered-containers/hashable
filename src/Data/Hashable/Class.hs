@@ -64,7 +64,10 @@ module Data.Hashable.Class
 import Control.Applicative (Const(..))
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
-import Data.Bits (shiftL, shiftR, xor)
+#if !MIN_VERSION_text(2,0,0)
+import Data.Bits (shiftL)
+#endif
+import Data.Bits (shiftR, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
@@ -706,9 +709,15 @@ instance Hashable BSI.ShortByteString where
 #endif
 
 instance Hashable T.Text where
+#if MIN_VERSION_text(2,0,0)
+    hashWithSalt salt (T.Text (TA.ByteArray arr) off len) =
+        hashByteArrayWithSalt arr off len
+        salt
+#else
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
         salt
+#endif
 
 instance Hashable TL.Text where
     hashWithSalt = TL.foldlChunks hashWithSalt
