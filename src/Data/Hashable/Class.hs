@@ -61,7 +61,7 @@ module Data.Hashable.Class
     , traverseHashed
     ) where
 
-import Control.Applicative (Const(..))
+import Control.Applicative (Const(..), (<|>))
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import Data.Bits (shiftL, shiftR, xor)
@@ -85,9 +85,11 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
+import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
+import Text.Read (readMaybe)
 
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
@@ -194,11 +196,18 @@ import Data.Kind (Type)
 -- * Default salt
 
 getInitialSeed :: IO (Maybe Word64)
+getInitialSeed = do
+    initialSeedFromEnv' <- lookupEnv "HASHABLE_INITIAL_SEED"
+    let initialSeedFromEnv = initialSeedFromEnv' >>= readMaybe
+    initialSeedFromRandom <- getRandomInitialSeed
+    return $ initialSeedFromEnv <|> initialSeedFromRandom
+    where
 #ifdef HASHABLE_RANDOM_SEED
-getInitialSeed = Just <$> initialSeedC
+        getRandomInitialSeed = Just <$> initialSeedC
+
 foreign import capi "HsHashable.h hs_hashable_init" initialSeedC :: IO Word64
 #else
-getInitialSeed = pure Nothing
+        getRandomInitialSeed = pure Nothing
 #endif
 
 getDefaultSalt :: IO Int
