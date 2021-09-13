@@ -190,10 +190,8 @@ import Data.Kind (Type)
 
 #include "MachDeps.h"
 
-infixl 0 `hashWithSalt`
-
 ------------------------------------------------------------------------
--- * Computing hash values
+-- * Default salt
 
 getInitialSeed :: IO (Maybe Word64)
 #ifdef HASHABLE_RANDOM_SEED
@@ -217,6 +215,11 @@ getDefaultSalt = maybe defaultSalt' (hashWithSalt defaultSalt') <$> getInitialSe
 defaultSalt :: Int
 defaultSalt = unsafePerformIO getDefaultSalt
 {-# NOINLINE defaultSalt #-}
+
+------------------------------------------------------------------------
+-- * Computing hash values
+
+infixl 0 `hashWithSalt`
 
 -- | The class of types that can be converted to a hash value.
 --
