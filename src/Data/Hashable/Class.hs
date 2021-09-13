@@ -85,7 +85,7 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 
@@ -188,10 +188,6 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
-#ifdef HASHABLE_RANDOM_SEED
-import System.IO.Unsafe (unsafePerformIO)
-#endif
-
 #include "MachDeps.h"
 
 infixl 0 `hashWithSalt`
@@ -199,22 +195,21 @@ infixl 0 `hashWithSalt`
 ------------------------------------------------------------------------
 -- * Computing hash values
 
+getInitialSeed :: IO (Maybe Word64)
 #ifdef HASHABLE_RANDOM_SEED
-initialSeed :: Word64
-initialSeed = unsafePerformIO initialSeedC
-{-# NOINLINE initialSeed #-}
-
+getInitialSeed = Just <$> initialSeedC
 foreign import capi "HsHashable.h hs_hashable_init" initialSeedC :: IO Word64
+#else
+getInitialSeed = pure Nothing
 #endif
+
+getDefaultSalt :: IO Int
+getDefaultSalt = maybe defaultSalt' (hashWithSalt defaultSalt') <$> getInitialSeed
 
 -- | A default salt used in the implementation of 'hash'.
 defaultSalt :: Int
-#ifdef HASHABLE_RANDOM_SEED
-defaultSalt = hashWithSalt defaultSalt' initialSeed
-#else
-defaultSalt = defaultSalt'
-#endif
-{-# INLINE defaultSalt #-}
+defaultSalt = unsafePerformIO getDefaultSalt
+{-# NOINLINE defaultSalt #-}
 
 defaultSalt' :: Int
 #if WORD_SIZE_IN_BITS == 64
