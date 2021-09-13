@@ -61,7 +61,7 @@ module Data.Hashable.Class
     , traverseHashed
     ) where
 
-import Control.Applicative (Const(..))
+import Control.Applicative (Const(..), (<|>))
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import Data.Bits (shiftL, shiftR, xor)
@@ -85,9 +85,11 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.Environment (lookupEnv)
+import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
+import Text.Read (readMaybe)
 
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
@@ -188,41 +190,45 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
-#ifdef HASHABLE_RANDOM_SEED
-import System.IO.Unsafe (unsafePerformIO)
-#endif
-
 #include "MachDeps.h"
 
-infixl 0 `hashWithSalt`
-
 ------------------------------------------------------------------------
--- * Computing hash values
+-- * Default salt
 
+getInitialSeed :: IO (Maybe Word64)
+getInitialSeed = do
+    initialSeedFromEnv' <- lookupEnv "HASHABLE_INITIAL_SEED"
+    let initialSeedFromEnv = initialSeedFromEnv' >>= readMaybe
+    initialSeedFromRandom <- getRandomInitialSeed
+    return $ initialSeedFromEnv <|> initialSeedFromRandom
+    where
 #ifdef HASHABLE_RANDOM_SEED
-initialSeed :: Word64
-initialSeed = unsafePerformIO initialSeedC
-{-# NOINLINE initialSeed #-}
+        getRandomInitialSeed = Just <$> initialSeedC
 
 foreign import capi "HsHashable.h hs_hashable_init" initialSeedC :: IO Word64
+#else
+        getRandomInitialSeed = pure Nothing
+#endif
+
+getDefaultSalt :: IO Int
+getDefaultSalt = maybe defaultSalt' (hashWithSalt defaultSalt') <$> getInitialSeed
+    where
+        defaultSalt' :: Int
+#if WORD_SIZE_IN_BITS == 64
+        defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
+#else
+        defaultSalt' = -2128831035 -- 2166136261 :: Int32
 #endif
 
 -- | A default salt used in the implementation of 'hash'.
 defaultSalt :: Int
-#ifdef HASHABLE_RANDOM_SEED
-defaultSalt = hashWithSalt defaultSalt' initialSeed
-#else
-defaultSalt = defaultSalt'
-#endif
-{-# INLINE defaultSalt #-}
+defaultSalt = unsafePerformIO getDefaultSalt
+{-# NOINLINE defaultSalt #-}
 
-defaultSalt' :: Int
-#if WORD_SIZE_IN_BITS == 64
-defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
-#else
-defaultSalt' = -2128831035 -- 2166136261 :: Int32
-#endif
-{-# INLINE defaultSalt' #-}
+------------------------------------------------------------------------
+-- * Computing hash values
+
+infixl 0 `hashWithSalt`
 
 -- | The class of types that can be converted to a hash value.
 --
