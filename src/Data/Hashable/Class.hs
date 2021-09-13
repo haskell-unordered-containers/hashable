@@ -205,19 +205,18 @@ getInitialSeed = pure Nothing
 
 getDefaultSalt :: IO Int
 getDefaultSalt = maybe defaultSalt' (hashWithSalt defaultSalt') <$> getInitialSeed
+    where
+        defaultSalt' :: Int
+#if WORD_SIZE_IN_BITS == 64
+        defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
+#else
+        defaultSalt' = -2128831035 -- 2166136261 :: Int32
+#endif
 
 -- | A default salt used in the implementation of 'hash'.
 defaultSalt :: Int
 defaultSalt = unsafePerformIO getDefaultSalt
 {-# NOINLINE defaultSalt #-}
-
-defaultSalt' :: Int
-#if WORD_SIZE_IN_BITS == 64
-defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
-#else
-defaultSalt' = -2128831035 -- 2166136261 :: Int32
-#endif
-{-# INLINE defaultSalt' #-}
 
 -- | The class of types that can be converted to a hash value.
 --
