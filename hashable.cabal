@@ -43,6 +43,7 @@ extra-source-files:
   CHANGES.md
   README.md
   include/HsHashable.h
+  include/siphash.h
 
 flag integer-gmp
   description:
@@ -61,6 +62,15 @@ flag random-initial-seed
   manual:      True
   default:     False
 
+
+flag sse2
+  description: Do we want to assume that a target supports SSE 2?
+  default: True
+
+flag sse41
+  description: Do we want to assume that a target supports SSE 4.1?
+  default: False
+
 library
   exposed-modules:
     Data.Hashable
@@ -74,6 +84,15 @@ library
     Data.Hashable.Generic.Instances
 
   c-sources:        cbits/fnv.c
+                    cbits/siphash.c
+  if arch(i386) && flag(sse2)
+    CPP-Options:   -DHAVE_SSE2
+    C-sources:       cbits/siphash-sse2.c
+
+    if flag(sse41)
+      CPP-Options:   -DHAVE_SSE41
+      C-sources:     cbits/siphash-sse41.c
+
   include-dirs:     include
   hs-source-dirs:   src
   build-depends:

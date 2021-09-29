@@ -93,6 +93,12 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
 
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C (CSize(..))
+#else
+import Foreign.C (CSize)
+#endif
+
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
 
@@ -131,7 +137,13 @@ import Foreign.C.Types (CInt(..))
 import Data.Word (Word)
 #endif
 
-#if !(MIN_VERSION_bytestring(0,10,0))
+#if MIN_VERSION_base(4,7,0)
+import Data.Bits (finiteBitSize)
+#else
+import Data.Bits (bitSize)
+#endif
+
+#if (MIN_VERSION_bytestring(0,10,0))
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
 
@@ -655,13 +667,7 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) (hashWithSalt salt len)
 
 instance Hashable BL.ByteString where
-    hashWithSalt salt = finalise . BL.foldlChunks step (SP salt 0)
-      where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) bs  = unsafeDupablePerformIO $
-                            B.unsafeUseAsCStringLen bs $ \(p, len) -> do
-                                s' <- hashPtrWithSalt p (fromIntegral len) s
-                                return (SP s' (l + len))
+    hashWithSalt = hashLazyByteStringWithSalt
 
 #if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
@@ -675,12 +681,7 @@ instance Hashable T.Text where
         (hashWithSalt salt len)
 
 instance Hashable TL.Text where
-    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
-      where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) (T.Text arr off len) = SP
-            (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
-            (l + len)
+    hashWithSalt = hashLazyTextWithSalt
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
@@ -774,6 +775,11 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ hash value
 hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 {-# INLINE hashByteArray #-}
+
+-- | Combine two given hash values.  'combine' has zero as a left
+-- identity.
+combine :: Int -> Int -> Int
+combine h1 h2 = (h1 * 16777619) `xor` h2
 
 instance Hashable Unique where
     hash = hashUnique
@@ -1012,6 +1018,7 @@ instance Hashable IntSet.IntSet where
 -- | @since 1.3.4.0
 instance Hashable1 Seq.Seq where
     liftHashWithSalt h s x = F.foldl' h (hashWithSalt s (Seq.length x)) x
+
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Seq.Seq v) where
