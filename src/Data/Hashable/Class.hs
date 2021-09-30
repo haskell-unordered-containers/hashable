@@ -78,7 +78,6 @@ import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
-import Foreign.C (CString)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, FunPtr, IntPtr, WordPtr, castPtr, castFunPtrToPtr, ptrToIntPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
@@ -188,9 +187,8 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
-#ifdef HASHABLE_RANDOM_SEED
-import System.IO.Unsafe (unsafePerformIO)
-#endif
+
+import Data.Hashable.LowLevel
 
 #include "MachDeps.h"
 
@@ -198,31 +196,6 @@ infixl 0 `hashWithSalt`
 
 ------------------------------------------------------------------------
 -- * Computing hash values
-
-#ifdef HASHABLE_RANDOM_SEED
-initialSeed :: Word64
-initialSeed = unsafePerformIO initialSeedC
-{-# NOINLINE initialSeed #-}
-
-foreign import capi "HsHashable.h hs_hashable_init" initialSeedC :: IO Word64
-#endif
-
--- | A default salt used in the implementation of 'hash'.
-defaultSalt :: Int
-#ifdef HASHABLE_RANDOM_SEED
-defaultSalt = hashWithSalt defaultSalt' initialSeed
-#else
-defaultSalt = defaultSalt'
-#endif
-{-# INLINE defaultSalt #-}
-
-defaultSalt' :: Int
-#if WORD_SIZE_IN_BITS == 64
-defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
-#else
-defaultSalt' = -2128831035 -- 2166136261 :: Int32
-#endif
-{-# INLINE defaultSalt' #-}
 
 -- | The class of types that can be converted to a hash value.
 --
@@ -334,7 +307,7 @@ defaultLiftHashWithSalt h = liftHashWithSalt2 hashWithSalt h
 -- the non-generic instance use case. Instead we provide
 -- 'defaultHashWith'.
 defaultHashWithSalt :: Hashable a => Int -> a -> Int
-defaultHashWithSalt salt x = salt `combine` hash x
+defaultHashWithSalt salt x = salt `hashInt` hash x
 
 -- | Transform a value into a 'Hashable' value, then hash the
 -- transformed value using the given salt.
@@ -570,8 +543,8 @@ instance Hashable a => Hashable (Maybe a) where
     hashWithSalt = hashWithSalt1
 
 instance Hashable1 Maybe where
-    liftHashWithSalt _ s Nothing = s `combine` 0
-    liftHashWithSalt h s (Just a) = s `combine` distinguisher `h` a
+    liftHashWithSalt _ s Nothing = s `hashInt` 0
+    liftHashWithSalt h s (Just a) = s `hashInt` distinguisher `h` a
 
 instance (Hashable a, Hashable b) => Hashable (Either a b) where
     hash (Left a)  = 0 `hashWithSalt` a
@@ -582,8 +555,8 @@ instance Hashable a => Hashable1 (Either a) where
     liftHashWithSalt = defaultLiftHashWithSalt
 
 instance Hashable2 Either where
-    liftHashWithSalt2 h _ s (Left a) = s `combine` 0 `h` a
-    liftHashWithSalt2 _ h s (Right b) = s `combine` distinguisher `h` b
+    liftHashWithSalt2 h _ s (Left a) = s `hashInt` 0 `h` a
+    liftHashWithSalt2 _ h s (Right b) = s `hashInt` distinguisher `h` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
     hash (a1, a2) = hash a1 `hashWithSalt` a2
@@ -808,27 +781,6 @@ hashPtr :: Ptr a      -- ^ pointer to the data to hash
         -> IO Int     -- ^ hash value
 hashPtr p len = hashPtrWithSalt p len defaultSalt
 
--- | Compute a hash value for the content of this pointer, using an
--- initial salt.
---
--- This function can for example be used to hash non-contiguous
--- segments of memory as if they were one contiguous segment, by using
--- the output of one hash as the salt for the next.
-hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
-                -> Int     -- ^ length, in bytes
-                -> Int     -- ^ salt
-                -> IO Int  -- ^ hash value
-hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
-    (fromIntegral salt)
-
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString
-#if WORD_SIZE_IN_BITS == 64
-    :: CString -> Int64 -> Int64 -> IO Word64
-#else
-    :: CString -> Int32 -> Int32 -> IO Word32
-#endif
-
 -- | Compute a hash value for the content of this 'ByteArray#',
 -- beginning at the specified offset, using specified number of bytes.
 hashByteArray :: ByteArray#  -- ^ data to hash
@@ -837,42 +789,6 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ hash value
 hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 {-# INLINE hashByteArray #-}
-
--- | Compute a hash value for the content of this 'ByteArray#', using
--- an initial salt.
---
--- This function can for example be used to hash non-contiguous
--- segments of memory as if they were one contiguous segment, by using
--- the output of one hash as the salt for the next.
-hashByteArrayWithSalt
-    :: ByteArray#  -- ^ data to hash
-    -> Int         -- ^ offset, in bytes
-    -> Int         -- ^ length, in bytes
-    -> Int         -- ^ salt
-    -> Int         -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h =
-    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
-    (fromIntegral h)
-
-#if __GLASGOW_HASKELL__ >= 802
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash_offset" c_hashByteArray
-#else
-foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
-#endif
-#if WORD_SIZE_IN_BITS == 64
-    :: ByteArray# -> Int64 -> Int64 -> Int64 -> Word64
-#else
-    :: ByteArray# -> Int32 -> Int32 -> Int32 -> Word32
-#endif
-
--- | Combine two given hash values.  'combine' has zero as a left
--- identity.
-combine :: Int -> Int -> Int
-#if WORD_SIZE_IN_BITS == 64
-combine h1 h2 = (h1 * 1099511628211) `xor` h2
-#else
-combine h1 h2 = (h1 * 16777619) `xor` h2
-#endif
 
 instance Hashable Unique where
     hash = hashUnique
@@ -991,8 +907,8 @@ instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FP.Product f g a) w
     hashWithSalt = hashWithSalt1
 
 instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
-    liftHashWithSalt h s (FS.InL a) = liftHashWithSalt h (s `combine` 0) a
-    liftHashWithSalt h s (FS.InR a) = liftHashWithSalt h (s `combine` distinguisher) a
+    liftHashWithSalt h s (FS.InL a) = liftHashWithSalt h (s `hashInt` 0) a
+    liftHashWithSalt h s (FS.InR a) = liftHashWithSalt h (s `hashInt` distinguisher) a
 
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
     hashWithSalt = hashWithSalt1

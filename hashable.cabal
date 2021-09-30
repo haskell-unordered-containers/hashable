@@ -69,6 +69,7 @@ library
 
   other-modules:
     Data.Hashable.Class
+    Data.Hashable.LowLevel
     Data.Hashable.Generic.Instances
 
   c-sources:        cbits/fnv.c
