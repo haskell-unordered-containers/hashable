@@ -868,7 +868,11 @@ foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
 -- | Combine two given hash values.  'combine' has zero as a left
 -- identity.
 combine :: Int -> Int -> Int
+#if WORD_SIZE_IN_BITS == 64
+combine h1 h2 = (h1 * 1099511628211) `xor` h2
+#else
 combine h1 h2 = (h1 * 16777619) `xor` h2
+#endif
 
 instance Hashable Unique where
     hash = hashUnique

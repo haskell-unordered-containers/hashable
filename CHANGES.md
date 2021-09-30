@@ -3,7 +3,11 @@ See also https://pvp.haskell.org/faq
 ## Version 1.3.4.0
  * `Text` and `ByteString` hashes include length.
    This fixes a variant of https://github.com/haskell-unordered-containers/hashable/issues/74
-   for texts and bytestrings
+   for texts and bytestrings.
+   https://github.com/haskell-unordered-containers/hashable/pull/223
+ * Use correct prime in `combine`.
+   This should improve the hash quality of compound structures on 64bit systems.
+   https://github.com/haskell-unordered-containers/hashable/pull/224
 
 ## Version 1.3.3.0
 
