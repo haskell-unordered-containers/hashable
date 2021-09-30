@@ -339,7 +339,7 @@ hashUsing f salt x = hashWithSalt salt (f x)
 
 instance Hashable Int where
     hash = id
-    hashWithSalt = defaultHashWithSalt
+    hashWithSalt = hashInt
 
 instance Hashable Int8 where
     hash = fromIntegral
@@ -354,15 +354,8 @@ instance Hashable Int32 where
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Int64 where
-    hash n
-#if MIN_VERSION_base(4,7,0)
-        | finiteBitSize (undefined :: Int) == 64 = fromIntegral n
-#else
-        | bitSize (undefined :: Int) == 64 = fromIntegral n
-#endif
-        | otherwise = fromIntegral (fromIntegral n `xor`
-                                   (fromIntegral n `shiftR` 32 :: Word64))
-    hashWithSalt = defaultHashWithSalt
+    hash = fromIntegral
+    hashWithSalt = hashInt64
 
 instance Hashable Word where
     hash = fromIntegral
@@ -381,14 +374,7 @@ instance Hashable Word32 where
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Word64 where
-    hash n
-#if MIN_VERSION_base(4,7,0)
-        | finiteBitSize (undefined :: Int) == 64 = fromIntegral n
-#else
-        | bitSize (undefined :: Int) == 64 = fromIntegral n
-#endif
-        | otherwise = fromIntegral (n `xor` (n `shiftR` 32))
-    hashWithSalt = defaultHashWithSalt
+    hashWithSalt = hashWord64
 
 instance Hashable () where
     hash = fromEnum

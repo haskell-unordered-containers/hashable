@@ -10,6 +10,8 @@ See also https://pvp.haskell.org/faq
    https://github.com/haskell-unordered-containers/hashable/pull/224
  * Add instance for types in `containers` package
    https://github.com/haskell-unordered-containers/hashable/pull/226
+ * Change `Int`, `Int64` and `Word64` `hashWithSalt` slightly.
+   https://github.com/haskell-unordered-containers/hashable/pull/227
 
 ## Version 1.3.3.0
 
