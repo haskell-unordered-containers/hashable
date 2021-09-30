@@ -48,7 +48,7 @@ regressions = [] ++
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=? 1541679664618040100
+        hash ("hello world" :: Text) @=? -3875242662334356092
 #endif
     , F.testGroup "concatenation"
         [ testCase "String" $ do
