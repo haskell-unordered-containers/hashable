@@ -87,6 +87,12 @@ import GHC.Prim (ThreadId#)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
+import qualified Data.IntMap as IntMap
+import qualified Data.IntSet as IntSet
+import qualified Data.Map as Map
+import qualified Data.Sequence as Seq
+import qualified Data.Set as Set
+import qualified Data.Tree as Tree
 
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
@@ -976,3 +982,66 @@ instance Ord1 Hashed where
 instance Show1 Hashed where
   liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
 #endif
+
+-------------------------------------------------------------------------------
+-- containers
+-------------------------------------------------------------------------------
+
+-- | @since 1.3.4.0
+instance Hashable2 Map.Map where
+    liftHashWithSalt2 hk hv s m = Map.foldlWithKey'
+        (\s' k v -> hv (hk s' k) v)
+        (hashWithSalt s (Map.size m))
+        m
+
+-- | @since 1.3.4.0
+instance Hashable k => Hashable1 (Map.Map k) where
+    liftHashWithSalt h s m = Map.foldlWithKey'
+        (\s' k v -> h (hashWithSalt s' k) v)
+        (hashWithSalt s (Map.size m))
+        m
+
+-- | @since 1.3.4.0
+instance (Hashable k, Hashable v) => Hashable (Map.Map k v) where
+    hashWithSalt = hashWithSalt2
+
+-- | @since 1.3.4.0
+instance Hashable1 IntMap.IntMap where
+    liftHashWithSalt h s m = IntMap.foldlWithKey'
+        (\s' k v -> h (hashWithSalt s' k) v)
+        (hashWithSalt s (IntMap.size m))
+        m
+
+-- | @since 1.3.4.0
+instance Hashable v => Hashable (IntMap.IntMap v) where
+    hashWithSalt = hashWithSalt1
+
+-- | @since 1.3.4.0
+instance Hashable1 Set.Set where
+    liftHashWithSalt h s x = Set.foldl' h (hashWithSalt s (Set.size x)) x
+
+-- | @since 1.3.4.0
+instance Hashable v => Hashable (Set.Set v) where
+    hashWithSalt = hashWithSalt1
+
+-- | @since 1.3.4.0
+instance Hashable IntSet.IntSet where
+    hashWithSalt salt x = IntSet.foldl' hashWithSalt
+        (hashWithSalt salt (IntSet.size x))
+        x
+
+-- | @since 1.3.4.0
+instance Hashable1 Seq.Seq where
+    liftHashWithSalt h s x = F.foldl' h (hashWithSalt s (Seq.length x)) x
+
+-- | @since 1.3.4.0
+instance Hashable v => Hashable (Seq.Seq v) where
+    hashWithSalt = hashWithSalt1
+
+-- | @since 1.3.4.0
+instance Hashable1 Tree.Tree where
+    liftHashWithSalt h s (Tree.Node x xs) = h s x
+
+-- | @since 1.3.4.0
+instance Hashable v => Hashable (Tree.Tree v) where
+    hashWithSalt = hashWithSalt1
