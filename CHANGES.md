@@ -1,5 +1,10 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.3.4.0
+ * `Text` and `ByteString` hashes include length.
+   This fixes a variant of https://github.com/haskell-unordered-containers/hashable/issues/74
+   for texts and bytestrings
+
 ## Version 1.3.3.0
 
  * `Text` hashing uses 64-bit FNV prime

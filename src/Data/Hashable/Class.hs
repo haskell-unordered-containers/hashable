@@ -694,24 +694,35 @@ instance Hashable1 [] where
 instance Hashable B.ByteString where
     hashWithSalt salt bs = unsafeDupablePerformIO $
                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
-                           hashPtrWithSalt p (fromIntegral len) salt
+                           hashPtrWithSalt p (fromIntegral len) (hashWithSalt salt len)
 
 instance Hashable BL.ByteString where
-    hashWithSalt = BL.foldlChunks hashWithSalt
+    hashWithSalt salt = finalise . BL.foldlChunks step (SP salt 0)
+      where
+        finalise (SP s l) = hashWithSalt s l
+        step (SP s l) bs  = unsafeDupablePerformIO $
+                            B.unsafeUseAsCStringLen bs $ \(p, len) -> do
+                                s' <- hashPtrWithSalt p (fromIntegral len) s
+                                return (SP s' (l + len))
 
 #if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
     hashWithSalt salt sbs@(BSI.SBS ba) =
-        hashByteArrayWithSalt ba 0 (BSI.length sbs) salt
+        hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
 #endif
 
 instance Hashable T.Text where
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
-        salt
+        (hashWithSalt salt len)
 
 instance Hashable TL.Text where
-    hashWithSalt = TL.foldlChunks hashWithSalt
+    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
+      where
+        finalise (SP s l) = hashWithSalt s l
+        step (SP s l) (T.Text arr off len) = SP
+            (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
+            (l + len)
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
