@@ -5,12 +5,19 @@
 module Regress (regressions) where
 
 import qualified Test.Framework as F
+import Control.Monad (when)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@=?))
+import Test.HUnit (assertFailure, (@=?))
 import GHC.Generics (Generic)
 import Data.List (nub)
 import Data.Fixed (Pico)
 import Data.Text (Text)
+import Data.ByteString (ByteString)
+
+import qualified Data.Text.Lazy as TL
+import qualified Data.ByteString.Char8 as BS8
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSL8
 
 #ifdef HAVE_MMAP
 import qualified Regress.Mmap as Mmap
@@ -41,8 +48,49 @@ regressions = [] ++
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=? 2668910425102664189
+        hash ("hello world" :: Text) @=? 1541679664618040100
 #endif
+    , F.testGroup "concatenation"
+        [ testCase "String" $ do
+            let lhs, rhs :: (String, String)
+                lhs = ("foo", "bar")
+                rhs = ("foobar", "")
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Text" $ do
+            let lhs, rhs :: (Text, Text)
+                lhs = ("foo", "bar")
+                rhs = ("foobar", "")
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Lazy Text" $ do
+            let lhs, rhs :: (TL.Text, TL.Text)
+                lhs = ("foo", "bar")
+                rhs = ("foobar", "")
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "ByteString" $ do
+            let lhs, rhs :: (ByteString, ByteString)
+                lhs = (BS8.pack "foo", BS8.pack "bar")
+                rhs = (BS8.pack "foobar", BS8.empty)
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Lazy ByteString" $ do
+            let lhs, rhs :: (BSL.ByteString, BSL.ByteString)
+                lhs = (BSL8.pack "foo", BSL8.pack "bar")
+                rhs = (BSL8.pack "foobar", BSL.empty)
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+        ]
     ]
   where
     nullaryCase :: Int -> SumOfNullary -> IO ()
