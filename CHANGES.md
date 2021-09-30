@@ -8,6 +8,8 @@ See also https://pvp.haskell.org/faq
  * Use correct prime in `combine`.
    This should improve the hash quality of compound structures on 64bit systems.
    https://github.com/haskell-unordered-containers/hashable/pull/224
+ * Add instance for types in `containers` package
+   https://github.com/haskell-unordered-containers/hashable/pull/226
 
 ## Version 1.3.3.0
 
