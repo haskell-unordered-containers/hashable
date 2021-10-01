@@ -3,7 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Regress (regressions) where
-
 import qualified Test.Framework as F
 import Control.Monad (when)
 import Test.Framework.Providers.HUnit (testCase)
@@ -48,10 +47,53 @@ regressions = [] ++
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=?
-          (-4389506060771033211) -- siphash
+          (8403009751224113351) -- siphash
           -- -3875242662334356092 -- FNV
+          @=?
+          hash ("hello world" :: Text)
 #endif
+    , F.testGroup "different chars aren't equal"
+      [ testCase "String" $ do
+            let lhs, rhs :: String
+                lhs = "a"
+                rhs = "x"
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Text" $ do
+            let lhs, rhs :: Text
+                lhs = "a"
+                rhs = "x"
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Lazy Text" $ do
+            let lhs, rhs :: TL.Text
+                lhs = "a"
+                rhs = "x"
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "ByteString" $ do
+            let lhs, rhs :: ByteString
+                lhs = "a"
+                rhs = "x"
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+        , testCase "Lazy ByteString" $ do
+            let lhs, rhs :: BSL.ByteString
+                lhs = "a"
+                rhs = "x"
+
+            when (hash lhs == hash rhs) $ do
+                assertFailure "Should have different hashes"
+
+      ]
     , F.testGroup "concatenation"
         [ testCase "String" $ do
             let lhs, rhs :: (String, String)

@@ -12,8 +12,17 @@ typedef uint8_t u8;
 #define SIPHASH_ROUNDS 2
 #define SIPHASH_FINALROUNDS 4
 
-uint64_t hashable_siphash(int, int, uint64_t, uint64_t, const u8 *, size_t);
-uint64_t hashable_siphash24(uint64_t, uint64_t, const u8 *, size_t);
+void hashable_siphash_init(uint64_t k0, uint64_t k1, uint64_t *v);
+
+uint64_t hashable_siphash_finalize(const int d, uint64_t *v);
+
+void hashable_siphash_compression(
+                                         const int c,
+                                         uint64_t v[4],
+                                    const u8 *str, // ByteArray#
+                                    size_t off,
+                                    size_t len
+                                    );
 
 #if defined(__i386)
 

@@ -64,11 +64,11 @@ flag random-initial-seed
 
 
 flag sse2
-  description: Do we want to assume that a target supports SSE 2?
+  description: Use SSE2 instruction set. Available on practically any x86 CPU made since 2005.
   default: True
 
 flag sse41
-  description: Do we want to assume that a target supports SSE 4.1?
+  description: Use SSE4.1 instruction set. Available on practically any x86 CPU made since 2008.
   default: False
 
 library
@@ -102,6 +102,8 @@ library
     , deepseq     >=1.3  && <1.5
     , ghc-prim
     , text        >=0.12 && <1.3
+  if impl(ghc <=7.7)
+    build-depends: bytestring-builder
 
   if impl(ghc >=9)
     build-depends: ghc-bignum ==1.0.* || ==1.2.*
@@ -166,6 +168,8 @@ test-suite hashable-tests
     , test-framework-hunit
     , test-framework-quickcheck2  >=0.2.9
     , text                        >=0.11.0.5
+  if impl(ghc <=7.7)
+    build-depends: bytestring-builder
 
   if !os(windows)
     build-depends:    unix

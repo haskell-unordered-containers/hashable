@@ -62,10 +62,15 @@ module Data.Hashable.Class
     ) where
 
 import Control.Applicative (Const(..))
+#if __GLASGOW_HASKELL__ <= 784
+import Control.Applicative((<$>), (<$), pure)
+#endif
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Builder.Extra as BB
 import qualified Data.ByteString.Unsafe as B
 import Data.Complex (Complex(..))
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -75,6 +80,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Internal.Encoding.Fusion as TL
+import qualified Data.Text.Internal.Lazy.Fusion as TL hiding (unstream)
+import qualified Data.Text.Lazy.Builder as TLB
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.Marshal.Utils (with)
@@ -83,7 +91,7 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 import qualified Data.IntMap as IntMap
@@ -92,12 +100,6 @@ import qualified Data.Map as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Tree as Tree
-
-#if __GLASGOW_HASKELL__ >= 703
-import Foreign.C (CSize(..))
-#else
-import Foreign.C (CSize)
-#endif
 
 -- As we use qualified F.Foldable, we don't get warnings with newer base
 import qualified Data.Foldable as F
@@ -143,7 +145,7 @@ import Data.Bits (finiteBitSize)
 import Data.Bits (bitSize)
 #endif
 
-#if (MIN_VERSION_bytestring(0,10,0))
+#if !(MIN_VERSION_bytestring(0,10,0))
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
 
@@ -667,7 +669,17 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) (hashWithSalt salt len)
 
 instance Hashable BL.ByteString where
-    hashWithSalt = hashLazyByteStringWithSalt
+    hashWithSalt salt bstxt =
+      unsafePerformIO $
+      withState k0 k1 $ \state ->
+        fmap (hashInt salt) $ BL.foldlChunks (step state) (pure 0) $
+          BB.toLazyByteString $ BB.lazyByteString -- this fixes chucnking issues
+              bstxt
+      where
+        step state prev bs =  do
+                            prevLen <- prev
+                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
+                                (prevLen + len) <$ hashPtrChunk p (fromIntegral len) state
 
 #if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
@@ -681,7 +693,10 @@ instance Hashable T.Text where
         (hashWithSalt salt len)
 
 instance Hashable TL.Text where
-    hashWithSalt = hashLazyTextWithSalt
+    hashWithSalt salt = -- piggy back on lazy bytestring instead
+      hashWithSalt salt . TL.unstream .
+      TL.restreamUtf16LE . -- I don't think the encoding matters, best would be fastest
+      TL.stream
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
@@ -775,11 +790,6 @@ hashByteArray :: ByteArray#  -- ^ data to hash
               -> Int         -- ^ hash value
 hashByteArray ba0 off len = hashByteArrayWithSalt ba0 off len defaultSalt
 {-# INLINE hashByteArray #-}
-
--- | Combine two given hash values.  'combine' has zero as a left
--- identity.
-combine :: Int -> Int -> Int
-combine h1 h2 = (h1 * 16777619) `xor` h2
 
 instance Hashable Unique where
     hash = hashUnique
@@ -1018,7 +1028,6 @@ instance Hashable IntSet.IntSet where
 -- | @since 1.3.4.0
 instance Hashable1 Seq.Seq where
     liftHashWithSalt h s x = F.foldl' h (hashWithSalt s (Seq.length x)) x
-
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Seq.Seq v) where

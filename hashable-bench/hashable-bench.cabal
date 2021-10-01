@@ -33,8 +33,8 @@ tested-with:
    || ==9.0.1
 
 extra-source-files:
-  benchmarks/cbits/*.h
   include/HsHashable.h
+  include/siphash.h
 
 flag integer-gmp
   description:
@@ -74,6 +74,8 @@ library
     , deepseq     >=1.3  && <1.5
     , ghc-prim
     , text        >=0.12 && <1.3
+  if impl(ghc <=7.7)
+    build-depends: bytestring-builder
 
   if impl(ghc >=9)
     build-depends: ghc-bignum ==1.0.*
