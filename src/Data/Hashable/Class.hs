@@ -64,7 +64,6 @@ module Data.Hashable.Class
 import Control.Applicative (Const(..))
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
-import Data.Bits (shiftL, shiftR, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
@@ -132,12 +131,6 @@ import Foreign.C.Types (CInt(..))
 import Data.Word (Word)
 #endif
 
-#if MIN_VERSION_base(4,7,0)
-import Data.Bits (finiteBitSize)
-#else
-import Data.Bits (bitSize)
-#endif
-
 #if !(MIN_VERSION_bytestring(0,10,0))
 import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 #endif
@@ -193,7 +186,7 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
-
+import Data.Hashable.Imports
 import Data.Hashable.LowLevel
 
 #include "MachDeps.h"
@@ -1026,7 +1019,8 @@ instance Hashable v => Hashable (Seq.Seq v) where
 
 -- | @since 1.3.4.0
 instance Hashable1 Tree.Tree where
-    liftHashWithSalt h s (Tree.Node x xs) = h s x
+    liftHashWithSalt h = go where
+        go s (Tree.Node x xs) = liftHashWithSalt go (h s x) xs
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Tree.Tree v) where

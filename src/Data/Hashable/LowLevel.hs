@@ -13,9 +13,6 @@ module Data.Hashable.LowLevel (
 
 #include "MachDeps.h"
 
-import Data.Bits (xor)
-import Data.Int (Int64)
-import Data.Word (Word64)
 import Foreign.C (CString)
 import Foreign.Ptr (Ptr, castPtr)
 import GHC.Base (ByteArray#)
@@ -24,9 +21,7 @@ import GHC.Base (ByteArray#)
 import System.IO.Unsafe (unsafePerformIO)
 #endif
 
-#if WORD_SIZE_IN_BITS != 64
-import Data.Bits (shiftR)
-#endif
+import Data.Hashable.Imports
 
 -------------------------------------------------------------------------------
 -- Initial seed

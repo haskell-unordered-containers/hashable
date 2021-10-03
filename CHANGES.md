@@ -1,5 +1,10 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.3.4.1
+
+ * Fix compilation on 32 bit platforms
+ * Fix `Tree` instance
+
 ## Version 1.3.4.0
  * `Text` and `ByteString` hashes include length.
    This fixes a variant of https://github.com/haskell-unordered-containers/hashable/issues/74

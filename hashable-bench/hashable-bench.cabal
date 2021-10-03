@@ -60,6 +60,7 @@ library
 
   other-modules:
     Data.Hashable.Class
+    Data.Hashable.Imports
     Data.Hashable.LowLevel
     Data.Hashable.Generic.Instances
 
