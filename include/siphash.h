@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef uint8_t u8;
@@ -12,8 +11,17 @@ typedef uint8_t u8;
 #define SIPHASH_ROUNDS 2
 #define SIPHASH_FINALROUNDS 4
 
-u64 hashable_siphash(int, int, u64, u64, const u8 *, size_t);
-u64 hashable_siphash24(u64, u64, const u8 *, size_t);
+void hashable_siphash_init(uint64_t k0, uint64_t k1, uint64_t *v);
+
+uint64_t hashable_siphash_finalize(const int d, uint64_t *v);
+
+void hashable_siphash_compression(
+                                         const int c,
+                                         uint64_t v[4],
+                                    const u8 *str, // ByteArray#
+                                    size_t off,
+                                    size_t len
+                                    );
 
 #if defined(__i386)
 
@@ -22,8 +30,8 @@ u64 hashable_siphash24(u64, u64, const u8 *, size_t);
 
 # define ALIGNED_STACK __attribute__((force_align_arg_pointer))
 
-u64 hashable_siphash24_sse2(u64, u64, const u8 *, size_t) ALIGNED_STACK;
-u64 hashable_siphash24_sse41(u64, u64, const u8 *, size_t) ALIGNED_STACK;
+uint64_t hashable_siphash24_sse2(uint64_t, uint64_t, const u8 *, size_t) ALIGNED_STACK;
+uint64_t hashable_siphash24_sse41(uint64_t, uint64_t, const u8 *, size_t) ALIGNED_STACK;
 #endif
 
 #if defined(_WIN32)
@@ -47,9 +55,9 @@ u64 hashable_siphash24_sse41(u64, u64, const u8 *, size_t) ALIGNED_STACK;
 # include <endian.h>
 #endif
 
-static inline u64 peek_u64le(const u64 *p)
+static inline uint64_t peek_uint64_tle(const uint64_t *p)
 {
-    u64 x = *p;
+    uint64_t x = *p;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
     x = ((x & 0xff00000000000000ull) >> 56) |

@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnliftedFFITypes #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Trustworthy, RankNTypes #-}
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
     Salt,
@@ -9,6 +9,11 @@ module Data.Hashable.LowLevel (
     hashWord64,
     hashPtrWithSalt,
     hashByteArrayWithSalt,
+    k0, -- TODO remove
+    k1,
+    withState,
+    hashPtrChunk,
+    siphash
 ) where
 
 #include "MachDeps.h"
@@ -16,12 +21,41 @@ module Data.Hashable.LowLevel (
 import Foreign.C (CString)
 import Foreign.Ptr (Ptr, castPtr)
 import GHC.Base (ByteArray#)
+import Foreign.C.Types (CInt(..))
+import qualified Data.Text.Array as TA
+import qualified Data.Text.Internal as T
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Internal.Lazy as TL
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Unsafe as B
+import qualified Data.ByteString.Lazy as BL
+import Foreign.Marshal.Array(advancePtr, allocaArray)
+import System.IO.Unsafe(unsafePerformIO)
+import Foreign.Storable (alignment, peek, sizeOf)
+import Foreign.Ptr(nullPtr)
+import Data.Bits (shiftL, shiftR, xor)
+#if (MIN_VERSION_bytestring(0,10,0))
+import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
+#endif
 
 #ifdef HASHABLE_RANDOM_SEED
 import System.IO.Unsafe (unsafePerformIO)
 #endif
 
 import Data.Hashable.Imports
+#if WORD_SIZE_IN_BITS != 64
+import Data.Bits (shiftR)
+#endif
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C (CSize(..))
+#else
+import Foreign.C (CSize)
+#endif
+#if __GLASGOW_HASKELL__ <= 784
+import Control.Applicative((<$>), (<$))
+#endif
+
 
 -------------------------------------------------------------------------------
 -- Initial seed
@@ -91,8 +125,63 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Salt    -- ^ salt
                 -> IO Salt -- ^ hash value
 hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
-    (fromIntegral salt)
+    withState k0 k1 (\state -> salt <$ hashPtrChunk p len state)
+
+-- TODO don't hardcode these! The entire point is that the user can determine
+--  or hide k0 & k1 (both making up k)
+k0 :: Word64
+k0 = 0x56e2b8a0aee1721a
+{-# INLINE k0 #-}
+
+fromSalt :: Int -> Word64
+#if WORD_SIZE_IN_BITS == 64
+fromSalt = fromIntegral
+#else
+fromSalt v = fromIntegral v `xor` k1
+#endif
+
+-- TODO this should be hideable, see 'k0'
+k1 :: Word64
+k1 = 0x7654954208bdfef9
+{-# INLINE k1 #-}
+
+newtype SipHashState = MkSipHashState { unstate ::  Ptr Word64 }
+
+siphash
+  :: CInt -- ^ compression rounds
+  -> CInt -- ^ finalize rounds
+  -> Word64 -- ^ k0
+  -> Word64 -- ^ k1
+  -> Ptr Word8 -- ^ data
+  -> CSize -- ^ length of data
+  -> Word64 -- ^ hash
+siphash finalizeRounds compression k0 k1 data' length = fromIntegral $ unsafePerformIO $
+  withState' finalizeRounds k0 k1 $ \state ->
+    (0 <$ hashPtrChunk' compression data' length state)
+
+-- | allocates a siphash state for given k0.
+--   this allows usage of 'hashByteArrayChunck'
+--   after those calls are made, the hash will be returned
+withState :: Word64 -- ^ k0 (k for key, should be secret)
+          -> Word64 -- ^ k1 (second part of the key)
+          -> (SipHashState -> IO Salt
+            ) -- ^ the function to mutate the sipState, should return a salt,
+              -- a salt of 0 means no salting
+              -- (the xor doesn't do anything with that value).
+          -> IO Int -- ^ the hash value
+withState = withState' defFinalizeRounds
+
+withState' :: CInt -- ^ finalize rounds
+          -> Word64
+          -> Word64
+          -> (SipHashState -> IO Salt)
+          -> IO Int
+withState' finalizeRounds k0 k1 fun =
+  allocaArray 4 $ \v -> do
+    c_siphash_init k0 k1 v
+    salt <- fun $ MkSipHashState v
+    hashInt salt -- just jam the salt in somewhere (k0, or k1 could've worked as well)
+      . fromIntegral <$> c_siphash_finalize finalizeRounds v
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
 -- an initial salt.
@@ -106,24 +195,73 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Salt        -- ^ salt
     -> Salt        -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h =
-    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
-    (fromIntegral h)
+hashByteArrayWithSalt ba !off !len !salt =
+    unsafePerformIO $ withState k0 k1 (\state -> salt <$ hashByteArrayChunck ba off len state)
 
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString
-#if WORD_SIZE_IN_BITS == 64
-    :: CString -> Int64 -> Int64 -> IO Word64
-#else
-    :: CString -> Int32 -> Int32 -> IO Word32
-#endif
+-- | Sip hash is streamable after initilization. Use 'withState'
+--   to obtain 'SipHashState x'
+hashByteArrayChunck
+    :: ByteArray#  -- ^ data to hash
+    -> Int         -- ^ offset, in bytes
+    -> Int         -- ^ length, in bytes
+    -> SipHashState -- ^ this mutates (out var)
+    -> IO ()
+hashByteArrayChunck ba off len (MkSipHashState v) =
+  c_siphash_compression_offset defCompressionRounds v ba (fromIntegral off) (fromIntegral len)
+
+hashPtrChunk
+    :: Ptr a  -- ^ data to hash
+    -> Int         -- ^ length, in bytes
+    -> SipHashState -- ^ this mutates (out var)
+    -> IO ()
+hashPtrChunk data' length = hashPtrChunk' defCompressionRounds data' (fromIntegral length)
+
+hashPtrChunk'
+    :: CInt -- ^ compression rounds
+    -> Ptr a
+    -> CSize
+    -> SipHashState
+    -> IO ()
+hashPtrChunk' compressions ba len (MkSipHashState v) =
+  c_siphash_compression_words compressions v (castPtr ba) 0 len
 
 #if __GLASGOW_HASKELL__ >= 802
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash_offset" c_hashByteArray
+foreign import capi unsafe "siphash.h hashable_siphash_finalize" c_siphash_finalize
 #else
-foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
+foreign import ccall unsafe "hashable_siphash_finalize" c_siphash_finalize
 #endif
-#if WORD_SIZE_IN_BITS == 64
-    :: ByteArray# -> Int64 -> Int64 -> Int64 -> Word64
+    :: CInt -> Ptr Word64 -> IO Word64
+
+#if __GLASGOW_HASKELL__ >= 802
+foreign import capi unsafe "siphash.h hashable_siphash_compression" c_siphash_compression_offset
 #else
-    :: ByteArray# -> Int32 -> Int32 -> Int32 -> Word32
+foreign import ccall unsafe "hashable_siphash_compression"
+        c_siphash_compression_offset
 #endif
+    :: CInt -> Ptr Word64 -> ByteArray# -> CSize -> CSize -> IO ()
+
+-- I don't think it's easy to convince the compiler  ByteArray# ~ Ptr Word8
+-- (I'm probably wrong on this even, but this is what the previous version basically did,
+-- and I (naivily probably) believe them)
+-- so we just add another binding to the same function
+#if __GLASGOW_HASKELL__ >= 802
+foreign import capi unsafe "siphash.h hashable_siphash_compression" c_siphash_compression_words
+#else
+foreign import ccall unsafe "hashable_siphash_compression"
+        c_siphash_compression_words
+#endif
+    :: CInt -> Ptr Word64 -> Ptr Word8 -> CSize -> CSize -> IO ()
+
+#if __GLASGOW_HASKELL__ >= 802
+foreign import capi unsafe "siphash.h hashable_siphash_init" c_siphash_init
+#else
+foreign import ccall unsafe "hashable_siphash_init" c_siphash_init
+#endif
+    :: Word64 -> Word64 -> Ptr Word64 -> IO ()
+
+
+defCompressionRounds :: CInt
+defCompressionRounds = 2
+
+defFinalizeRounds :: CInt
+defFinalizeRounds = 4

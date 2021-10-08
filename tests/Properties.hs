@@ -12,6 +12,7 @@ import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
 import Data.Hashable.Generic (genericHashWithSalt)
 import Data.Hashable.Lifted (hashWithSalt1)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -27,6 +28,12 @@ import Test.QuickCheck hiding ((.&.))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import GHC.Generics
+import Data.Monoid((<>))
+#if __GLASGOW_HASKELL__ <= 784
+import Control.Applicative((<$>), (<$), pure, (<*>))
+import Data.Monoid(Monoid)
+#endif
+
 
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as BS
@@ -79,6 +86,7 @@ instance Arbitrary ChunkSize where
     arbitrary = (ChunkSize . (`mod` maxChunkSize)) `fmap`
                 (arbitrary `suchThat` ((/=0) . (`mod` maxChunkSize)))
         where maxChunkSize = 16
+
 
 -- | Ensure that the rechunk function causes a rechunked string to
 -- still match its original form.
@@ -133,7 +141,8 @@ pBSRechunk t cs = fromStrict t == rechunkBS t cs
 -- are chunked.
 pBSLazyRechunked :: B.ByteString
                  -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
-pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
+pBSLazyRechunked t cs1 cs2 =
+  hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -237,6 +246,11 @@ properties =
 #endif
       , testProperty "bytestring/rechunk" pBSRechunk
       , testProperty "bytestring/rechunked" pBSLazyRechunked
+      , testProperty "bytestring/rechunked/big" $ forAll (do
+                                              x <- getSize
+                                              y <- chooseInt (x, x*1000)
+                                              resize y arbitrary
+                                              ) $ \x -> pBSLazyRechunked x
       ]
     , testGroup "generics"
       [
@@ -253,6 +267,26 @@ properties =
     , testGroup "lifted law"
       [ testProperty "Hashed" pLiftedHashed
       ]
+    , testGroup "statefull"
+    [ testGroup "postfix"
+    [ testProperty "string" postfixedString
+    , testProperty "text/strict" postfixedText
+    , testProperty "text/lazy" postfixedTextL
+#if __GLASGOW_HASKELL__ > 750
+    , testProperty "bytestring/strict" postfixedBS
+#endif
+    , testProperty "bytestring/lazy" postfixedBSL
+    ]
+    , testGroup "prefix"
+    [ testProperty "string" prefixedString
+    , testProperty "text/strict" prefixedText
+    , testProperty "text/lazy" prefixedTextL
+#if __GLASGOW_HASKELL__ > 750
+    , testProperty "bytestring/strict" prefixedBS
+#endif
+    , testProperty "bytestring/lazy" prefixedBSL
+    ]
+    ]
     ]
 
 ------------------------------------------------------------------------
@@ -264,3 +298,111 @@ fromStrict = BL.fromStrict
 #else
 fromStrict b = BL.fromChunks [b]
 #endif
+
+data SizedPair a = MkSizedPair { sized1 :: a, sized2 :: a }
+  deriving Show
+
+instance (Eq a, Arbitrary a) => Arbitrary (SizedPair a) where
+  arbitrary = do
+    size' <- chooseInt (1, 15)
+    suchThat (MkSizedPair <$> resize size' arbitrary <*> resize size' arbitrary) $
+        \(MkSizedPair a b) -> a /= b
+
+
+fixed ::
+  (Show a, Hashable a)
+  => (a -> a -> a) -- first arg input string, second arg char
+  -> (Char -> a)
+  -> SizedPair a
+  -> Char
+  -> Property
+fixed semigroup lift (MkSizedPair a b) c =
+  counterexample (
+    "failed " <> show lhs <> " & " <> show rhs <>
+    " hash " <> show one <> " /= " <> show two
+    ) (one /= two)
+  where
+    lhs = semigroup a $ lift c
+    rhs = semigroup b $ lift c
+    one = hash lhs
+    two = hash rhs
+
+postfixed ::
+  (Show a, Hashable a, Monoid a)
+  => (Char -> a)
+  -> SizedPair a
+  -> Char
+  -> Property
+postfixed = fixed (<>)
+
+prefixed ::
+  (Show a, Hashable a, Monoid a)
+  => (Char -> a)
+  -> SizedPair a
+  -> Char
+  -> Property
+prefixed = fixed (flip (<>))
+
+prefixedString ::
+  SizedPair String
+  -> Char
+  -> Property
+prefixedString = prefixed pure
+
+prefixedText ::
+  SizedPair T.Text
+  -> Char
+  -> Property
+prefixedText = prefixed T.singleton
+
+prefixedTextL ::
+  SizedPair TL.Text
+  -> Char
+  -> Property
+prefixedTextL = prefixed TL.singleton
+
+#if __GLASGOW_HASKELL__ > 750
+prefixedBS ::
+  SizedPair B.ByteString
+  -> Char
+  -> Property
+prefixedBS = prefixed (BL.toStrict . BB.toLazyByteString . BB.charUtf8)
+#endif
+
+prefixedBSL ::
+  SizedPair BL.ByteString
+  -> Char
+  -> Property
+prefixedBSL = prefixed (BB.toLazyByteString . BB.charUtf8)
+
+postfixedString ::
+  SizedPair String
+  -> Char
+  -> Property
+postfixedString = postfixed pure
+
+postfixedText ::
+  SizedPair T.Text
+  -> Char
+  -> Property
+postfixedText = postfixed T.singleton
+
+postfixedTextL ::
+  SizedPair TL.Text
+  -> Char
+  -> Property
+postfixedTextL = postfixed TL.singleton
+
+#if __GLASGOW_HASKELL__ > 750
+postfixedBS ::
+  SizedPair B.ByteString
+  -> Char
+  -> Property
+postfixedBS = postfixed (BL.toStrict . BB.toLazyByteString . BB.charUtf8)
+#endif
+
+postfixedBSL ::
+  SizedPair BL.ByteString
+  -> Char
+  -> Property
+postfixedBSL = postfixed (BB.toLazyByteString . BB.charUtf8)

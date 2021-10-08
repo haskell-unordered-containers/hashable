@@ -62,10 +62,15 @@ module Data.Hashable.Class
     ) where
 
 import Control.Applicative (Const(..))
+#if __GLASGOW_HASKELL__ <= 784
+import Control.Applicative((<$>), (<$), pure)
+#endif
 import Control.Exception (assert)
 import Control.DeepSeq (NFData(rnf))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Builder.Extra as BB
 import qualified Data.ByteString.Unsafe as B
 import Data.Complex (Complex(..))
 import Data.Int (Int8, Int16, Int32, Int64)
@@ -75,6 +80,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Internal.Encoding.Fusion as TL
+import qualified Data.Text.Internal.Lazy.Fusion as TL hiding (unstream)
+import qualified Data.Text.Lazy.Builder as TLB
 import Data.Version (Version(..))
 import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.Marshal.Utils (with)
@@ -83,7 +91,7 @@ import Foreign.Storable (alignment, peek, sizeOf)
 import GHC.Base (ByteArray#)
 import GHC.Conc (ThreadId(..))
 import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import System.Mem.StableName
 import Data.Unique (Unique, hashUnique)
 import qualified Data.IntMap as IntMap
@@ -129,6 +137,12 @@ import Foreign.C.Types (CInt(..))
 
 #if !(MIN_VERSION_base(4,8,0))
 import Data.Word (Word)
+#endif
+
+#if MIN_VERSION_base(4,7,0)
+import Data.Bits (finiteBitSize)
+#else
+import Data.Bits (bitSize)
 #endif
 
 #if !(MIN_VERSION_bytestring(0,10,0))
@@ -655,13 +669,17 @@ instance Hashable B.ByteString where
                            hashPtrWithSalt p (fromIntegral len) (hashWithSalt salt len)
 
 instance Hashable BL.ByteString where
-    hashWithSalt salt = finalise . BL.foldlChunks step (SP salt 0)
+    hashWithSalt salt bstxt =
+      unsafePerformIO $
+      withState k0 k1 $ \state ->
+        fmap (hashInt salt) $ BL.foldlChunks (step state) (pure 0) $
+          BB.toLazyByteString $ BB.lazyByteString -- this fixes chucnking issues
+              bstxt
       where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) bs  = unsafeDupablePerformIO $
-                            B.unsafeUseAsCStringLen bs $ \(p, len) -> do
-                                s' <- hashPtrWithSalt p (fromIntegral len) s
-                                return (SP s' (l + len))
+        step state prev bs =  do
+                            prevLen <- prev
+                            B.unsafeUseAsCStringLen bs $ \(p, len) ->
+                                (prevLen + len) <$ hashPtrChunk p (fromIntegral len) state
 
 #if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
@@ -675,12 +693,10 @@ instance Hashable T.Text where
         (hashWithSalt salt len)
 
 instance Hashable TL.Text where
-    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
-      where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) (T.Text arr off len) = SP
-            (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
-            (l + len)
+    hashWithSalt salt = -- piggy back on lazy bytestring instead
+      hashWithSalt salt . TL.unstream .
+      TL.restreamUtf16LE . -- I don't think the encoding matters, best would be fastest
+      TL.stream
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int
