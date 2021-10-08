@@ -6,7 +6,8 @@ module Main (main) where
 import Control.Monad.ST
 import Criterion.Main
 import Data.Hashable
-import Data.Hashable.SipHash
+import qualified Data.Hashable.LowLevel as L
+import qualified Data.Hashable.SipHash as Sip
 import Data.Int
 import Foreign.ForeignPtr
 import GHC.Exts
@@ -72,14 +73,11 @@ main = do
 
     let k0 = 0x4a7330fae70f52e8
         k1 = 0x919ea5953a9a1ec9
-        sipHash = hashByteString 2 4 k0 k1
+        sipHash = Sip.hashByteString 2 4 k0 k1
         hsSipHash = HS.hash (HS.SipKey k0 k1)
         cSipHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
-            return $! c_siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
-        cSipHash24 (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
-            return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
+            return $! L.siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
         fnvHash (PS fp off len) =
             inlinePerformIO . withForeignPtr fp $ \ptr ->
             return $! fnv_hash (ptr `plusPtr` off) (fromIntegral len) 2166136261
@@ -199,15 +197,6 @@ main = do
           , bench "512" $ whnf cSipHash bs512
           , bench "2^20" $ whnf cSipHash bs1Mb
           ]
-        , bgroup "cSipHash24"
-          [ bench "5" $ whnf cSipHash24 bs5
-          , bench "8" $ whnf cSipHash24 bs8
-          , bench "11" $ whnf cSipHash24 bs11
-          , bench "40" $ whnf cSipHash24 bs40
-          , bench "128" $ whnf cSipHash24 bs128
-          , bench "512" $ whnf cSipHash24 bs512
-          , bench "2^20" $ whnf cSipHash24 bs1Mb
-          ]
 #ifdef HAVE_SSE2
         , bgroup "sse2SipHash"
           [ bench "5" $ whnf sse2SipHash bs5
@@ -271,10 +260,6 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
         (# s2, ary #) -> case unsafeFreezeByteArray# ary s2 of
             (# s3, ba #) -> (# s3, BA ba #))
 
-foreign import ccall unsafe "hashable_siphash" c_siphash
-    :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-foreign import ccall unsafe "hashable_siphash24" c_siphash24
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
 #ifdef HAVE_SSE2
 foreign import ccall unsafe "hashable_siphash24_sse2" sse2_siphash
     :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64

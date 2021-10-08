@@ -57,14 +57,15 @@ library
     Data.Hashable
     Data.Hashable.Generic
     Data.Hashable.Lifted
+    Data.Hashable.LowLevel
 
   other-modules:
     Data.Hashable.Class
     Data.Hashable.Imports
-    Data.Hashable.LowLevel
     Data.Hashable.Generic.Instances
 
   c-sources:        cbits/fnv.c
+                    cbits/siphash.c
   include-dirs:     include
   hs-source-dirs:   src
   build-depends:
@@ -137,7 +138,6 @@ benchmark hashable-benchmark
   other-modules:    Data.Hashable.SipHash
   c-sources:
     benchmarks/cbits/inthash.c
-    benchmarks/cbits/siphash.c
     benchmarks/cbits/wang.c
 
   if ((arch(i386) || arch(x86_64)) && flag(sse2))

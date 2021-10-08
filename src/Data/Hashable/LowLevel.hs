@@ -12,7 +12,8 @@ module Data.Hashable.LowLevel (
     k0, -- TODO remove
     k1,
     withState,
-    hashPtrChunk
+    hashPtrChunk,
+    siphash
 ) where
 
 #include "MachDeps.h"
@@ -146,6 +147,18 @@ k1 = 0x7654954208bdfef9
 
 newtype SipHashState = MkSipHashState { unstate ::  Ptr Word64 }
 
+siphash
+  :: CInt -- ^ compression rounds
+  -> CInt -- ^ finalize rounds
+  -> Word64 -- ^ k0
+  -> Word64 -- ^ k1
+  -> Ptr Word8 -- ^ data
+  -> CSize -- ^ length of data
+  -> Word64 -- ^ hash
+siphash finalizeRounds compression k0 k1 data' length = fromIntegral $ unsafePerformIO $
+  withState' finalizeRounds k0 k1 $ \state ->
+    (0 <$ hashPtrChunk' compression data' length state)
+
 -- | allocates a siphash state for given k0.
 --   this allows usage of 'hashByteArrayChunck'
 --   after those calls are made, the hash will be returned
@@ -156,7 +169,14 @@ withState :: Word64 -- ^ k0 (k for key, should be secret)
               -- a salt of 0 means no salting
               -- (the xor doesn't do anything with that value).
           -> IO Int -- ^ the hash value
-withState k0 k1 fun =
+withState = withState' defFinalizeRounds
+
+withState' :: CInt -- ^ finalize rounds
+          -> Word64
+          -> Word64
+          -> (SipHashState -> IO Salt)
+          -> IO Int
+withState' finalizeRounds k0 k1 fun =
   allocaArray 4 $ \v -> do
     c_siphash_init k0 k1 v
     salt <- fun $ MkSipHashState v
@@ -187,21 +207,23 @@ hashByteArrayChunck
     -> SipHashState -- ^ this mutates (out var)
     -> IO ()
 hashByteArrayChunck ba off len (MkSipHashState v) =
-  c_siphash_compression_offset compressionRounds v ba (fromIntegral off) (fromIntegral len)
-
-compressionRounds :: CInt
-compressionRounds = 2
-
-finalizeRounds :: CInt
-finalizeRounds = 4
+  c_siphash_compression_offset defCompressionRounds v ba (fromIntegral off) (fromIntegral len)
 
 hashPtrChunk
     :: Ptr a  -- ^ data to hash
     -> Int         -- ^ length, in bytes
     -> SipHashState -- ^ this mutates (out var)
     -> IO ()
-hashPtrChunk ba len (MkSipHashState v) =
-  c_siphash_compression_words compressionRounds v (castPtr ba) 0 (fromIntegral len)
+hashPtrChunk data' length = hashPtrChunk' defCompressionRounds data' (fromIntegral length)
+
+hashPtrChunk'
+    :: CInt -- ^ compression rounds
+    -> Ptr a
+    -> CSize
+    -> SipHashState
+    -> IO ()
+hashPtrChunk' compressions ba len (MkSipHashState v) =
+  c_siphash_compression_words compressions v (castPtr ba) 0 len
 
 #if __GLASGOW_HASKELL__ >= 802
 foreign import capi unsafe "siphash.h hashable_siphash_finalize" c_siphash_finalize
@@ -236,3 +258,10 @@ foreign import capi unsafe "siphash.h hashable_siphash_init" c_siphash_init
 foreign import ccall unsafe "hashable_siphash_init" c_siphash_init
 #endif
     :: Word64 -> Word64 -> Ptr Word64 -> IO ()
+
+
+defCompressionRounds :: CInt
+defCompressionRounds = 2
+
+defFinalizeRounds :: CInt
+defFinalizeRounds = 4

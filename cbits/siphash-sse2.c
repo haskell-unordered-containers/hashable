@@ -11,7 +11,7 @@
 
 #define _mm_roti_epi64(x, c) ((16 == (c)) ? _mm_shufflelo_epi16((x), _MM_SHUFFLE(2,1,0,3)) : _mm_xor_si128(_mm_slli_epi64((x), (c)), _mm_srli_epi64((x), 64-(c))))
 
-uint64_t hashable_siphash24_sse2(u64 ik0, u64 ik1, const u8 *m, size_t n)
+uint64_t hashable_siphash24_sse2(uint64_t ik0, uint64_t ik1, const u8 *m, size_t n)
 {
 	__m128i v0, v1, v2, v3;
 	__m128i k0, k1;

@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef uint64_t uint64_t;
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef uint8_t u8;
