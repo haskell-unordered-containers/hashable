@@ -16,7 +16,7 @@
 //#define _mm_roti_epi64(x, c)  _mm_xor_si128(_mm_slli_epi64((x), (c)), _mm_srli_epi64((x), 64-(c)))
 
 
-uint64_t hashable_siphash24_sse41(u64 _k0, u64 _k1, const unsigned char *m, size_t n)
+uint64_t hashable_siphash24_sse41(uint64_t _k0, uint64_t _k1, const unsigned char *m, size_t n)
 {
 	__m128i v0, v1, v02, v13;
 	__m128i k0;

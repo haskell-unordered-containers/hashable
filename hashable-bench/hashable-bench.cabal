@@ -49,7 +49,7 @@ flag sse2
 
 flag sse41
   description: Do we want to assume that a target supports SSE 4.1?
-  default:     False
+  default:     True
   manual:      True
 
 library
