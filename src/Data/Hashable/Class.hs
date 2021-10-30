@@ -178,6 +178,12 @@ import qualified Data.Functor.Product as FP
 import qualified Data.Functor.Sum as FS
 #endif
 
+#if MIN_VERSION_base(4,16,0)
+import Data.Tuple (Solo (..))
+#elif MIN_VERSION_base(4,15,0)
+import GHC.Tuple (Solo (..))
+#endif
+
 import Data.String (IsString(..))
 
 #if MIN_VERSION_base(4,9,0)
@@ -1025,3 +1031,14 @@ instance Hashable1 Tree.Tree where
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Tree.Tree v) where
     hashWithSalt = hashWithSalt1
+
+-------------------------------------------------------------------------------
+-- Solo
+-------------------------------------------------------------------------------
+
+#if MIN_VERSION_base(4,15,0)
+instance Hashable a => Hashable (Solo a) where
+    hashWithSalt = hashWithSalt1
+instance Hashable1 Solo where
+    liftHashWithSalt h salt (Solo x) = h salt x
+#endif
