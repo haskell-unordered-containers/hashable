@@ -186,6 +186,14 @@ import Data.Kind (Type)
 #define Type *
 #endif
 
+#if MIN_VERSION_base(4,16,0)
+import Data.Tuple (Solo (..))
+#elif MIN_VERSION_base(4,15,0)
+import GHC.Tuple (Solo (..))
+#else
+import Data.Tuple.Solo (Solo (..))
+#endif
+
 import Data.Hashable.Imports
 import Data.Hashable.LowLevel
 
@@ -1024,4 +1032,16 @@ instance Hashable1 Tree.Tree where
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Tree.Tree v) where
+    hashWithSalt = hashWithSalt1
+
+-------------------------------------------------------------------------------
+-- Solo
+-------------------------------------------------------------------------------
+
+-- | @since 1.3.5.0
+instance Hashable1 Solo where
+    liftHashWithSalt h s (Solo x) = h s x
+
+-- | @since 1.3.5.0
+instance Hashable a => Hashable (Solo a) where
     hashWithSalt = hashWithSalt1

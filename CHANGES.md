@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.3.5.0
+
+ * Add `Solo` instances
+
 ## Version 1.3.4.1
 
  * Fix compilation on 32 bit platforms
