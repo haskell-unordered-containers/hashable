@@ -1,6 +1,7 @@
 distribution: bionic
-branches: master
-benchmarks: False
+branches:     master
+benchmarks:   False
+ghcup-jobs:   >=9.2
 
 constraint-set random-initial-seed
   constraints: hashable +random-initial-seed

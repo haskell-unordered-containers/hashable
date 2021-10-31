@@ -63,6 +63,7 @@ module Data.Hashable
     -- * Caching hashes
     , Hashed
     , hashed
+    , hashedHash
     , unhashed
     , mapHashed
     , traverseHashed

@@ -1,7 +1,6 @@
 packages: .
 tests: True
 
--- For alpha/rc GHC testing:
 --
 -- allow-newer: base
 -- allow-newer: bytestring

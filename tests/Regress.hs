@@ -100,8 +100,8 @@ regressions = [] ++
         let actual = hashWithSalt salt s
         expected @=? actual
 
-data SumOfNullary = S0 | S1 | S2 | S3 | S4 deriving (Generic)
+data SumOfNullary = S0 | S1 | S2 | S3 | S4 deriving (Eq, Generic)
 instance Hashable SumOfNullary
 
-data Nat = Z | S Nat deriving (Generic)
+data Nat = Z | S Nat deriving (Eq, Generic)
 instance Hashable Nat

@@ -154,7 +154,7 @@ fromList xs0 = unBA (runST $ ST $ \ s1# ->
 -- Generics
 
 data Product2 a b = Product2 a b
-                    deriving (Generic)
+                    deriving (Eq, Generic)
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Product2 a b) where
     arbitrary = Product2 `liftM` arbitrary `ap` arbitrary
@@ -162,7 +162,7 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (Product2 a b) where
 instance (Hashable a, Hashable b) => Hashable (Product2 a b)
 
 data Product3 a b c = Product3 a b c
-                    deriving (Generic)
+                    deriving (Eq, Generic)
 
 instance (Arbitrary a, Arbitrary b, Arbitrary c) =>
     Arbitrary (Product3 a b c) where

@@ -56,6 +56,7 @@ module Data.Hashable.Class
     -- * Caching hashes
     , Hashed
     , hashed
+    , hashedHash
     , unhashed
     , mapHashed
     , traverseHashed
@@ -168,10 +169,24 @@ import GHC.Natural (Natural(..))
 #endif
 #endif
 
+import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..))
+
+-- Whether we have lifted classes, in particular, Eq2
+#ifndef MIN_VERSION_transformers
+#define LIFTED_FUNCTOR_CLASSES 1
+#else
+#if !(MIN_VERSION_transformers(0,4,0) && !MIN_VERSION_transformers(0,5,0))
+#define LIFTED_FUNCTOR_CLASSES 1
+#endif
+#endif
+
+#ifdef LIFTED_FUNCTOR_CLASSES
+import Data.Functor.Classes (Eq2)
+#endif
+
 #if MIN_VERSION_base(4,9,0)
 import qualified Data.List.NonEmpty as NE
 import Data.Semigroup
-import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..),showsUnaryWith)
 
 import Data.Functor.Compose (Compose(..))
 import qualified Data.Functor.Product as FP
@@ -195,6 +210,26 @@ import Data.Kind (Type)
 import Data.Hashable.Imports
 import Data.Hashable.LowLevel
 
+#ifdef VERSION_base_orphans
+import Data.Orphans ()
+#endif
+
+#ifdef VERSION_transformers_compat
+import Control.Monad.Trans.Instances ()
+#endif
+
+#ifdef VERSION_ghc_bignum_orphans
+import GHC.Num.Orphans ()
+#endif
+
+#ifdef VERSION_functor_classes_compat
+import Data.Map.Functor.Classes ()
+import Data.Set.Functor.Classes ()
+import Data.IntMap.Functor.Classes ()
+import Data.Sequence.Functor.Classes ()
+import Data.Tree.Functor.Classes ()
+#endif
+
 #include "MachDeps.h"
 
 infixl 0 `hashWithSalt`
@@ -213,7 +248,7 @@ infixl 0 `hashWithSalt`
 -- If you are looking for 'Hashable' instance in @time@ package,
 -- check [time-compat](https://hackage.haskell.org/package/time-compat)
 --
-class Hashable a where
+class Eq a => Hashable a where
     -- | Return a hash value for the argument, using the given salt.
     --
     -- The general contract of 'hashWithSalt' is:
@@ -270,7 +305,7 @@ newtype instance HashArgs One  a = HashArgs1 (Int -> a -> Int)
 class GHashable arity f where
     ghashWithSalt :: HashArgs arity a -> Int -> f a -> Int
 
-class Hashable1 t where
+class Eq1 t => Hashable1 t where
     -- | Lift a hashing function through the type constructor.
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 
@@ -285,7 +320,11 @@ genericLiftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> 
 genericLiftHashWithSalt = \h salt -> ghashWithSalt (HashArgs1 h) salt . from1
 {-# INLINE genericLiftHashWithSalt #-}
 
+#if LIFTED_FUNCTOR_CLASSES
+class Eq2 t => Hashable2 t where
+#else
 class Hashable2 t where
+#endif
     -- | Lift a hashing function through the binary type constructor.
     liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
 
@@ -588,8 +627,11 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
     hash (a1, a2, a3, a4, a5) =
         hash a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5
-    hashWithSalt = hashWithSalt1
+    hashWithSalt s (a1, a2, a3, a4, a5) =
+        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5
 
+{-
 instance (Hashable a1, Hashable a2, Hashable a3,
           Hashable a4) => Hashable1 ((,,,,) a1 a2 a3 a4) where
     liftHashWithSalt = defaultLiftHashWithSalt
@@ -599,15 +641,18 @@ instance (Hashable a1, Hashable a2, Hashable a3)
     liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5) =
       (s `hashWithSalt` a1 `hashWithSalt` a2
          `hashWithSalt` a3) `h1` a4 `h2` a5
-
+-}
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
     hash (a1, a2, a3, a4, a5, a6) =
         hash a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
-    hashWithSalt = hashWithSalt1
+    hashWithSalt s (a1, a2, a3, a4, a5, a6) =
+        s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
+        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
 
+{-
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4,
           Hashable a5) => Hashable1 ((,,,,,) a1 a2 a3 a4 a5) where
     liftHashWithSalt = defaultLiftHashWithSalt
@@ -617,7 +662,7 @@ instance (Hashable a1, Hashable a2, Hashable a3,
     liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5, a6) =
       (s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
          `hashWithSalt` a4) `h1` a5 `h2` a6
-
+-}
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
@@ -629,6 +674,7 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
 
+{-
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5, Hashable a6) => Hashable1 ((,,,,,,) a1 a2 a3 a4 a5 a6) where
     liftHashWithSalt = defaultLiftHashWithSalt
 
@@ -637,6 +683,7 @@ instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4,
     liftHashWithSalt2 h1 h2 s (a1, a2, a3, a4, a5, a6, a7) =
       (s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
          `hashWithSalt` a4 `hashWithSalt` a5) `h1` a6 `h2` a7
+-}
 
 instance Hashable (StableName a) where
     hash = hashStableName
@@ -792,15 +839,14 @@ instance Hashable Version where
 #if MIN_VERSION_base(4,7,0)
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
--- Using hashWithSalt1 would cause needless constraint
-instance Hashable1 Fixed where
-    liftHashWithSalt _ salt (MkFixed i) = hashWithSalt salt i
 #else
 instance Hashable (Fixed a) where
     hashWithSalt salt x = hashWithSalt salt (unsafeCoerce x :: Integer)
 #endif
 
+
 #if MIN_VERSION_base(4,8,0)
+-- TODO: make available on all base
 instance Hashable a => Hashable (Identity a) where
     hashWithSalt = hashWithSalt1
 instance Hashable1 Identity where
@@ -838,14 +884,8 @@ instance Hashable1 NE.NonEmpty where
 instance Hashable a => Hashable (Min a) where
     hashWithSalt p (Min a) = hashWithSalt p a
 
--- | @since 1.3.1.0
-instance Hashable1 Min where liftHashWithSalt h salt (Min a) = h salt a
-
 instance Hashable a => Hashable (Max a) where
     hashWithSalt p (Max a) = hashWithSalt p a
-
--- | @since 1.3.1.0
-instance Hashable1 Max where liftHashWithSalt h salt (Max a) = h salt a
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
@@ -856,28 +896,41 @@ instance Hashable a => Hashable (Arg a b) where
 instance Hashable a => Hashable (First a) where
     hashWithSalt p (First a) = hashWithSalt p a
 
--- | @since 1.3.1.0
-instance Hashable1 First where liftHashWithSalt h salt (First a) = h salt a
 
 instance Hashable a => Hashable (Last a) where
     hashWithSalt p (Last a) = hashWithSalt p a
 
--- | @since 1.3.1.0
-instance Hashable1 Last where liftHashWithSalt h salt (Last a) = h salt a
 
 instance Hashable a => Hashable (WrappedMonoid a) where
     hashWithSalt p (WrapMonoid a) = hashWithSalt p a
 
--- | @since 1.3.1.0
-instance Hashable1 WrappedMonoid where liftHashWithSalt h salt (WrapMonoid a) = h salt a
 
 #if !MIN_VERSION_base(4,16,0)
 instance Hashable a => Hashable (Option a) where
     hashWithSalt p (Option a) = hashWithSalt p a
 
--- | @since 1.3.1.0
-instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
+
+-- TODO: this instance is removed as there isn't Eq1 Min/Max, ...
+
+-- | @since 1.3.1.0
+-- instance Hashable1 Min where liftHashWithSalt h salt (Min a) = h salt a
+
+-- | @since 1.3.1.0
+-- instance Hashable1 Max where liftHashWithSalt h salt (Max a) = h salt a
+
+-- | @since 1.3.1.0
+-- instance Hashable1 First where liftHashWithSalt h salt (First a) = h salt a
+
+-- | @since 1.3.1.0
+-- instance Hashable1 Last where liftHashWithSalt h salt (Last a) = h salt a
+
+
+-- | @since 1.3.1.0
+-- instance Hashable1 WrappedMonoid where liftHashWithSalt h salt (WrapMonoid a) = h salt a
+
+-- | @since 1.3.1.0
+-- instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
 
 -- instances for @Data.Functor.{Product,Sum,Compose}@, present
@@ -917,6 +970,12 @@ hashed a = Hashed a (hash a)
 unhashed :: Hashed a -> a
 unhashed (Hashed a _) = a
 
+-- | 'hash' has 'Eq' requirement.
+--
+-- @since 1.4.0.0
+hashedHash :: Hashed a -> Int
+hashedHash (Hashed _ h) = h
+
 -- | Uses precomputed hash to detect inequality faster
 instance Eq a => Eq (Hashed a) where
   Hashed a ha == Hashed b hb = ha == hb && a == b
@@ -928,9 +987,10 @@ instance Show a => Show (Hashed a) where
   showsPrec d (Hashed a _) = showParen (d > 10) $
     showString "hashed" . showChar ' ' . showsPrec 11 a
 
-instance Hashable (Hashed a) where
+instance Eq a => Hashable (Hashed a) where
   hashWithSalt = defaultHashWithSalt
-  hash (Hashed _ h) = h
+  hash = hashedHash
+
 
 -- This instance is a little unsettling. It is unusal for
 -- 'liftHashWithSalt' to ignore its first argument when a
@@ -955,9 +1015,17 @@ mapHashed f (Hashed a _) = hashed (f a)
 traverseHashed :: (Hashable b, Functor f) => (a -> f b) -> Hashed a -> f (Hashed b)
 traverseHashed f (Hashed a _) = fmap hashed (f a)
 
+#if MIN_VERSION_base(4,9,0)
+#define LIFTED_FUNCTOR_CLASSES 1
+#elif defined(MIN_VERSION_transformers)
+#if !(MIN_VERSION_transformers(0,4,0)) || MIN_VERSION_transformers(0,5,0)
+#define LIFTED_FUNCTOR_CLASSES 1
+#endif
+#endif
+
 -- instances for @Data.Functor.Classes@ higher rank typeclasses
 -- in base-4.9 and onward.
-#if MIN_VERSION_base(4,9,0)
+#if LIFTED_FUNCTOR_CLASSES
 instance Eq1 Hashed where
   liftEq f (Hashed a ha) (Hashed b hb) = ha == hb && f a b
 
@@ -965,7 +1033,12 @@ instance Ord1 Hashed where
   liftCompare f (Hashed a _) (Hashed b _) = f a b
 
 instance Show1 Hashed where
-  liftShowsPrec sp _ d (Hashed a _) = showsUnaryWith sp "hashed" d a
+  liftShowsPrec sp _ d (Hashed a _) = showParen (d > 10) $
+    showString "hashed " . sp 11 a
+#else
+instance Eq1 Hashed where eq1 = (==)
+instance Ord1 Hashed where compare1 = compare
+instance Show1 Hashed where showsPrec1 = showsPrec
 #endif
 
 -------------------------------------------------------------------------------

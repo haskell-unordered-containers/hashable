@@ -1,5 +1,14 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.0.0
+
+ * `Eq` is now a superclass of `Hashable`.
+   Also `Eq1` is a superclass of `Hashable1` and `Eq2` is a superclass of `Hashable2`
+   when exists.
+
+ * Remove `Hashable1 Fixed` instance
+ * Remove `Hashable1 Semi.Min/Max/...` instances as they don't have `Eq1` instance.
+
 ## Version 1.3.5.0
 
  * Add `Solo` instance (base-4.15+, GHC-9+)
