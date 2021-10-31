@@ -913,6 +913,7 @@ instance Hashable a => Hashable (Option a) where
 
 -- TODO: this instance is removed as there isn't Eq1 Min/Max, ...
 
+#if 0
 -- | @since 1.3.1.0
 -- instance Hashable1 Min where liftHashWithSalt h salt (Min a) = h salt a
 
@@ -932,10 +933,12 @@ instance Hashable a => Hashable (Option a) where
 -- | @since 1.3.1.0
 -- instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
+#endif
 
 -- instances for @Data.Functor.{Product,Sum,Compose}@, present
 -- in base-4.9 and onward.
 #if MIN_VERSION_base(4,9,0)
+
 -- | In general, @hash (Compose x) ≠ hash x@. However, @hashWithSalt@ satisfies
 -- its variant of this equivalence.
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (Compose f g a) where
