@@ -87,7 +87,7 @@ library
     , containers  >=0.4.2.1 && <0.7
     , deepseq     >=1.3     && <1.5
     , ghc-prim
-    , text        >=0.12    && <1.3
+    , text        >=0.12    && <2.1
 
   if !impl(ghc >=9.2)
     build-depends: base-orphans >=0.8.6
