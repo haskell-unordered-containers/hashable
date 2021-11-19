@@ -722,6 +722,22 @@ instance Hashable BSI.ShortByteString where
         hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
 #endif
 
+#if MIN_VERSION_text(2,0,0)
+
+instance Hashable T.Text where
+    hashWithSalt salt (T.Text (TA.ByteArray arr) off len) =
+        hashByteArrayWithSalt arr off len (hashWithSalt salt len)
+
+instance Hashable TL.Text where
+    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
+      where
+        finalise (SP s l) = hashWithSalt s l
+        step (SP s l) (T.Text (TA.ByteArray arr) off len) = SP
+            (hashByteArrayWithSalt arr off len s)
+            (l + len)
+
+#else
+
 instance Hashable T.Text where
     hashWithSalt salt (T.Text arr off len) =
         hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
@@ -734,6 +750,8 @@ instance Hashable TL.Text where
         step (SP s l) (T.Text arr off len) = SP
             (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
             (l + len)
+
+#endif
 
 -- | Compute the hash of a ThreadId.
 hashThreadId :: ThreadId -> Int

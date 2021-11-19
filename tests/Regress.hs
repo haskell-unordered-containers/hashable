@@ -48,7 +48,12 @@ regressions = [] ++
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=? -3875242662334356092
+        hash ("hello world" :: Text) @=?
+#if MIN_VERSION_text(2,0,0)
+            4078614214911247440
+#else
+            -3875242662334356092
+#endif
 #endif
     , F.testGroup "concatenation"
         [ testCase "String" $ do
