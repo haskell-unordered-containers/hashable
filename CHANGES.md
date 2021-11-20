@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.0.1
+
+ * `text-2.0` compatibility
+
 ## Version 1.4.0.0
 
  * `Eq` is now a superclass of `Hashable`.
