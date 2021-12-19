@@ -1,6 +1,6 @@
 cabal-version:      1.12
 name:               hashable
-version:            1.4.0.1
+version:            1.4.0.2
 synopsis:           A class for types that can be converted to a hash value
 description:
   This package defines a class, 'Hashable', for types that
@@ -121,12 +121,16 @@ library
     else
       c-sources: cbits-unix/init.c
 
+  -- containers flag mutually exclusive choice
   if flag(containers)
     build-depends: containers >=0.5.9.1
-
   else
     build-depends: containers <0.5.9.1
-    build-depends: functor-classes-compat >=2 && <2.1
+
+  -- we need functor-classes-compat on older GHCs always.
+  -- we also need it if containers is too old.
+  if !impl(ghc >=8.0) || !flag(containers)
+    build-depends: functor-classes-compat >=2.0.0.2 && <2.1
 
   default-language: Haskell2010
   other-extensions:

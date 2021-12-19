@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.0.2
+
+ * Restore older GHC support
+
 ## Version 1.4.0.1
 
  * `text-2.0` compatibility

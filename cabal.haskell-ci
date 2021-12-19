@@ -5,3 +5,7 @@ ghcup-jobs:   >=9.2
 
 constraint-set random-initial-seed
   constraints: hashable +random-initial-seed
+
+constraint-set containers-0.5.9.1
+  ghc: >=7.10.3
+  constraints: containers >=0.5.9.1
