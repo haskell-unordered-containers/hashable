@@ -3,6 +3,7 @@ See also https://pvp.haskell.org/faq
 ## Version 1.4.0.2
 
  * Restore older GHC support
+ * Support GHC-9.0.2
 
 ## Version 1.4.0.1
 

@@ -36,7 +36,9 @@ tested-with:
    || ==8.6.5
    || ==8.8.3
    || ==8.10.4
+   || ==8.10.7
    || ==9.0.1
+   || ==9.0.2
    || ==9.2.1
 
 extra-source-files:
@@ -94,9 +96,9 @@ library
 
   -- Integer internals
   if impl(ghc >=9)
-    build-depends: ghc-bignum >=1.0 && <1.1 || >=1.2 && <1.3
+    build-depends: ghc-bignum >=1.0 && <1.3
 
-    if !impl(ghc >=9.2)
+    if !impl(ghc >=9.0.2)
       build-depends: ghc-bignum-orphans >=0.1 && <0.2
 
   else
