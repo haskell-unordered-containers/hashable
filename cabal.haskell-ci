@@ -1,5 +1,5 @@
 distribution: bionic
-branches: master
+branches: master release-1.3
 benchmarks: False
 
 constraint-set random-initial-seed
