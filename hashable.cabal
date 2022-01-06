@@ -1,6 +1,7 @@
 cabal-version:      1.12
 name:               hashable
 version:            1.3.5.0
+x-revision:         1
 synopsis:           A class for types that can be converted to a hash value
 description:
   This package defines a class, 'Hashable', for types that
@@ -37,6 +38,7 @@ tested-with:
    || ==8.8.3
    || ==8.10.4
    || ==9.0.1
+   || ==9.0.2
    || ==9.2.1
 
 extra-source-files:
@@ -85,7 +87,7 @@ library
     , text        >=0.12 && <1.3
 
   if impl(ghc >=9)
-    build-depends: ghc-bignum ==1.0.* || ==1.2.*
+    build-depends: ghc-bignum ==1.0.* || ==1.1.* || ==1.2.*
 
   else
     if flag(integer-gmp)
