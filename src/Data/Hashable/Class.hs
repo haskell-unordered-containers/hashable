@@ -689,7 +689,7 @@ instance Hashable (StableName a) where
     hash = hashStableName
     hashWithSalt = defaultHashWithSalt
 
--- Auxillary type for Hashable [a] definition
+-- Auxiliary type for Hashable [a] definition
 data SPInt = SP !Int !Int
 
 instance Hashable a => Hashable [a] where
