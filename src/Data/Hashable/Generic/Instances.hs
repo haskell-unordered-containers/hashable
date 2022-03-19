@@ -63,12 +63,12 @@ class SumSize f => GSum arity f where
 -- [Note: Hashing a sum type]
 --
 -- The tree structure is used in GHC.Generics to represent the sum (and
--- product) part of the generic represention of the type, e.g.:
+-- product) part of the generic representation of the type, e.g.:
 --
 --   (C0 ... :+: C1 ...) :+: (C2 ... :+: (C3 ... :+: C4 ...))
 --
 -- The value constructed with C2 constructor is represented as (R1 (L1 ...)).
--- Yet, if we think that this tree is a flat (heterogenous) list:
+-- Yet, if we think that this tree is a flat (heterogeneous) list:
 --
 --   [C0 ..., C1 ..., C2 ..., C3 ..., C4... ]
 --
