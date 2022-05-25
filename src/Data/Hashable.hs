@@ -33,6 +33,8 @@ module Data.Hashable
 
       -- * Computing hash values
       Hashable(..)
+    , Hasher(..)
+    , FnvHasher(..)
 
       -- * Creating new instances
       -- | There are two ways to create new instances: by deriving
@@ -54,19 +56,20 @@ module Data.Hashable
       -- *** Hashing types with multiple constructors
       -- $multiple-ctors
 
+    , fnvHash
     , hashUsing
     , hashPtr
-    , hashPtrWithSalt
-    , hashByteArray
-    , hashByteArrayWithSalt
+    -- , hashPtrWithSalt
+    -- , hashByteArray
+    -- , hashByteArrayWithSalt
 
-    -- * Caching hashes
-    , Hashed
-    , hashed
-    , hashedHash
-    , unhashed
-    , mapHashed
-    , traverseHashed
+    -- -- * Caching hashes
+    -- , Hashed
+    -- , hashed
+    -- , hashedHash
+    -- , unhashed
+    -- , mapHashed
+    -- , traverseHashed
     ) where
 
 import Data.Hashable.Class

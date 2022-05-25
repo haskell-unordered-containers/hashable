@@ -2,6 +2,7 @@
 import Data.Hashable
 import Data.Hashable.Lifted
 import GHC.Generics (Generic)
+import Data.Hashable (fnvHash)
 
 data Foo
   = Foo1 Int Char Bool
@@ -21,11 +22,12 @@ instance Hashable Bar
 main :: IO ()
 main = do
   putStrLn "Hashing Foo1"
-  print . hash $ Foo1 22 'y' True
+  print . fnvHash $ Foo1 22 'y' True
   putStrLn "Hashing Foo2"
-  print . hash $ Foo2 "hello" ()
+  print . fnvHash $ Foo2 "hello" ()
   putStrLn "Hashing Bar"
-  print . hash $ Bar 55.50 9.125
+  print . fnvHash $ Bar 55.50 9.125
+  pure ()
 
 -----------------------------------
 -- Higher Rank Hashable Examples --

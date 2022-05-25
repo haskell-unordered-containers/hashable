@@ -1,16 +1,17 @@
 {-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, MagicHash,
     Rank2Types, UnboxedTuples #-}
 {-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | QuickCheck tests for the 'Data.Hashable' module.  We test
 -- functions by comparing the C and Haskell implementations.
 
 module Properties (properties) where
 
-import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
-         Hashed, hashed, unhashed, hashWithSalt)
+import Data.Hashable (Hashable, fnvHash, hashByteArray#, hashPtr, hashWithSalt, FnvHasher (..), defaultHasher)
+         
+-- Hashed, hashed, unhashed, hashWithSalt)
 import Data.Hashable.Generic (genericHashWithSalt)
-import Data.Hashable.Lifted (hashWithSalt1)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
@@ -58,16 +59,16 @@ instance Arbitrary BS.ShortByteString where
 -- versions.
 pHash :: [Word8] -> Bool
 pHash xs = unsafePerformIO $ withArray xs $ \ p ->
-    (hashByteArray (fromList xs) 0 len ==) `fmap` hashPtr p len
+    (hashByteArray# @FnvHasher defaultHasher (fromList xs) 0 len ==) `fmap` hashPtr defaultHasher p len
   where len = length xs
 
 -- | Content equality implies hash equality.
 pText :: T.Text -> T.Text -> Bool
-pText a b = if (a == b) then (hash a == hash b) else True
+pText a b = if (a == b) then (fnvHash a == fnvHash b) else True
 
 -- | Content equality implies hash equality.
 pTextLazy :: TL.Text -> TL.Text -> Bool
-pTextLazy a b = if (a == b) then (hash a == hash b) else True
+pTextLazy a b = if (a == b) then (fnvHash a == fnvHash b) else True
 
 -- | A small positive integer.
 newtype ChunkSize = ChunkSize { unCS :: Int }
@@ -90,7 +91,7 @@ pTextRechunk t cs = TL.fromStrict t == rechunkText t cs
 pTextLazyRechunked :: T.Text
                    -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
 pTextLazyRechunked t cs0 cs1 =
-    hash (rechunkText t cs0) == hash (rechunkText t cs1)
+    fnvHash (rechunkText t cs0) == fnvHash (rechunkText t cs1)
 
 -- | Break up a string into chunks of different sizes.
 rechunkText :: T.Text -> NonEmptyList ChunkSize -> TL.Text
@@ -104,16 +105,16 @@ rechunkText t0 (NonEmpty cs0) = TL.fromChunks . go t0 . cycle $ cs0
 #if MIN_VERSION_bytestring(0,10,4)
 -- | Content equality implies hash equality.
 pBSShort :: BS.ShortByteString -> BS.ShortByteString -> Bool
-pBSShort a b = if (a == b) then (hash a == hash b) else True
+pBSShort a b = if (a == b) then (fnvHash a == fnvHash b) else True
 #endif
 
 -- | Content equality implies hash equality.
 pBS :: B.ByteString -> B.ByteString -> Bool
-pBS a b = if (a == b) then (hash a == hash b) else True
+pBS a b = if (a == b) then (fnvHash a == fnvHash b) else True
 
 -- | Content equality implies hash equality.
 pBSLazy :: BL.ByteString -> BL.ByteString -> Bool
-pBSLazy a b = if (a == b) then (hash a == hash b) else True
+pBSLazy a b = if (a == b) then (fnvHash a == fnvHash b) else True
 
 -- | Break up a string into chunks of different sizes.
 rechunkBS :: B.ByteString -> NonEmptyList ChunkSize -> BL.ByteString
@@ -133,7 +134,7 @@ pBSRechunk t cs = fromStrict t == rechunkBS t cs
 -- are chunked.
 pBSLazyRechunked :: B.ByteString
                  -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
-pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
+pBSLazyRechunked t cs1 cs2 = fnvHash (rechunkBS t cs1) == fnvHash (rechunkBS t cs2)
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -173,10 +174,10 @@ instance (Hashable a, Hashable b, Hashable c) => Hashable (Product3 a b c)
 -- Hashes of all product types of the same shapes should be the same.
 
 pProduct2 :: Int -> String -> Bool
-pProduct2 x y = hash (x, y) == hash (Product2 x y)
+pProduct2 x y = fnvHash (x, y) == fnvHash (Product2 x y)
 
 pProduct3 :: Double -> Maybe Bool -> (Int, String) -> Bool
-pProduct3 x y z = hash (x, y, z) == hash (Product3 x y z)
+pProduct3 x y z = fnvHash (x, y, z) == fnvHash (Product3 x y z)
 
 data Sum2 a b = S2a a | S2b b
                 deriving (Eq, Ord, Show, Generic)
@@ -201,24 +202,26 @@ instance (Hashable a, Hashable b, Hashable c) => Hashable (Sum3 a b c)
 
 pSum2_differ :: Int -> Bool
 pSum2_differ x = nub hs == hs
-  where hs = [ hash (S2a x :: Sum2 Int Int)
-             , hash (S2b x :: Sum2 Int Int) ]
+  where hs = [ fnvHash (S2a x :: Sum2 Int Int)
+             , fnvHash (S2b x :: Sum2 Int Int) ]
 
 pSum3_differ :: Int -> Bool
 pSum3_differ x = nub hs == hs
-  where hs = [ hash (S3a x :: Sum3 Int Int Int)
-             , hash (S3b x :: Sum3 Int Int Int)
-             , hash (S3c x :: Sum3 Int Int Int) ]
+  where hs = [ fnvHash (S3a x :: Sum3 Int Int Int)
+             , fnvHash (S3b x :: Sum3 Int Int Int)
+             , fnvHash (S3c x :: Sum3 Int Int Int) ]
 
-pGeneric :: Sum3 Int Bool String -> Int -> Bool
-pGeneric x salt = hashWithSalt salt x == genericHashWithSalt salt x
+pGeneric ::  Sum3 Int Bool String -> Int -> Bool
+pGeneric x salt' = hashWithSalt salt x == genericHashWithSalt salt x
+  where salt = FnvHasher salt'
 
-instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
-  arbitrary = fmap hashed arbitrary
-  shrink xs = map hashed $ shrink $ unhashed xs
 
-pLiftedHashed :: Int -> Hashed (Either Int String) -> Bool
-pLiftedHashed s h = hashWithSalt s h == hashWithSalt1 s h
+-- instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
+--   arbitrary = fmap hashed arbitrary
+--   shrink xs = map hashed $ shrink $ unhashed xs
+
+-- pLiftedHashed :: Int -> Hashed (Either Int String) -> Bool
+-- pLiftedHashed s h = hashWithSalt s h == hashWithSalt1 s h
 
 properties :: [Test]
 properties =
@@ -250,9 +253,9 @@ properties =
       , testProperty "sum3_differ" pSum3_differ
       , testProperty "genericHashWithSalt" pGeneric
       ]
-    , testGroup "lifted law"
-      [ testProperty "Hashed" pLiftedHashed
-      ]
+    -- , testGroup "lifted law"
+    --   [ testProperty "Hashed" pLiftedHashed
+    --   ]
     ]
 
 ------------------------------------------------------------------------

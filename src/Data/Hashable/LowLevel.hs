@@ -3,10 +3,10 @@
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
     Salt,
-    defaultSalt,
-    hashInt,
-    hashInt64,
-    hashWord64,
+    -- defaultSalt,
+    -- hashInt,
+    -- hashInt64,
+    -- hashWord64,
     hashPtrWithSalt,
     hashByteArrayWithSalt,
 ) where

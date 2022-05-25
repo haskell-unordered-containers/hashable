@@ -8,7 +8,7 @@ import Control.Exception (bracket, evaluate)
 import Control.Monad (forM_)
 import Data.Bits ((.|.))
 import Data.ByteString.Internal (ByteString(..))
-import Data.Hashable (hash)
+import Data.Hashable (fnvHash)
 import Foreign.C.Error (throwErrnoIf, throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.C.Types (CInt(..), CSize(..))
 import Foreign.Ptr (Ptr, intPtrToPtr, nullPtr, plusPtr)
@@ -41,7 +41,7 @@ hashNearPageBoundary =
     fp <- newForeignPtr_ (ptr `plusPtr` (pageSize - initialSize))
     let bs0 = PS fp 0 initialSize
     forM_ (B.tails bs0) $ \bs -> do
-      evaluate (hash bs)
+      evaluate (fnvHash bs)
 
 regressions :: [Test]
 regressions = [

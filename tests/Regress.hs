@@ -32,7 +32,7 @@ regressions = [] ++
 #ifdef HAVE_MMAP
     Mmap.regressions ++
     [ testCase "Fixed" $ do
-        (hash (1 :: Pico) == hash (2 :: Pico)) @=? False
+        (fnvHash (1 :: Pico) == fnvHash (2 :: Pico)) @=? False
     ] ++
 #endif
     [ F.testGroup "Generic: sum of nullary constructors"
@@ -44,11 +44,11 @@ regressions = [] ++
         ]
     , testCase "Generic: Peano https://github.com/tibbe/hashable/issues/135" $ do
         let ns = take 20 $ iterate S Z
-        let hs = map hash ns
+        let hs = map fnvHash ns
         hs @=? nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=?
+        fnvHash ("hello world" :: Text) @=?
 #if MIN_VERSION_text(2,0,0)
             4078614214911247440
 #else
@@ -61,7 +61,7 @@ regressions = [] ++
                 lhs = ("foo", "bar")
                 rhs = ("foobar", "")
 
-            when (hash lhs == hash rhs) $ do
+            when (fnvHash lhs == fnvHash rhs) $ do
                 assertFailure "Should have different hashes"
 
         , testCase "Text" $ do
@@ -69,7 +69,7 @@ regressions = [] ++
                 lhs = ("foo", "bar")
                 rhs = ("foobar", "")
 
-            when (hash lhs == hash rhs) $ do
+            when (fnvHash lhs == fnvHash rhs) $ do
                 assertFailure "Should have different hashes"
 
         , testCase "Lazy Text" $ do
@@ -77,7 +77,7 @@ regressions = [] ++
                 lhs = ("foo", "bar")
                 rhs = ("foobar", "")
 
-            when (hash lhs == hash rhs) $ do
+            when (fnvHash lhs == fnvHash rhs) $ do
                 assertFailure "Should have different hashes"
 
         , testCase "ByteString" $ do
@@ -85,7 +85,7 @@ regressions = [] ++
                 lhs = (BS8.pack "foo", BS8.pack "bar")
                 rhs = (BS8.pack "foobar", BS8.empty)
 
-            when (hash lhs == hash rhs) $ do
+            when (fnvHash lhs == fnvHash rhs) $ do
                 assertFailure "Should have different hashes"
 
         , testCase "Lazy ByteString" $ do
@@ -93,14 +93,14 @@ regressions = [] ++
                 lhs = (BSL8.pack "foo", BSL8.pack "bar")
                 rhs = (BSL8.pack "foobar", BSL.empty)
 
-            when (hash lhs == hash rhs) $ do
+            when (fnvHash lhs == fnvHash rhs) $ do
                 assertFailure "Should have different hashes"
         ]
     ]
   where
     nullaryCase :: Int -> SumOfNullary -> IO ()
     nullaryCase n s = do
-        let salt = 42
+        let salt = FnvHasher 42
         let expected = salt `hashWithSalt` n `hashWithSalt` ()
         let actual = hashWithSalt salt s
         expected @=? actual

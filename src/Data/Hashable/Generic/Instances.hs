@@ -57,7 +57,7 @@ instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
     ghashWithSalt targs salt = liftHashWithSalt (ghashWithSalt targs) salt . unComp1
 
 class SumSize f => GSum arity f where
-    hashSum :: HashArgs arity a -> Int -> Int -> f a -> Int
+    hashSum :: Hasher h => HashArgs arity h a -> h -> Int -> f a -> h
     -- hashSum args salt index value = ...
 
 -- [Note: Hashing a sum type]
@@ -96,13 +96,13 @@ class SumSize f => GSum arity f where
 -- For that type the manual implementation:
 --
 --    instance Hashable Nat where
---        hashWithSalt salt n = hashWithSalt salt (natToInteger n)
+  --        hashWithSalt salt n = hashWithSalt salt (natToInteger n)
 --
 -- would be better performing CPU and hash-quality wise (assuming that
 -- Integer's Hashable is of high quality).
 --
 instance (GSum arity a, GSum arity b) => GHashable arity (a :+: b) where
-    ghashWithSalt toHash salt = hashSum toHash salt 0
+  ghashWithSalt toHash salt = hashSum toHash salt 0
 
 instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
     hashSum toHash !salt !index s = case s of
@@ -111,13 +111,13 @@ instance (GSum arity a, GSum arity b) => GSum arity (a :+: b) where
       where
         sizeL = unTagged (sumSize :: Tagged a)
     {-# INLINE hashSum #-}
-
+  
 instance GHashable arity a => GSum arity (C1 c a) where
     hashSum toHash !salt !index (M1 x) = ghashWithSalt toHash (hashWithSalt salt index) x
     {-# INLINE hashSum #-}
 
 class SumSize f where
-    sumSize :: Tagged f
+  sumSize :: Tagged f
 
 newtype Tagged (s :: Type -> Type) = Tagged {unTagged :: Int}
 

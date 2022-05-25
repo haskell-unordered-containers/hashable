@@ -8,7 +8,9 @@ import Regress (regressions)
 import Test.Framework (defaultMain, testGroup)
 
 main :: IO ()
-main = defaultMain [
-         testGroup "properties" properties
-       , testGroup "regressions" regressions
-       ]
+main =
+  defaultMain
+    [ testGroup "properties" properties
+      , testGroup "regressions" regressions
+    ]
+-- main = pure ()
