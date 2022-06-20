@@ -33,7 +33,7 @@ tested-with:
    || ==8.10.7
    || ==9.0.1
    || ==9.0.2
-   || ==9.2.1
+   || ==9.2.3
 
 extra-source-files:
   benchmarks/cbits/*.h
