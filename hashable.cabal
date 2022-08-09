@@ -97,7 +97,7 @@ library
 
   -- Integer internals
   if impl(ghc >=9)
-    build-depends: ghc-bignum >=1.0 && <1.3
+    build-depends: ghc-bignum >=1.0 && <1.4
 
     if !impl(ghc >=9.0.2)
       build-depends: ghc-bignum-orphans >=0.1 && <0.2
