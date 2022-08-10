@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.1.0
+
+ * Add instance for `Data.Array.Byte.ByteArray`.
+
 ## Version 1.4.0.2
 
  * Restore older GHC support
