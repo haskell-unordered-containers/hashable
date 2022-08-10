@@ -69,7 +69,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Unsafe as B
 import Data.Complex (Complex(..))
-import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Int (Int8, Int16)
 import Data.List (foldl')
 import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
@@ -77,7 +77,7 @@ import qualified Data.Text.Array as TA
 import qualified Data.Text.Internal as T
 import qualified Data.Text.Lazy as TL
 import Data.Version (Version(..))
-import Data.Word (Word8, Word16, Word32, Word64)
+import Data.Word (Word8, Word16)
 import Foreign.Marshal.Utils (with)
 import Foreign.Ptr (Ptr, FunPtr, IntPtr, WordPtr, castPtr, castFunPtrToPtr, ptrToIntPtr)
 import Foreign.Storable (alignment, peek, sizeOf)
@@ -228,6 +228,10 @@ import Data.Set.Functor.Classes ()
 import Data.IntMap.Functor.Classes ()
 import Data.Sequence.Functor.Classes ()
 import Data.Tree.Functor.Classes ()
+#endif
+
+#if MIN_VERSION_base(4,17,0)
+import qualified Data.Array.Byte as AB
 #endif
 
 #include "MachDeps.h"
@@ -978,6 +982,21 @@ instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
     hashWithSalt = hashWithSalt1
 #endif
+
+#if MIN_VERSION_base(4,17,0)
+-- | @since 1.4.1.0
+instance Hashable AB.ByteArray where
+    hashWithSalt salt (AB.ByteArray ba) =
+        hashByteArrayWithSalt ba 0 numBytes salt
+        `hashWithSalt` size
+      where
+        size     = numBytes `quot` SIZEOF_HSWORD
+        numBytes = I# (sizeofByteArray# ba)
+#endif
+
+-------------------------------------------------------------------------------
+-- Hashed
+-------------------------------------------------------------------------------
 
 -- | A hashable value along with the result of the 'hash' function.
 data Hashed a = Hashed a {-# UNPACK #-} !Int
