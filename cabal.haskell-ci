@@ -5,6 +5,5 @@ benchmarks:   False
 constraint-set random-initial-seed
   constraints: hashable +random-initial-seed
 
-constraint-set containers-0.5.9.1
-  ghc: >=7.10.3
-  constraints: containers >=0.5.9.1
+constraint-set filepath-1.4.100.0
+  constraints: filepath >=1.4.100.0

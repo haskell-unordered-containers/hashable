@@ -252,10 +252,10 @@ jobs:
       - name: prepare for constraint sets
         run: |
           rm -f cabal.project.local
-      - name: constraint set containers-0.5.9.1
+      - name: constraint set filepath-1.4.100.0
         run: |
-          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' --dependencies-only -j2 all
-          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' all
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='filepath >=1.4.100.0' --dependencies-only -j2 all
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='filepath >=1.4.100.0' all
       - name: constraint set random-initial-seed
         run: |
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='hashable +random-initial-seed' --dependencies-only -j2 all

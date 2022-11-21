@@ -117,6 +117,10 @@ import Foreign.C.Types (CInt(..))
 
 import qualified Data.ByteString.Short.Internal as BSI
 
+#if MIN_VERSION_filepath(1,4,100)
+import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
+#endif
+
 #ifdef VERSION_ghc_bignum
 import GHC.Num.BigNat (BigNat (..))
 import GHC.Num.Integer (Integer (..))
@@ -656,6 +660,20 @@ instance Hashable BL.ByteString where
 instance Hashable BSI.ShortByteString where
     hashWithSalt salt sbs@(BSI.SBS ba) =
         hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
+
+#if MIN_VERSION_filepath(1,4,100)
+-- | @since 1.4.2.0
+instance Hashable PosixString where
+    hashWithSalt salt (PosixString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable WindowsString where
+    hashWithSalt salt (WindowsString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable OsString where
+    hashWithSalt salt (OsString s) = hashWithSalt salt s
+#endif
 
 #if MIN_VERSION_text(2,0,0)
 
