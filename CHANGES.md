@@ -1,5 +1,11 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.2.0
+
+ * Add instance for `System.OsString.Internal.Types.PosixString`.
+ * Add instance for `System.OsString.Internal.Types.WindowsString`.
+ * Add instance for `System.OsString.OsString`.
+
 ## Version 1.4.1.0
 
  * Add instance for `Data.Array.Byte.ByteArray`.

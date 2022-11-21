@@ -138,6 +138,12 @@ import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
 
 #if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short.Internal as BSI
+
+-- OsString internally uses ShortByteString
+#if MIN_VERSION_filepath(1,4,100)
+import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
+#endif
+
 #endif
 
 #ifdef VERSION_ghc_bignum
@@ -724,6 +730,21 @@ instance Hashable BL.ByteString where
 instance Hashable BSI.ShortByteString where
     hashWithSalt salt sbs@(BSI.SBS ba) =
         hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
+
+#if MIN_VERSION_filepath(1,4,100)
+-- | @since 1.4.2.0
+instance Hashable PosixString where
+    hashWithSalt salt (PosixString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable WindowsString where
+    hashWithSalt salt (WindowsString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable OsString where
+    hashWithSalt salt (OsString s) = hashWithSalt salt s
+#endif
+
 #endif
 
 #if MIN_VERSION_text(2,0,0)
