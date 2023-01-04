@@ -126,7 +126,13 @@ import Data.Typeable.Internal (Typeable, TypeRep (..))
 import GHC.Fingerprint.Type(Fingerprint(..))
 #endif
 
+#if __GLASGOW_HASKELL__ >= 904
+import Foreign.C.Types (CULLong(..))
+#elif __GLASGOW_HASKELL__ >= 900
+import Foreign.C.Types (CLong(..))
+#else
 import Foreign.C.Types (CInt(..))
+#endif
 
 #if !(MIN_VERSION_base(4,8,0))
 import Data.Word (Word)
@@ -763,7 +769,15 @@ hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
 
 -- this cannot be capi, as GHC panics.
 foreign import ccall unsafe "rts_getThreadId" getThreadId
+#if __GLASGOW_HASKELL__ >= 904
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
+    :: ThreadId# -> CULLong
+#elif __GLASGOW_HASKELL__ >= 900
+    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
+    :: ThreadId# -> CLong
+#else
     :: ThreadId# -> CInt
+#endif
 
 instance Hashable ThreadId where
     hash = hashThreadId
