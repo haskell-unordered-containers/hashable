@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, FlexibleInstances, KindSignatures,
+{-# LANGUAGE BangPatterns, FlexibleInstances, KindSignatures,
              ScopedTypeVariables, TypeOperators,
              MultiParamTypeClasses, GADTs, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -19,12 +19,7 @@ module Data.Hashable.Generic.Instances () where
 
 import Data.Hashable.Class
 import GHC.Generics
-
-#if MIN_VERSION_base(4,9,0)
 import Data.Kind (Type)
-#else
-#define Type *
-#endif
 
 
 -- Type without constructors

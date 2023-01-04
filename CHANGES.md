@@ -4,6 +4,8 @@ See also https://pvp.haskell.org/faq
 
  * Fix the foreign signature of `getThreadId`
    https://github.com/haskell-unordered-containers/hashable/pull/263
+ * Drop support for GHCs prior GHC-8.2
+   The recent `unordered-containers` releases support only GHC-8.2+
 
 ## Version 1.4.1.0
 

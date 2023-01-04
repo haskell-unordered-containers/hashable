@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20220808
+# version: 0.15.20221225
 #
-# REGENDATA ("0.15.20220808",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
+# REGENDATA ("0.15.20221225",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
 #
 name: Benchmarks
 on:
@@ -32,9 +32,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.2.4
+          - compiler: ghc-9.4.4
             compilerKind: ghc
-            compilerVersion: 9.2.4
+            compilerVersion: 9.4.4
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.2.5
+            compilerKind: ghc
+            compilerVersion: 9.2.5
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.2
@@ -75,31 +80,6 @@ jobs:
           - compiler: ghc-8.2.2
             compilerKind: ghc
             compilerVersion: 8.2.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.0.2
-            compilerKind: ghc
-            compilerVersion: 8.0.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.10.3
-            compilerKind: ghc
-            compilerVersion: 7.10.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.8.4
-            compilerKind: ghc
-            compilerVersion: 7.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.6.3
-            compilerKind: ghc
-            compilerVersion: 7.6.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.4.2
-            compilerKind: ghc
-            compilerVersion: 7.4.2
             setup-method: hvr-ppa
             allow-failure: false
       fail-fast: false
@@ -228,8 +208,8 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_hashable_bench}" >> cabal.project
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package hashable-bench" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
+          echo "package hashable-bench" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(hashable-bench)$/; }' >> cabal.project.local
@@ -271,8 +251,8 @@ jobs:
           rm -f cabal.project.local
       - name: constraint set containers-0.5.9.1
         run: |
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' --dependencies-only -j2 all ; fi
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' all ; fi
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' --dependencies-only -j2 all
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='containers >=0.5.9.1' all
       - name: constraint set random-initial-seed
         run: |
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='hashable +random-initial-seed' --dependencies-only -j2 all
