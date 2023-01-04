@@ -1,13 +1,14 @@
-{-# LANGUAGE BangPatterns, CPP, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes,
-             DefaultSignatures, FlexibleContexts, TypeFamilies,
-             MultiParamTypeClasses, CApiFFI #-}
-
-{-# LANGUAGE Trustworthy #-}
-
-#if __GLASGOW_HASKELL__ >= 801
-{-# LANGUAGE PolyKinds #-} -- For TypeRep instances
-#endif
+{-# LANGUAGE CApiFFI               #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MagicHash             #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE Trustworthy           #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UnliftedFFITypes      #-}
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -62,70 +63,71 @@ module Data.Hashable.Class
     , traverseHashed
     ) where
 
-import Control.Applicative (Const(..))
-import Control.Exception (assert)
-import Control.DeepSeq (NFData(rnf))
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Unsafe as B
-import Data.Complex (Complex(..))
-import Data.Int (Int8, Int16)
-import Data.List (foldl')
-import Data.Ratio (Ratio, denominator, numerator)
-import qualified Data.Text as T
-import qualified Data.Text.Array as TA
-import qualified Data.Text.Internal as T
-import qualified Data.Text.Lazy as TL
-import Data.Version (Version(..))
-import Data.Word (Word8, Word16)
-import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr, FunPtr, IntPtr, WordPtr, castPtr, castFunPtrToPtr, ptrToIntPtr)
-import Foreign.Storable (alignment, peek, sizeOf)
-import GHC.Base (ByteArray#)
-import GHC.Conc (ThreadId(..))
-import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
-import System.Mem.StableName
-import Data.Unique (Unique, hashUnique)
-import qualified Data.IntMap as IntMap
-import qualified Data.IntSet as IntSet
-import qualified Data.Map as Map
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
-import qualified Data.Tree as Tree
+import Control.Applicative    (Const (..))
+import Control.DeepSeq        (NFData (rnf))
+import Control.Exception      (assert)
+import Data.Complex           (Complex (..))
+import Data.Fixed             (Fixed (..))
+import Data.Functor.Classes   (Eq1 (..), Eq2 (..), Ord1 (..), Show1 (..))
+import Data.Functor.Compose   (Compose (..))
+import Data.Functor.Identity  (Identity (..))
+import Data.Int               (Int16, Int8)
+import Data.Kind              (Type)
+import Data.List              (foldl')
+import Data.Proxy             (Proxy)
+import Data.Ratio             (Ratio, denominator, numerator)
+import Data.String            (IsString (..))
+import Data.Unique            (Unique, hashUnique)
+import Data.Version           (Version (..))
+import Data.Void              (Void, absurd)
+import Data.Word              (Word16, Word8)
+import Foreign.Marshal.Utils  (with)
+import Foreign.Ptr            (FunPtr, IntPtr, Ptr, WordPtr, castFunPtrToPtr, castPtr, ptrToIntPtr)
+import Foreign.Storable       (alignment, peek, sizeOf)
+import GHC.Base               (ByteArray#)
+import GHC.Conc               (ThreadId (..))
+import GHC.Fingerprint.Type   (Fingerprint (..))
+import GHC.Prim               (ThreadId#)
+import GHC.Word               (Word (..))
+import System.IO.Unsafe       (unsafeDupablePerformIO)
+import System.Mem.StableName  (StableName, hashStableName)
+import Type.Reflection        (SomeTypeRep (..), TypeRep)
+import Type.Reflection.Unsafe (typeRepFingerprint)
 
--- As we use qualified F.Foldable, we don't get warnings with newer base
-import qualified Data.Foldable as F
-
-import Data.Proxy (Proxy)
-import Data.Fixed (Fixed(..))
-import Data.Functor.Identity (Identity(..))
+import qualified Data.ByteString                as B
+import qualified Data.ByteString.Lazy           as BL
+import qualified Data.ByteString.Short.Internal as BSI
+import qualified Data.ByteString.Unsafe         as B
+import qualified Data.Functor.Product           as FP
+import qualified Data.Functor.Sum               as FS
+import qualified Data.IntMap                    as IntMap
+import qualified Data.IntSet                    as IntSet
+import qualified Data.List.NonEmpty             as NE
+import qualified Data.Map                       as Map
+import qualified Data.Semigroup                 as Semi
+import qualified Data.Sequence                  as Seq
+import qualified Data.Set                       as Set
+import qualified Data.Text                      as T
+import qualified Data.Text.Array                as TA
+import qualified Data.Text.Internal             as T
+import qualified Data.Text.Lazy                 as TL
+import qualified Data.Tree                      as Tree
 
 import GHC.Generics
 
-import Type.Reflection (TypeRep, SomeTypeRep(..))
-import Type.Reflection.Unsafe (typeRepFingerprint)
-import GHC.Fingerprint.Type(Fingerprint(..))
-
 #if __GLASGOW_HASKELL__ >= 904
-import Foreign.C.Types (CULLong(..))
+import Foreign.C.Types (CULLong (..))
 #elif __GLASGOW_HASKELL__ >= 900
-import Foreign.C.Types (CLong(..))
+import Foreign.C.Types (CLong (..))
 #else
-import Foreign.C.Types (CInt(..))
-#endif
-
-import qualified Data.ByteString.Short.Internal as BSI
-
-#if MIN_VERSION_filepath(1,4,100)
-import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
+import Foreign.C.Types (CInt (..))
 #endif
 
 #ifdef VERSION_ghc_bignum
-import GHC.Num.BigNat (BigNat (..))
+import GHC.Exts        (Int (..), sizeofByteArray#)
+import GHC.Num.BigNat  (BigNat (..))
 import GHC.Num.Integer (Integer (..))
 import GHC.Num.Natural (Natural (..))
-import GHC.Exts (Int (..), sizeofByteArray#)
 #endif
 
 #ifdef VERSION_integer_gmp
@@ -134,27 +136,17 @@ import GHC.Exts (Int (..), sizeofByteArray#)
 #  define MIN_VERSION_integer_gmp_1_0_0
 # endif
 
-import GHC.Exts (Int(..))
-import GHC.Integer.GMP.Internals (Integer(..))
+import GHC.Exts                  (Int (..))
+import GHC.Integer.GMP.Internals (Integer (..))
 # if defined(MIN_VERSION_integer_gmp_1_0_0)
-import GHC.Exts (sizeofByteArray#)
-import GHC.Integer.GMP.Internals (BigNat(BN#))
+import GHC.Exts                  (sizeofByteArray#)
+import GHC.Integer.GMP.Internals (BigNat (BN#))
 # endif
 #endif
 
-import Data.Void (Void, absurd)
-import GHC.Word (Word(..))
 #ifndef VERSION_ghc_bignum
-import GHC.Natural (Natural(..))
+import GHC.Natural (Natural (..))
 #endif
-
-import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..), Eq2(..))
-import qualified Data.List.NonEmpty as NE
-import Data.Semigroup
-
-import Data.Functor.Compose (Compose(..))
-import qualified Data.Functor.Product as FP
-import qualified Data.Functor.Sum as FS
 
 #if MIN_VERSION_base(4,16,0)
 import Data.Tuple (Solo (..))
@@ -162,12 +154,13 @@ import Data.Tuple (Solo (..))
 import GHC.Tuple (Solo (..))
 #endif
 
-import Data.String (IsString(..))
+#if MIN_VERSION_base(4,17,0)
+import qualified Data.Array.Byte as AB
+#endif
 
-import Data.Kind (Type)
-
-import Data.Hashable.Imports
-import Data.Hashable.LowLevel
+#if MIN_VERSION_filepath(1,4,100)
+import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
+#endif
 
 #ifdef VERSION_base_orphans
 import Data.Orphans ()
@@ -177,10 +170,8 @@ import Data.Orphans ()
 import GHC.Num.Orphans ()
 #endif
 
-
-#if MIN_VERSION_base(4,17,0)
-import qualified Data.Array.Byte as AB
-#endif
+import Data.Hashable.Imports
+import Data.Hashable.LowLevel
 
 #include "MachDeps.h"
 
@@ -823,33 +814,33 @@ instance Hashable a => Hashable (NE.NonEmpty a) where
 instance Hashable1 NE.NonEmpty where
     liftHashWithSalt h salt (a NE.:| as) = liftHashWithSalt h (h salt a) as
 
-instance Hashable a => Hashable (Min a) where
-    hashWithSalt p (Min a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Min a) where
+    hashWithSalt p (Semi.Min a) = hashWithSalt p a
 
-instance Hashable a => Hashable (Max a) where
-    hashWithSalt p (Max a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Max a) where
+    hashWithSalt p (Semi.Max a) = hashWithSalt p a
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
 -- @since 1.3.0.0
-instance Hashable a => Hashable (Arg a b) where
-    hashWithSalt p (Arg a _) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Arg a b) where
+    hashWithSalt p (Semi.Arg a _) = hashWithSalt p a
 
-instance Hashable a => Hashable (First a) where
-    hashWithSalt p (First a) = hashWithSalt p a
-
-
-instance Hashable a => Hashable (Last a) where
-    hashWithSalt p (Last a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.First a) where
+    hashWithSalt p (Semi.First a) = hashWithSalt p a
 
 
-instance Hashable a => Hashable (WrappedMonoid a) where
-    hashWithSalt p (WrapMonoid a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Last a) where
+    hashWithSalt p (Semi.Last a) = hashWithSalt p a
+
+
+instance Hashable a => Hashable (Semi.WrappedMonoid a) where
+    hashWithSalt p (Semi.WrapMonoid a) = hashWithSalt p a
 
 
 #if !MIN_VERSION_base(4,16,0)
-instance Hashable a => Hashable (Option a) where
-    hashWithSalt p (Option a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Option a) where
+    hashWithSalt p (Semi.Option a) = hashWithSalt p a
 
 #endif
 
@@ -954,7 +945,8 @@ instance Hashable1 Hashed where
 instance (IsString a, Hashable a) => IsString (Hashed a) where
   fromString s = let r = fromString s in Hashed r (hash r)
 
-instance F.Foldable Hashed where
+instance Foldable Hashed where
+  foldMap f (Hashed a _) = f a
   foldr f acc (Hashed a _) = f a acc
 
 instance NFData a => NFData (Hashed a) where
@@ -1029,7 +1021,7 @@ instance Hashable IntSet.IntSet where
 
 -- | @since 1.3.4.0
 instance Hashable1 Seq.Seq where
-    liftHashWithSalt h s x = F.foldl' h (hashWithSalt s (Seq.length x)) x
+    liftHashWithSalt h s x = foldl' h (hashWithSalt s (Seq.length x)) x
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Seq.Seq v) where
