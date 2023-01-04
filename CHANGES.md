@@ -1,5 +1,10 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.2.0
+
+ * Fix the foreign signature of `getThreadId`
+   https://github.com/haskell-unordered-containers/hashable/pull/263
+
 ## Version 1.4.1.0
 
  * Add instance for `Data.Array.Byte.ByteArray`.
