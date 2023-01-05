@@ -81,9 +81,8 @@ import Data.Unique            (Unique, hashUnique)
 import Data.Version           (Version (..))
 import Data.Void              (Void, absurd)
 import Data.Word              (Word16, Word8)
-import Foreign.Marshal.Utils  (with)
-import Foreign.Ptr            (FunPtr, IntPtr, Ptr, WordPtr, castFunPtrToPtr, castPtr, ptrToIntPtr)
-import Foreign.Storable       (alignment, peek, sizeOf)
+import Foreign.Ptr            (FunPtr, IntPtr, Ptr, WordPtr, castFunPtrToPtr, ptrToIntPtr)
+import Foreign.Storable       (alignment, sizeOf)
 import GHC.Base               (ByteArray#)
 import GHC.Conc               (ThreadId (..))
 import GHC.Fingerprint.Type   (Fingerprint (..))
@@ -146,6 +145,14 @@ import GHC.Integer.GMP.Internals (BigNat (BN#))
 
 #ifndef VERSION_ghc_bignum
 import GHC.Natural (Natural (..))
+#endif
+
+#if MIN_VERSION_base(4,11,0)
+import GHC.Float (castDoubleToWord64, castFloatToWord32)
+#else
+import Foreign.Marshal.Utils (with)
+import Foreign.Ptr           (castPtr)
+import Foreign.Storable      (peek)
 #endif
 
 #if MIN_VERSION_base(4,16,0)
@@ -473,7 +480,11 @@ instance Hashable Float where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
+#if MIN_VERSION_base(4,11,0)
+            hash (castFloatToWord32 x)
+#else
             hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word32)
+#endif
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -488,7 +499,11 @@ instance Hashable Double where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
+#if MIN_VERSION_base(4,11,0)
+            hash (castDoubleToWord64 x)
+#else
             hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word64)
+#endif
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
