@@ -7,6 +7,7 @@ See also https://pvp.haskell.org/faq
  * Drop support for GHCs prior GHC-8.2
    The recent `unordered-containers` releases support only GHC-8.2+
  * Add instance for `OsString`, `PosixString`, `WindowsString` from `filepath-1.4.100.1`
+ * Add `Hashable ByteArray` instance using `data-array-byte` compat package
 
 ## Version 1.4.1.0
 

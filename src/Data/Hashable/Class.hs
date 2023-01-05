@@ -93,6 +93,7 @@ import System.Mem.StableName  (StableName, hashStableName)
 import Type.Reflection        (SomeTypeRep (..), TypeRep)
 import Type.Reflection.Unsafe (typeRepFingerprint)
 
+import qualified Data.Array.Byte                as AB
 import qualified Data.ByteString                as B
 import qualified Data.ByteString.Lazy           as BL
 import qualified Data.ByteString.Short.Internal as BSI
@@ -159,10 +160,6 @@ import Foreign.Storable      (peek)
 import Data.Tuple (Solo (..))
 #elif MIN_VERSION_base(4,15,0)
 import GHC.Tuple (Solo (..))
-#endif
-
-#if MIN_VERSION_base(4,17,0)
-import qualified Data.Array.Byte as AB
 #endif
 
 #if MIN_VERSION_filepath(1,4,100)
@@ -903,8 +900,10 @@ instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
     hashWithSalt = hashWithSalt1
 
-#if MIN_VERSION_base(4,17,0)
--- | @since 1.4.1.0
+-- | This instance was available since 1.4.1.0 only for GHC-9.4+
+--
+-- @since 1.4.2.0
+--
 instance Hashable AB.ByteArray where
     hashWithSalt salt (AB.ByteArray ba) =
         hashByteArrayWithSalt ba 0 numBytes salt
@@ -912,7 +911,6 @@ instance Hashable AB.ByteArray where
       where
         size     = numBytes `quot` SIZEOF_HSWORD
         numBytes = I# (sizeofByteArray# ba)
-#endif
 
 -------------------------------------------------------------------------------
 -- Hashed

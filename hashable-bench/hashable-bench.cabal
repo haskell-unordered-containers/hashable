@@ -78,6 +78,9 @@ library
   if !impl(ghc >=9.2)
     build-depends: base-orphans >=0.8.6
 
+  if !impl(ghc >=9.4)
+    build-depends: data-array-byte >=0.1.0.1 && <0.2
+
   if impl(ghc >=9)
     build-depends: ghc-bignum >=1.0 && <1.4
 
