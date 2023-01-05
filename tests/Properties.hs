@@ -28,9 +28,7 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import GHC.Generics
 
-#if MIN_VERSION_bytestring(0,10,4)
 import qualified Data.ByteString.Short as BS
-#endif
 
 ------------------------------------------------------------------------
 -- * Properties
@@ -49,10 +47,8 @@ instance Arbitrary BL.ByteString where
                   ((BL.fromChunks . map (B.pack . nonEmpty)) `fmap` arbitrary)
       where nonEmpty (NonEmpty a) = a
 
-#if MIN_VERSION_bytestring(0,10,4)
 instance Arbitrary BS.ShortByteString where
     arbitrary   = BS.pack `fmap` arbitrary
-#endif
 
 -- | Validate the implementation by comparing the C and Haskell
 -- versions.
@@ -101,11 +97,9 @@ rechunkText t0 (NonEmpty cs0) = TL.fromChunks . go t0 . cycle $ cs0
       where (a,b)     = T.splitAt (unCS c) t
     go _ []           = error "Properties.rechunk - The 'impossible' happened!"
 
-#if MIN_VERSION_bytestring(0,10,4)
 -- | Content equality implies hash equality.
 pBSShort :: BS.ShortByteString -> BS.ShortByteString -> Bool
 pBSShort a b = if (a == b) then (hash a == hash b) else True
-#endif
 
 -- | Content equality implies hash equality.
 pBS :: B.ByteString -> B.ByteString -> Bool
@@ -232,9 +226,7 @@ properties =
     , testGroup "bytestring"
       [ testProperty "bytestring/strict" pBS
       , testProperty "bytestring/lazy" pBSLazy
-#if MIN_VERSION_bytestring(0,10,4)
       , testProperty "bytestring/short" pBSShort
-#endif
       , testProperty "bytestring/rechunk" pBSRechunk
       , testProperty "bytestring/rechunked" pBSLazyRechunked
       ]
@@ -259,8 +251,4 @@ properties =
 -- Utilities
 
 fromStrict :: B.ByteString -> BL.ByteString
-#if MIN_VERSION_bytestring(0,10,0)
 fromStrict = BL.fromStrict
-#else
-fromStrict b = BL.fromChunks [b]
-#endif

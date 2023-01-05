@@ -1,13 +1,14 @@
-{-# LANGUAGE BangPatterns, CPP, MagicHash,
-             ScopedTypeVariables, UnliftedFFITypes, DeriveDataTypeable,
-             DefaultSignatures, FlexibleContexts, TypeFamilies,
-             MultiParamTypeClasses, CApiFFI #-}
-
-{-# LANGUAGE Trustworthy #-}
-
-#if __GLASGOW_HASKELL__ >= 801
-{-# LANGUAGE PolyKinds #-} -- For TypeRep instances
-#endif
+{-# LANGUAGE CApiFFI               #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MagicHash             #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE Trustworthy           #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UnliftedFFITypes      #-}
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -62,95 +63,71 @@ module Data.Hashable.Class
     , traverseHashed
     ) where
 
-import Control.Applicative (Const(..))
-import Control.Exception (assert)
-import Control.DeepSeq (NFData(rnf))
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Unsafe as B
-import Data.Complex (Complex(..))
-import Data.Int (Int8, Int16)
-import Data.List (foldl')
-import Data.Ratio (Ratio, denominator, numerator)
-import qualified Data.Text as T
-import qualified Data.Text.Array as TA
-import qualified Data.Text.Internal as T
-import qualified Data.Text.Lazy as TL
-import Data.Version (Version(..))
-import Data.Word (Word8, Word16)
-import Foreign.Marshal.Utils (with)
-import Foreign.Ptr (Ptr, FunPtr, IntPtr, WordPtr, castPtr, castFunPtrToPtr, ptrToIntPtr)
-import Foreign.Storable (alignment, peek, sizeOf)
-import GHC.Base (ByteArray#)
-import GHC.Conc (ThreadId(..))
-import GHC.Prim (ThreadId#)
-import System.IO.Unsafe (unsafeDupablePerformIO)
-import System.Mem.StableName
-import Data.Unique (Unique, hashUnique)
-import qualified Data.IntMap as IntMap
-import qualified Data.IntSet as IntSet
-import qualified Data.Map as Map
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
-import qualified Data.Tree as Tree
+import Control.Applicative    (Const (..))
+import Control.DeepSeq        (NFData (rnf))
+import Control.Exception      (assert)
+import Data.Complex           (Complex (..))
+import Data.Fixed             (Fixed (..))
+import Data.Functor.Classes   (Eq1 (..), Eq2 (..), Ord1 (..), Show1 (..))
+import Data.Functor.Compose   (Compose (..))
+import Data.Functor.Identity  (Identity (..))
+import Data.Int               (Int16, Int8)
+import Data.Kind              (Type)
+import Data.List              (foldl')
+import Data.Proxy             (Proxy)
+import Data.Ratio             (Ratio, denominator, numerator)
+import Data.String            (IsString (..))
+import Data.Unique            (Unique, hashUnique)
+import Data.Version           (Version (..))
+import Data.Void              (Void, absurd)
+import Data.Word              (Word16, Word8)
+import Foreign.Ptr            (FunPtr, IntPtr, Ptr, WordPtr, castFunPtrToPtr, ptrToIntPtr)
+import Foreign.Storable       (alignment, sizeOf)
+import GHC.Base               (ByteArray#)
+import GHC.Conc               (ThreadId (..))
+import GHC.Fingerprint.Type   (Fingerprint (..))
+import GHC.Prim               (ThreadId#)
+import GHC.Word               (Word (..))
+import System.IO.Unsafe       (unsafeDupablePerformIO)
+import System.Mem.StableName  (StableName, hashStableName)
+import Type.Reflection        (SomeTypeRep (..), TypeRep)
+import Type.Reflection.Unsafe (typeRepFingerprint)
 
--- As we use qualified F.Foldable, we don't get warnings with newer base
-import qualified Data.Foldable as F
-
-#if MIN_VERSION_base(4,7,0)
-import Data.Proxy (Proxy)
-#endif
-
-#if MIN_VERSION_base(4,7,0)
-import Data.Fixed (Fixed(..))
-#else
-import Data.Fixed (Fixed)
-import Unsafe.Coerce (unsafeCoerce)
-#endif
-
-#if MIN_VERSION_base(4,8,0)
-import Data.Functor.Identity (Identity(..))
-#endif
+import qualified Data.Array.Byte                as AB
+import qualified Data.ByteString                as B
+import qualified Data.ByteString.Lazy           as BL
+import qualified Data.ByteString.Short.Internal as BSI
+import qualified Data.ByteString.Unsafe         as B
+import qualified Data.Functor.Product           as FP
+import qualified Data.Functor.Sum               as FS
+import qualified Data.IntMap                    as IntMap
+import qualified Data.IntSet                    as IntSet
+import qualified Data.List.NonEmpty             as NE
+import qualified Data.Map                       as Map
+import qualified Data.Semigroup                 as Semi
+import qualified Data.Sequence                  as Seq
+import qualified Data.Set                       as Set
+import qualified Data.Text                      as T
+import qualified Data.Text.Array                as TA
+import qualified Data.Text.Internal             as T
+import qualified Data.Text.Lazy                 as TL
+import qualified Data.Tree                      as Tree
 
 import GHC.Generics
 
-#if   MIN_VERSION_base(4,10,0)
-import Type.Reflection (Typeable, TypeRep, SomeTypeRep(..))
-import Type.Reflection.Unsafe (typeRepFingerprint)
-import GHC.Fingerprint.Type(Fingerprint(..))
-#elif MIN_VERSION_base(4,8,0)
-import Data.Typeable (typeRepFingerprint, Typeable, TypeRep)
-import GHC.Fingerprint.Type(Fingerprint(..))
-#else
-import Data.Typeable.Internal (Typeable, TypeRep (..))
-import GHC.Fingerprint.Type(Fingerprint(..))
-#endif
-
 #if __GLASGOW_HASKELL__ >= 904
-import Foreign.C.Types (CULLong(..))
+import Foreign.C.Types (CULLong (..))
 #elif __GLASGOW_HASKELL__ >= 900
-import Foreign.C.Types (CLong(..))
+import Foreign.C.Types (CLong (..))
 #else
-import Foreign.C.Types (CInt(..))
-#endif
-
-#if !(MIN_VERSION_base(4,8,0))
-import Data.Word (Word)
-#endif
-
-#if !(MIN_VERSION_bytestring(0,10,0))
-import qualified Data.ByteString.Lazy.Internal as BL  -- foldlChunks
-#endif
-
-#if MIN_VERSION_bytestring(0,10,4)
-import qualified Data.ByteString.Short.Internal as BSI
+import Foreign.C.Types (CInt (..))
 #endif
 
 #ifdef VERSION_ghc_bignum
-import GHC.Num.BigNat (BigNat (..))
+import GHC.Exts        (Int (..), sizeofByteArray#)
+import GHC.Num.BigNat  (BigNat (..))
 import GHC.Num.Integer (Integer (..))
 import GHC.Num.Natural (Natural (..))
-import GHC.Exts (Int (..), sizeofByteArray#)
 #endif
 
 #ifdef VERSION_integer_gmp
@@ -159,44 +136,24 @@ import GHC.Exts (Int (..), sizeofByteArray#)
 #  define MIN_VERSION_integer_gmp_1_0_0
 # endif
 
-import GHC.Exts (Int(..))
-import GHC.Integer.GMP.Internals (Integer(..))
+import GHC.Exts                  (Int (..))
+import GHC.Integer.GMP.Internals (Integer (..))
 # if defined(MIN_VERSION_integer_gmp_1_0_0)
-import GHC.Exts (sizeofByteArray#)
-import GHC.Integer.GMP.Internals (BigNat(BN#))
+import GHC.Exts                  (sizeofByteArray#)
+import GHC.Integer.GMP.Internals (BigNat (BN#))
 # endif
 #endif
 
-#if MIN_VERSION_base(4,8,0)
-import Data.Void (Void, absurd)
-import GHC.Exts (Word(..))
 #ifndef VERSION_ghc_bignum
-import GHC.Natural (Natural(..))
-#endif
+import GHC.Natural (Natural (..))
 #endif
 
-import Data.Functor.Classes (Eq1(..),Ord1(..),Show1(..))
-
--- Whether we have lifted classes, in particular, Eq2
-#ifndef MIN_VERSION_transformers
-#define LIFTED_FUNCTOR_CLASSES 1
+#if MIN_VERSION_base(4,11,0)
+import GHC.Float (castDoubleToWord64, castFloatToWord32)
 #else
-#if !(MIN_VERSION_transformers(0,4,0) && !MIN_VERSION_transformers(0,5,0))
-#define LIFTED_FUNCTOR_CLASSES 1
-#endif
-#endif
-
-#ifdef LIFTED_FUNCTOR_CLASSES
-import Data.Functor.Classes (Eq2)
-#endif
-
-#if MIN_VERSION_base(4,9,0)
-import qualified Data.List.NonEmpty as NE
-import Data.Semigroup
-
-import Data.Functor.Compose (Compose(..))
-import qualified Data.Functor.Product as FP
-import qualified Data.Functor.Sum as FS
+import Foreign.Marshal.Utils (with)
+import Foreign.Ptr           (castPtr)
+import Foreign.Storable      (peek)
 #endif
 
 #if MIN_VERSION_base(4,16,0)
@@ -205,40 +162,20 @@ import Data.Tuple (Solo (..))
 import GHC.Tuple (Solo (..))
 #endif
 
-import Data.String (IsString(..))
-
-#if MIN_VERSION_base(4,9,0)
-import Data.Kind (Type)
-#else
-#define Type *
+#if MIN_VERSION_filepath(1,4,100)
+import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
 #endif
-
-import Data.Hashable.Imports
-import Data.Hashable.LowLevel
 
 #ifdef VERSION_base_orphans
 import Data.Orphans ()
-#endif
-
-#ifdef VERSION_transformers_compat
-import Control.Monad.Trans.Instances ()
 #endif
 
 #ifdef VERSION_ghc_bignum_orphans
 import GHC.Num.Orphans ()
 #endif
 
-#ifdef VERSION_functor_classes_compat
-import Data.Map.Functor.Classes ()
-import Data.Set.Functor.Classes ()
-import Data.IntMap.Functor.Classes ()
-import Data.Sequence.Functor.Classes ()
-import Data.Tree.Functor.Classes ()
-#endif
-
-#if MIN_VERSION_base(4,17,0)
-import qualified Data.Array.Byte as AB
-#endif
+import Data.Hashable.Imports
+import Data.Hashable.LowLevel
 
 #include "MachDeps.h"
 
@@ -330,11 +267,7 @@ genericLiftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> 
 genericLiftHashWithSalt = \h salt -> ghashWithSalt (HashArgs1 h) salt . from1
 {-# INLINE genericLiftHashWithSalt #-}
 
-#if LIFTED_FUNCTOR_CLASSES
 class Eq2 t => Hashable2 t where
-#else
-class Hashable2 t where
-#endif
     -- | Lift a hashing function through the binary type constructor.
     liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
 
@@ -449,27 +382,25 @@ instance Hashable BigNat where
         numBytes = I# (sizeofByteArray# ba)
 #endif
 
-#if MIN_VERSION_base(4,8,0)
 instance Hashable Natural where
-# if defined(VERSION_ghc_bignum)
+#if defined(VERSION_ghc_bignum)
     hash (NS n)   = hash (W# n)
     hash (NB bn)  = hash (BN# bn)
 
     hashWithSalt salt (NS n)  = hashWithSalt salt (W# n)
     hashWithSalt salt (NB bn) = hashWithSalt salt (BN# bn)
-# else
-# if defined(MIN_VERSION_integer_gmp_1_0_0)
+#else
+#if defined(MIN_VERSION_integer_gmp_1_0_0)
     hash (NatS# n)   = hash (W# n)
     hash (NatJ# bn)  = hash bn
 
     hashWithSalt salt (NatS# n)   = hashWithSalt salt (W# n)
     hashWithSalt salt (NatJ# bn)  = hashWithSalt salt bn
-# else
+#else
     hash (Natural n) = hash n
 
     hashWithSalt salt (Natural n) = hashWithSalt salt n
-# endif
-# endif
+#endif
 #endif
 
 instance Hashable Integer where
@@ -530,12 +461,7 @@ instance Hashable a => Hashable (Complex a) where
 instance Hashable1 Complex where
     liftHashWithSalt h s (r :+ i) = s `h` r `h` i
 
-#if MIN_VERSION_base(4,9,0)
--- Starting with base-4.9, numerator/denominator don't need 'Integral' anymore
 instance Hashable a => Hashable (Ratio a) where
-#else
-instance (Integral a, Hashable a) => Hashable (Ratio a) where
-#endif
     {-# SPECIALIZE instance Hashable (Ratio Integer) #-}
     hash a = hash (numerator a) `hashWithSalt` denominator a
     hashWithSalt s a = s `hashWithSalt` numerator a `hashWithSalt` denominator a
@@ -551,7 +477,11 @@ instance Hashable Float where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word32) &&
                     alignment x >= alignment (0::Word32)) $
+#if MIN_VERSION_base(4,11,0)
+            hash (castFloatToWord32 x)
+#else
             hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word32)
+#endif
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -566,7 +496,11 @@ instance Hashable Double where
         | isIEEE x =
             assert (sizeOf x >= sizeOf (0::Word64) &&
                     alignment x >= alignment (0::Word64)) $
+#if MIN_VERSION_base(4,11,0)
+            hash (castDoubleToWord64 x)
+#else
             hash ((unsafeDupablePerformIO $ with x $ peek . castPtr) :: Word64)
+#endif
         | otherwise = hash (show x)
     hashWithSalt = defaultHashWithSalt
 
@@ -726,10 +660,22 @@ instance Hashable BL.ByteString where
                                 s' <- hashPtrWithSalt p (fromIntegral len) s
                                 return (SP s' (l + len))
 
-#if MIN_VERSION_bytestring(0,10,4)
 instance Hashable BSI.ShortByteString where
     hashWithSalt salt sbs@(BSI.SBS ba) =
         hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
+
+#if MIN_VERSION_filepath(1,4,100)
+-- | @since 1.4.2.0
+instance Hashable PosixString where
+    hashWithSalt salt (PosixString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable WindowsString where
+    hashWithSalt salt (WindowsString s) = hashWithSalt salt s
+
+-- | @since 1.4.2.0
+instance Hashable OsString where
+    hashWithSalt salt (OsString s) = hashWithSalt salt s
 #endif
 
 #if MIN_VERSION_text(2,0,0)
@@ -806,8 +752,6 @@ instance Hashable Fingerprint where
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
 
-#if MIN_VERSION_base(4,10,0)
-
 hashTypeRep :: Type.Reflection.TypeRep a -> Int
 hashTypeRep tr =
     let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
@@ -822,32 +766,10 @@ instance Hashable (Type.Reflection.TypeRep a) where
     hashWithSalt = defaultHashWithSalt
     {-# INLINE hash #-}
 
-#else
-
--- | Compute the hash of a TypeRep, in various GHC versions we can do this quickly.
-hashTypeRep :: TypeRep -> Int
-{-# INLINE hashTypeRep #-}
-#if   MIN_VERSION_base(4,8,0)
--- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep tr = let Fingerprint x _ = typeRepFingerprint tr in fromIntegral x
-#else
--- Fingerprint is just the MD5, so taking any Int from it is fine
-hashTypeRep (TypeRep (Fingerprint x _) _ _) = fromIntegral x
-#endif
-
-instance Hashable TypeRep where
-    hash = hashTypeRep
-    hashWithSalt = defaultHashWithSalt
-    {-# INLINE hash #-}
-
-#endif
-
 ----------------------------------------------------------------------------
 
-#if MIN_VERSION_base(4,8,0)
 instance Hashable Void where
     hashWithSalt _ = absurd
-#endif
 
 -- | Compute a hash value for the content of this pointer.
 hashPtr :: Ptr a      -- ^ pointer to the data to hash
@@ -872,22 +794,13 @@ instance Hashable Version where
     hashWithSalt salt (Version branch tags) =
         salt `hashWithSalt` branch `hashWithSalt` tags
 
-#if MIN_VERSION_base(4,7,0)
 instance Hashable (Fixed a) where
     hashWithSalt salt (MkFixed i) = hashWithSalt salt i
-#else
-instance Hashable (Fixed a) where
-    hashWithSalt salt x = hashWithSalt salt (unsafeCoerce x :: Integer)
-#endif
 
-
-#if MIN_VERSION_base(4,8,0)
--- TODO: make available on all base
 instance Hashable a => Hashable (Identity a) where
     hashWithSalt = hashWithSalt1
 instance Hashable1 Identity where
     liftHashWithSalt h salt (Identity x) = h salt x
-#endif
 
 -- Using hashWithSalt1 would cause needless constraint
 instance Hashable a => Hashable (Const a b) where
@@ -899,17 +812,13 @@ instance Hashable a => Hashable1 (Const a) where
 instance Hashable2 Const where
     liftHashWithSalt2 f _ salt (Const x) = f salt x
 
-#if MIN_VERSION_base(4,7,0)
 instance Hashable (Proxy a) where
     hash _ = 0
     hashWithSalt s _ = s
 
 instance Hashable1 Proxy where
     liftHashWithSalt _ s _ = s
-#endif
 
--- instances formerly provided by 'semigroups' package
-#if MIN_VERSION_base(4,9,0)
 instance Hashable a => Hashable (NE.NonEmpty a) where
     hashWithSalt p (a NE.:| as) = p `hashWithSalt` a `hashWithSalt` as
 
@@ -917,33 +826,33 @@ instance Hashable a => Hashable (NE.NonEmpty a) where
 instance Hashable1 NE.NonEmpty where
     liftHashWithSalt h salt (a NE.:| as) = liftHashWithSalt h (h salt a) as
 
-instance Hashable a => Hashable (Min a) where
-    hashWithSalt p (Min a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Min a) where
+    hashWithSalt p (Semi.Min a) = hashWithSalt p a
 
-instance Hashable a => Hashable (Max a) where
-    hashWithSalt p (Max a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Max a) where
+    hashWithSalt p (Semi.Max a) = hashWithSalt p a
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
 -- @since 1.3.0.0
-instance Hashable a => Hashable (Arg a b) where
-    hashWithSalt p (Arg a _) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Arg a b) where
+    hashWithSalt p (Semi.Arg a _) = hashWithSalt p a
 
-instance Hashable a => Hashable (First a) where
-    hashWithSalt p (First a) = hashWithSalt p a
-
-
-instance Hashable a => Hashable (Last a) where
-    hashWithSalt p (Last a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.First a) where
+    hashWithSalt p (Semi.First a) = hashWithSalt p a
 
 
-instance Hashable a => Hashable (WrappedMonoid a) where
-    hashWithSalt p (WrapMonoid a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Last a) where
+    hashWithSalt p (Semi.Last a) = hashWithSalt p a
+
+
+instance Hashable a => Hashable (Semi.WrappedMonoid a) where
+    hashWithSalt p (Semi.WrapMonoid a) = hashWithSalt p a
 
 
 #if !MIN_VERSION_base(4,16,0)
-instance Hashable a => Hashable (Option a) where
-    hashWithSalt p (Option a) = hashWithSalt p a
+instance Hashable a => Hashable (Semi.Option a) where
+    hashWithSalt p (Semi.Option a) = hashWithSalt p a
 
 #endif
 
@@ -969,11 +878,6 @@ instance Hashable a => Hashable (Option a) where
 -- | @since 1.3.1.0
 -- instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
-#endif
-
--- instances for @Data.Functor.{Product,Sum,Compose}@, present
--- in base-4.9 and onward.
-#if MIN_VERSION_base(4,9,0)
 
 -- | In general, @hash (Compose x) ≠ hash x@. However, @hashWithSalt@ satisfies
 -- its variant of this equivalence.
@@ -995,10 +899,11 @@ instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
 
 instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
     hashWithSalt = hashWithSalt1
-#endif
 
-#if MIN_VERSION_base(4,17,0)
--- | @since 1.4.1.0
+-- | This instance was available since 1.4.1.0 only for GHC-9.4+
+--
+-- @since 1.4.2.0
+--
 instance Hashable AB.ByteArray where
     hashWithSalt salt (AB.ByteArray ba) =
         hashByteArrayWithSalt ba 0 numBytes salt
@@ -1006,7 +911,6 @@ instance Hashable AB.ByteArray where
       where
         size     = numBytes `quot` SIZEOF_HSWORD
         numBytes = I# (sizeofByteArray# ba)
-#endif
 
 -------------------------------------------------------------------------------
 -- Hashed
@@ -1014,7 +918,6 @@ instance Hashable AB.ByteArray where
 
 -- | A hashable value along with the result of the 'hash' function.
 data Hashed a = Hashed a {-# UNPACK #-} !Int
-  deriving (Typeable)
 
 -- | Wrap a hashable value, caching the 'hash' function result.
 hashed :: Hashable a => a -> Hashed a
@@ -1055,7 +958,8 @@ instance Hashable1 Hashed where
 instance (IsString a, Hashable a) => IsString (Hashed a) where
   fromString s = let r = fromString s in Hashed r (hash r)
 
-instance F.Foldable Hashed where
+instance Foldable Hashed where
+  foldMap f (Hashed a _) = f a
   foldr f acc (Hashed a _) = f a acc
 
 instance NFData a => NFData (Hashed a) where
@@ -1069,17 +973,8 @@ mapHashed f (Hashed a _) = hashed (f a)
 traverseHashed :: (Hashable b, Functor f) => (a -> f b) -> Hashed a -> f (Hashed b)
 traverseHashed f (Hashed a _) = fmap hashed (f a)
 
-#if MIN_VERSION_base(4,9,0)
-#define LIFTED_FUNCTOR_CLASSES 1
-#elif defined(MIN_VERSION_transformers)
-#if !(MIN_VERSION_transformers(0,4,0)) || MIN_VERSION_transformers(0,5,0)
-#define LIFTED_FUNCTOR_CLASSES 1
-#endif
-#endif
-
 -- instances for @Data.Functor.Classes@ higher rank typeclasses
 -- in base-4.9 and onward.
-#if LIFTED_FUNCTOR_CLASSES
 instance Eq1 Hashed where
   liftEq f (Hashed a ha) (Hashed b hb) = ha == hb && f a b
 
@@ -1089,11 +984,6 @@ instance Ord1 Hashed where
 instance Show1 Hashed where
   liftShowsPrec sp _ d (Hashed a _) = showParen (d > 10) $
     showString "hashed " . sp 11 a
-#else
-instance Eq1 Hashed where eq1 = (==)
-instance Ord1 Hashed where compare1 = compare
-instance Show1 Hashed where showsPrec1 = showsPrec
-#endif
 
 -------------------------------------------------------------------------------
 -- containers
@@ -1144,7 +1034,7 @@ instance Hashable IntSet.IntSet where
 
 -- | @since 1.3.4.0
 instance Hashable1 Seq.Seq where
-    liftHashWithSalt h s x = F.foldl' h (hashWithSalt s (Seq.length x)) x
+    liftHashWithSalt h s x = foldl' h (hashWithSalt s (Seq.length x)) x
 
 -- | @since 1.3.4.0
 instance Hashable v => Hashable (Seq.Seq v) where
