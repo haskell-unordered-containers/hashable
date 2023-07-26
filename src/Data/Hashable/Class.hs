@@ -50,6 +50,7 @@ module Data.Hashable.Class
     , hashByteArray
     , hashByteArrayWithSalt
     , defaultHashWithSalt
+    , defaultHash
       -- * Higher Rank Functions
     , hashWithSalt1
     , hashWithSalt2
@@ -228,7 +229,7 @@ class Eq a => Hashable a where
     -- Instances might want to implement this method to provide a more
     -- efficient implementation than the default implementation.
     hash :: a -> Int
-    hash = hashWithSalt defaultSalt
+    hash = defaultHash
 
     default hashWithSalt :: (Generic a, GHashable Zero (Rep a)) => Int -> a -> Int
     hashWithSalt = genericHashWithSalt
@@ -293,8 +294,18 @@ defaultLiftHashWithSalt h = liftHashWithSalt2 hashWithSalt h
 -- cannot also provide a default implementation for that method for
 -- the non-generic instance use case. Instead we provide
 -- 'defaultHashWith'.
+--
+-- @since 1.4.3.0
+--
 defaultHashWithSalt :: Hashable a => Int -> a -> Int
 defaultHashWithSalt salt x = salt `hashInt` hash x
+
+-- | Default implementation of 'hash' based on 'hashWithSalt'.
+--
+-- @since 1.4.3.0
+--
+defaultHash :: Hashable a => a -> Int
+defaultHash = hashWithSalt defaultSalt
 
 -- | Transform a value into a 'Hashable' value, then hash the
 -- transformed value using the given salt.
@@ -533,7 +544,6 @@ instance Hashable2 Either where
     liftHashWithSalt2 _ h s (Right b) = s `hashInt` distinguisher `h` b
 
 instance (Hashable a1, Hashable a2) => Hashable (a1, a2) where
-    hash (a1, a2) = hash a1 `hashWithSalt` a2
     hashWithSalt = hashWithSalt1
 
 instance Hashable a1 => Hashable1 ((,) a1) where
@@ -543,7 +553,6 @@ instance Hashable2 (,) where
     liftHashWithSalt2 h1 h2 s (a1, a2) = s `h1` a1 `h2` a2
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable (a1, a2, a3) where
-    hash (a1, a2, a3) = hash a1 `hashWithSalt` a2 `hashWithSalt` a3
     hashWithSalt = hashWithSalt1
 
 instance (Hashable a1, Hashable a2) => Hashable1 ((,,) a1 a2) where
@@ -555,8 +564,6 @@ instance Hashable a1 => Hashable2 ((,,) a1) where
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4) =>
          Hashable (a1, a2, a3, a4) where
-    hash (a1, a2, a3, a4) = hash a1 `hashWithSalt` a2
-                            `hashWithSalt` a3 `hashWithSalt` a4
     hashWithSalt = hashWithSalt1
 
 instance (Hashable a1, Hashable a2, Hashable a3) => Hashable1 ((,,,) a1 a2 a3) where
@@ -568,9 +575,6 @@ instance (Hashable a1, Hashable a2) => Hashable2 ((,,,) a1 a2) where
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5)
       => Hashable (a1, a2, a3, a4, a5) where
-    hash (a1, a2, a3, a4, a5) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5
     hashWithSalt s (a1, a2, a3, a4, a5) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5
@@ -589,9 +593,6 @@ instance (Hashable a1, Hashable a2, Hashable a3)
 
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6) => Hashable (a1, a2, a3, a4, a5, a6) where
-    hash (a1, a2, a3, a4, a5, a6) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
     hashWithSalt s (a1, a2, a3, a4, a5, a6) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6
@@ -611,9 +612,6 @@ instance (Hashable a1, Hashable a2, Hashable a3,
 instance (Hashable a1, Hashable a2, Hashable a3, Hashable a4, Hashable a5,
           Hashable a6, Hashable a7) =>
          Hashable (a1, a2, a3, a4, a5, a6, a7) where
-    hash (a1, a2, a3, a4, a5, a6, a7) =
-        hash a1 `hashWithSalt` a2 `hashWithSalt` a3
-        `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7
     hashWithSalt s (a1, a2, a3, a4, a5, a6, a7) =
         s `hashWithSalt` a1 `hashWithSalt` a2 `hashWithSalt` a3
         `hashWithSalt` a4 `hashWithSalt` a5 `hashWithSalt` a6 `hashWithSalt` a7

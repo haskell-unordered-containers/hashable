@@ -60,6 +60,9 @@ module Data.Hashable
     , hashByteArray
     , hashByteArrayWithSalt
 
+    , defaultHashWithSalt
+    , defaultHash
+
     -- * Caching hashes
     , Hashed
     , hashed
