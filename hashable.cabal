@@ -8,6 +8,8 @@ description:
   exists for the benefit of hashing-based data
   structures.  The package provides instances for
   basic types and a way to combine hash values.
+  .
+  The 'Hashable' 'hash' values are not guaranteed to be stable across library versions, operating systems or architectures. For stable hashing use named hashes: SHA256, CRC32 etc.
 
 homepage:           http://github.com/haskell-unordered-containers/hashable
 
