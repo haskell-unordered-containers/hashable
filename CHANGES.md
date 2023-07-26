@@ -1,5 +1,10 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.3.0
+
+ * Export `defaultHashWithSalt` and `defaultHash`.
+ * Fix issue of tuples with 0 first component causing all-zero state.
+
 ## Version 1.4.2.0
 
  * Fix the foreign signature of `getThreadId`

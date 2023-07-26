@@ -7,7 +7,7 @@ module Regress (regressions) where
 import qualified Test.Framework as F
 import Control.Monad (when)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (assertFailure, (@=?))
+import Test.HUnit (Assertion, assertFailure, (@=?))
 import GHC.Generics (Generic)
 import Data.List (nub)
 import Data.Fixed (Pico)
@@ -27,6 +27,11 @@ import Data.Hashable
 
 #include "MachDeps.h"
 
+assertInequal :: Eq a => String -> a -> a -> Assertion
+assertInequal msg x y
+    | x == y    = assertFailure msg
+    | otherwise = return ()
+
 regressions :: [F.Test]
 regressions = [] ++
 #ifdef HAVE_MMAP
@@ -42,6 +47,11 @@ regressions = [] ++
         , testCase "3" $ nullaryCase 3 S3
         , testCase "4" $ nullaryCase 4 S4
         ]
+
+    , testCase "Zero tuples: issue 271" $ do
+        assertInequal "Hash of (0,0) != 0" (hash (0 :: Int, 0 :: Int)) 0
+        assertInequal "Hash of (0,0,0) != 0" (hash (0 :: Int, 0 :: Int, 0 :: Int)) 0
+
     , testCase "Generic: Peano https://github.com/tibbe/hashable/issues/135" $ do
         let ns = take 20 $ iterate S Z
         let hs = map hash ns
