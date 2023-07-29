@@ -7,7 +7,8 @@ module Regress (regressions) where
 import qualified Test.Framework as F
 import Control.Monad (when)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.HUnit (Assertion, assertFailure, (@?=))
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import GHC.Generics (Generic)
 import Data.List (nub)
 import Data.Fixed (Pico)
@@ -37,7 +38,7 @@ regressions = [] ++
 #ifdef HAVE_MMAP
     Mmap.regressions ++
     [ testCase "Fixed" $ do
-        (hash (1 :: Pico) == hash (2 :: Pico)) @=? False
+        (hash (1 :: Pico) == hash (2 :: Pico)) @?= False
     ] ++
 #endif
     [ F.testGroup "Generic: sum of nullary constructors"
@@ -52,17 +53,22 @@ regressions = [] ++
         assertInequal "Hash of (0,0) != 0" (hash (0 :: Int, 0 :: Int)) 0
         assertInequal "Hash of (0,0,0) != 0" (hash (0 :: Int, 0 :: Int, 0 :: Int)) 0
 
+    , testProperty "odd, odd: issue 271" $ \x' y' ->
+        let x = if odd x' then x' else x' + 1 :: Int
+            y = if odd y' then y' else y' + 1 :: Int
+        in hash (x, y) /= hash (negate x, negate y)
+
     , testCase "Generic: Peano https://github.com/tibbe/hashable/issues/135" $ do
         let ns = take 20 $ iterate S Z
         let hs = map hash ns
-        hs @=? nub hs
+        hs @?= nub hs
 #if WORD_SIZE_IN_BITS == 64
     , testCase "64 bit Text" $ do
-        hash ("hello world" :: Text) @=?
+        hash ("hello world" :: Text) @?=
 #if MIN_VERSION_text(2,0,0)
-            4078614214911247440
+            2589482369471999198
 #else
-            -3875242662334356092
+            -1955893671357159554
 #endif
 #endif
     , F.testGroup "concatenation"
@@ -113,7 +119,7 @@ regressions = [] ++
         let salt = 42
         let expected = salt `hashWithSalt` n `hashWithSalt` ()
         let actual = hashWithSalt salt s
-        expected @=? actual
+        actual @?= expected
 
 data SumOfNullary = S0 | S1 | S2 | S3 | S4 deriving (Eq, Generic)
 instance Hashable SumOfNullary

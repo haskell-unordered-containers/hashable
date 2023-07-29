@@ -4,6 +4,7 @@ See also https://pvp.haskell.org/faq
 
  * Export `defaultHashWithSalt` and `defaultHash`.
  * Fix issue of tuples with 0 first component causing all-zero state.
+ * Change `hashInt` to mix bits more.
 
 ## Version 1.4.2.0
 
