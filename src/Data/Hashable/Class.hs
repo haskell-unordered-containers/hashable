@@ -330,6 +330,10 @@ hashUsing :: (Hashable b) =>
 hashUsing f salt x = hashWithSalt salt (f x)
 {-# INLINE hashUsing #-}
 
+instance Hashable Salt where
+    hash = finishHash
+    hashWithSalt salt (Salt s) = hashInt salt s
+
 instance Hashable Int where
     hash = id
     hashWithSalt = hashInt
