@@ -25,6 +25,7 @@ import qualified Regress.Mmap as Mmap
 #endif
 
 import Data.Hashable
+import Data.Hashable.LowLevel
 
 #include "MachDeps.h"
 
@@ -116,7 +117,7 @@ regressions = [] ++
   where
     nullaryCase :: Int -> SumOfNullary -> IO ()
     nullaryCase n s = do
-        let salt = 42
+        let salt = Salt 42
         let expected = salt `hashWithSalt` n `hashWithSalt` ()
         let actual = hashWithSalt salt s
         actual @?= expected
