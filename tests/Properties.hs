@@ -11,7 +11,6 @@ import Data.Hashable (Hashable, hash, hashByteArray, hashPtr,
          Hashed, hashed, unhashed, hashWithSalt)
 import Data.Hashable.Generic (genericHashWithSalt)
 import Data.Hashable.Lifted (hashWithSalt1)
-import Data.Hashable.LowLevel (Salt (..))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
@@ -206,14 +205,14 @@ pSum3_differ x = nub hs == hs
              , hash (S3c x :: Sum3 Int Int Int) ]
 
 pGeneric :: Sum3 Int Bool String -> Int -> Bool
-pGeneric x salt = hashWithSalt (Salt salt) x == genericHashWithSalt (Salt salt) x
+pGeneric x salt = hashWithSalt salt x == genericHashWithSalt salt x
 
 instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
   arbitrary = fmap hashed arbitrary
   shrink xs = map hashed $ shrink $ unhashed xs
 
 pLiftedHashed :: Int -> Hashed (Either Int String) -> Bool
-pLiftedHashed s h = hashWithSalt (Salt s) h == hashWithSalt1 (Salt s) h
+pLiftedHashed s h = hashWithSalt s h == hashWithSalt1 s h
 
 properties :: [Test]
 properties =

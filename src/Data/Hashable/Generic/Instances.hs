@@ -18,7 +18,6 @@
 module Data.Hashable.Generic.Instances () where
 
 import Data.Hashable.Class
-import Data.Hashable.LowLevel
 import GHC.Generics
 import Data.Kind (Type)
 

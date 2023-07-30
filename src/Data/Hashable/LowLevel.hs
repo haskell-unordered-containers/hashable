@@ -1,8 +1,9 @@
-{-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnliftedFFITypes #-}
+{-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnliftedFFITypes, PatternSynonyms #-}
 {-# LANGUAGE Trustworthy #-}
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
-    Salt (..),
+    Salt,
+    pattern MkSalt,
     finaliseHash,
     defaultSalt,
     hashInt,
@@ -32,8 +33,11 @@ type Hash = Int
 
 -- | The hash state.
 -- For historical reasons it is called salt.
-newtype Salt = Salt Int
-  deriving (Eq, Show)
+type Salt = Int
+
+pattern MkSalt :: Int -> Salt
+pattern MkSalt x = x
+{-# COMPLETE MkSalt #-}
 
 #ifdef HASHABLE_RANDOM_SEED
 initialSeed :: Word64
@@ -54,9 +58,9 @@ defaultSalt = defaultSalt'
 
 defaultSalt' :: Salt
 #if WORD_SIZE_IN_BITS == 64
-defaultSalt' = Salt (-3750763034362895579) -- 14695981039346656037 :: Int64
+defaultSalt' = MkSalt (-3750763034362895579) -- 14695981039346656037 :: Int64
 #else
-defaultSalt' = Salt (-2128831035) -- 2166136261 :: Int32
+defaultSalt' = MkSalt (-2128831035) -- 2166136261 :: Int32
 #endif
 {-# INLINE defaultSalt' #-}
 
@@ -66,12 +70,12 @@ defaultSalt' = Salt (-2128831035) -- 2166136261 :: Int32
 
 -- | Extract final hash value from the hash state 'Salt'.
 finaliseHash :: Salt -> Hash
-finaliseHash (Salt s) = s
+finaliseHash (MkSalt s) = s
 
 -- | Hash 'Int'. First argument is a salt, second argument is an 'Int'.
 -- The result is new salt / hash value.
 hashInt :: Salt -> Int -> Salt
-hashInt (Salt s) x = Salt $ s `rnd` x1 `rnd` x2 `rnd` x3 `rnd` x4
+hashInt (MkSalt s) x = MkSalt $ s `rnd` x1 `rnd` x2 `rnd` x3 `rnd` x4
   where
     {-# INLINE rnd #-}
     {-# INLINE x1 #-}
@@ -120,8 +124,8 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ length, in bytes
                 -> Salt    -- ^ salt
                 -> IO Salt -- ^ hash value
-hashPtrWithSalt p len (Salt salt) =
-    (Salt . fromIntegral) `fmap` c_hashCString (castPtr p) (fromIntegral len)
+hashPtrWithSalt p len (MkSalt salt) =
+    (MkSalt . fromIntegral) `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
@@ -136,8 +140,8 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Salt        -- ^ salt
     -> Salt        -- ^ hash value
-hashByteArrayWithSalt ba !off !len !(Salt h) =
-    Salt $ fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
+hashByteArrayWithSalt ba !off !len !(MkSalt h) =
+    MkSalt $ fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h)
 
 foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString

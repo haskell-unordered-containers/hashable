@@ -68,14 +68,11 @@ library
     Data.Hashable.Generic
     Data.Hashable.Lifted
 
-  -- temporary
-  exposed-modules:
-    Data.Hashable.LowLevel
-
   other-modules:
     Data.Hashable.Class
     Data.Hashable.Generic.Instances
     Data.Hashable.Imports
+    Data.Hashable.LowLevel
 
   c-sources:        cbits/fnv.c
   include-dirs:     include
