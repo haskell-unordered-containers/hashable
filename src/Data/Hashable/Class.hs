@@ -63,7 +63,11 @@ module Data.Hashable.Class
     , unhashed
     , mapHashed
     , traverseHashed
-    ) where
+    -- * Salt
+    , Salt
+    , defaultSalt
+    , finaliseHash
+) where
 
 import Control.Applicative    (Const (..))
 import Control.DeepSeq        (NFData (rnf))
@@ -306,7 +310,7 @@ defaultHashWithSalt salt x = salt `hashInt` hash x
 -- @since 1.4.3.0
 --
 defaultHash :: Hashable a => a -> Int
-defaultHash x = finishHash (hashWithSalt defaultSalt x)
+defaultHash x = finaliseHash (hashWithSalt defaultSalt x)
 
 -- | Transform a value into a 'Hashable' value, then hash the
 -- transformed value using the given salt.
@@ -331,7 +335,7 @@ hashUsing f salt x = hashWithSalt salt (f x)
 {-# INLINE hashUsing #-}
 
 instance Hashable Salt where
-    hash = finishHash
+    hash = finaliseHash
     hashWithSalt salt (Salt s) = hashInt salt s
 
 instance Hashable Int where

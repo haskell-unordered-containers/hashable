@@ -3,7 +3,7 @@
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
     Salt (..),
-    finishHash,
+    finaliseHash,
     defaultSalt,
     hashInt,
     hashInt64,
@@ -65,8 +65,8 @@ defaultSalt' = Salt (-2128831035) -- 2166136261 :: Int32
 -------------------------------------------------------------------------------
 
 -- | Extract final hash value from the hash state 'Salt'.
-finishHash :: Salt -> Hash
-finishHash (Salt s) = s
+finaliseHash :: Salt -> Hash
+finaliseHash (Salt s) = s
 
 -- | Hash 'Int'. First argument is a salt, second argument is an 'Int'.
 -- The result is new salt / hash value.
