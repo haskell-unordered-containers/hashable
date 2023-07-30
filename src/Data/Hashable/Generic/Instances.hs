@@ -18,6 +18,7 @@
 module Data.Hashable.Generic.Instances () where
 
 import Data.Hashable.Class
+import Data.Hashable.LowLevel
 import GHC.Generics
 import Data.Kind (Type)
 
@@ -52,7 +53,7 @@ instance (Hashable1 f, GHashable One g) => GHashable One (f :.: g) where
     ghashWithSalt targs salt = liftHashWithSalt (ghashWithSalt targs) salt . unComp1
 
 class SumSize f => GSum arity f where
-    hashSum :: HashArgs arity a -> Int -> Int -> f a -> Int
+    hashSum :: HashArgs arity a -> Salt -> Int -> f a -> Salt
     -- hashSum args salt index value = ...
 
 -- [Note: Hashing a sum type]

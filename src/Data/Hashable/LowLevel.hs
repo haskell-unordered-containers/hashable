@@ -2,7 +2,8 @@
 {-# LANGUAGE Trustworthy #-}
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
-    Salt,
+    Salt (..),
+    finishHash,
     defaultSalt,
     hashInt,
     hashInt64,
@@ -27,7 +28,12 @@ import Data.Hashable.Imports
 -- Initial seed
 -------------------------------------------------------------------------------
 
-type Salt = Int
+type Hash = Int
+
+-- | The hash state.
+-- For historical reasons it is called salt.
+newtype Salt = Salt Int
+  deriving (Eq, Show)
 
 #ifdef HASHABLE_RANDOM_SEED
 initialSeed :: Word64
@@ -48,9 +54,9 @@ defaultSalt = defaultSalt'
 
 defaultSalt' :: Salt
 #if WORD_SIZE_IN_BITS == 64
-defaultSalt' = -3750763034362895579 -- 14695981039346656037 :: Int64
+defaultSalt' = Salt (-3750763034362895579) -- 14695981039346656037 :: Int64
 #else
-defaultSalt' = -2128831035 -- 2166136261 :: Int32
+defaultSalt' = Salt (-2128831035) -- 2166136261 :: Int32
 #endif
 {-# INLINE defaultSalt' #-}
 
@@ -58,10 +64,14 @@ defaultSalt' = -2128831035 -- 2166136261 :: Int32
 -- Hash primitives
 -------------------------------------------------------------------------------
 
+-- | Extract final hash value from the hash state 'Salt'.
+finishHash :: Salt -> Hash
+finishHash (Salt s) = s
+
 -- | Hash 'Int'. First argument is a salt, second argument is an 'Int'.
 -- The result is new salt / hash value.
 hashInt :: Salt -> Int -> Salt
-hashInt s x = s `rnd` x1 `rnd` x2 `rnd` x3 `rnd` x4
+hashInt (Salt s) x = Salt $ s `rnd` x1 `rnd` x2 `rnd` x3 `rnd` x4
   where
     {-# INLINE rnd #-}
     {-# INLINE x1 #-}
@@ -110,8 +120,8 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ length, in bytes
                 -> Salt    -- ^ salt
                 -> IO Salt -- ^ hash value
-hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
+hashPtrWithSalt p len (Salt salt) =
+    (Salt . fromIntegral) `fmap` c_hashCString (castPtr p) (fromIntegral len)
     (fromIntegral salt)
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
@@ -126,8 +136,8 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Salt        -- ^ salt
     -> Salt        -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h =
-    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
+hashByteArrayWithSalt ba !off !len !(Salt h) =
+    Salt $ fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
     (fromIntegral h)
 
 foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString
