@@ -1,6 +1,7 @@
-distribution: bionic
+distribution: focal
 branches:     master
 benchmarks:   False
+ghc-head:     True
 
 constraint-set random-initial-seed
   constraints: hashable +random-initial-seed
