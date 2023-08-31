@@ -1,6 +1,9 @@
 packages: .
 tests: True
 
+allow-newer: splitmix-0.1.0.4:base
+allow-newer: splitmix-0.1.0.4:deepseq
+
 --
 -- allow-newer: base
 -- allow-newer: bytestring
