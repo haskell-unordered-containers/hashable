@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnliftedFFITypes #-}
+{-# LANGUAGE CPP, BangPatterns, MagicHash, CApiFFI, UnboxedTuples, UnliftedFFITypes #-}
 {-# LANGUAGE Trustworthy #-}
 -- | A module containing low-level hash primitives.
 module Data.Hashable.LowLevel (
@@ -16,6 +16,7 @@ module Data.Hashable.LowLevel (
 import Foreign.C (CString)
 import Foreign.Ptr (Ptr, castPtr)
 import GHC.Base (ByteArray#)
+import GHC.Exts (Word#, timesWord2#, xor#, Int (..), int2Word#, word2Int#)
 
 #ifdef HASHABLE_RANDOM_SEED
 import System.IO.Unsafe (unsafePerformIO)
@@ -58,33 +59,22 @@ defaultSalt' = -2128831035 -- 2166136261 :: Int32
 -- Hash primitives
 -------------------------------------------------------------------------------
 
+#if WORD_SIZE_IN_BITS == 64
+#define MULTIPLE 6364136223846793005##
+#else
+#define MULTIPLE 134775813##
+#endif
+
+folded_multiply# :: Word# -> Word# -> Word#
+folded_multiply# x y = case timesWord2# x y of (# u, v #) -> xor# u v
+
 -- | Hash 'Int'. First argument is a salt, second argument is an 'Int'.
 -- The result is new salt / hash value.
 hashInt :: Salt -> Int -> Salt
-hashInt s x = s `rnd` x1 `rnd` x2 `rnd` x3 `rnd` x4
-  where
-    {-# INLINE rnd #-}
-    {-# INLINE x1 #-}
-    {-# INLINE x2 #-}
-    {-# INLINE x3 #-}
-    {-# INLINE x4 #-}
-#if WORD_SIZE_IN_BITS == 64
-    -- See https://github.com/haskell-unordered-containers/hashable/issues/270
-    -- FNV-1 is defined to hash byte at the time.
-    -- We used to hash whole Int at once, which provided very bad mixing.
-    -- Current is a performance-quality compromise, we do four rounds per Int (instead of 8 for FNV-1 or 1 for previous hashable).
-    rnd a b = (a * 1099511628211) `xor` b
-    x1 = shiftR x 48 .&. 0xffff
-    x2 = shiftR x 32 .&. 0xffff
-    x3 = shiftR x 16 .&. 0xffff
-    x4 =           x .&. 0xffff
-#else
-    rnd a b = (a * 16777619) `xor` b
-    x1 = shiftR x 24 .&. 0xff
-    x2 = shiftR x 16 .&. 0xff
-    x3 = shiftR x  8 .&. 0xff
-    x4 =           x .&. 0xff
-#endif
+hashInt (I# s) (I# x) = I#
+    (word2Int#
+        (folded_multiply#
+            (xor# (int2Word# s) (int2Word# x)) MULTIPLE))
 
 -- Note: FNV-1 hash takes a byte of data at once, here we take an 'Int',
 -- which is 4 or 8 bytes. Whether that's bad or not, I don't know.
