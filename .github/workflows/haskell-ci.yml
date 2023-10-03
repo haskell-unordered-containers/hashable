@@ -37,14 +37,14 @@ jobs:
             compilerVersion: 9.8.0.20230929
             setup-method: ghcup
             allow-failure: true
-          - compiler: ghc-9.6.2
+          - compiler: ghc-9.6.3
             compilerKind: ghc
-            compilerVersion: 9.6.2
+            compilerVersion: 9.6.3
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.4.6
+          - compiler: ghc-9.4.7
             compilerKind: ghc
-            compilerVersion: 9.4.6
+            compilerVersion: 9.4.7
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.2.8
@@ -146,7 +146,7 @@ jobs:
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--disable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER >= 90800)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          echo "HEADHACKAGE=false" >> "$GITHUB_ENV"
           echo "ARG_COMPILER=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
         env:
