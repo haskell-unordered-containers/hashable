@@ -87,7 +87,6 @@ import Foreign.Storable       (alignment, sizeOf)
 import GHC.Base               (ByteArray#)
 import GHC.Conc               (ThreadId (..))
 import GHC.Fingerprint.Type   (Fingerprint (..))
-import GHC.Prim               (ThreadId#)
 import GHC.Word               (Word (..))
 import System.IO.Unsafe       (unsafeDupablePerformIO)
 import System.Mem.StableName  (StableName, hashStableName)
@@ -116,12 +115,17 @@ import qualified Data.Tree                      as Tree
 
 import GHC.Generics
 
+#if MIN_VERSION_base(4,19,0)
+import GHC.Conc.Sync (fromThreadId)
+#else
+import GHC.Prim (ThreadId#)
 #if __GLASGOW_HASKELL__ >= 904
 import Foreign.C.Types (CULLong (..))
 #elif __GLASGOW_HASKELL__ >= 900
 import Foreign.C.Types (CLong (..))
 #else
 import Foreign.C.Types (CInt (..))
+#endif
 #endif
 
 #ifdef VERSION_ghc_bignum
@@ -707,9 +711,9 @@ instance Hashable TL.Text where
 
 #endif
 
--- | Compute the hash of a ThreadId.
-hashThreadId :: ThreadId -> Int
-hashThreadId (ThreadId t) = hash (fromIntegral (getThreadId t) :: Int)
+#if !MIN_VERSION_base(4,19,0)
+fromThreadId :: ThreadId -> Word64
+fromThreadId (ThreadId t) = fromIntegral (getThreadId t)
 
 -- this cannot be capi, as GHC panics.
 foreign import ccall unsafe "rts_getThreadId" getThreadId
@@ -722,9 +726,10 @@ foreign import ccall unsafe "rts_getThreadId" getThreadId
 #else
     :: ThreadId# -> CInt
 #endif
+#endif
 
 instance Hashable ThreadId where
-    hash = hashThreadId
+    hash = hash . fromThreadId
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable (Ptr a) where
