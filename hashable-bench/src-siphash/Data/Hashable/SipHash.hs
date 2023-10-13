@@ -21,7 +21,7 @@ import Data.Bits (unsafeShiftL)
 import Data.Word (Word8, Word64)
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
-import Data.ByteString.Internal (ByteString(PS), inlinePerformIO)
+import Data.ByteString.Internal (ByteString(PS), accursedUnutterablePerformIO)
 import Foreign.Storable (peek)
 import Numeric (showHex)
 
@@ -103,7 +103,7 @@ finalize d k st@Sip{..}
 
 hashByteString :: Int -> Int -> Word64 -> Word64 -> ByteString -> Word64
 hashByteString !c !d k0 k1 (PS fp off len) =
-  inlinePerformIO . withForeignPtr fp $ \basePtr ->
+  accursedUnutterablePerformIO . withForeignPtr fp $ \basePtr ->
     let ptr0 = basePtr `plusPtr` off
         scant = len .&. 7
         endBlocks = ptr0 `plusPtr` (len - scant)
