@@ -75,22 +75,22 @@ main = do
         sipHash = hashByteString 2 4 k0 k1
         hsSipHash = HS.hash (HS.SipKey k0 k1)
         cSipHash (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
             return $! c_siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
         cSipHash24 (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
             return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
         fnvHash (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
             return $! fnv_hash (ptr `plusPtr` off) (fromIntegral len) 2166136261
 #ifdef HAVE_SSE2
         sse2SipHash (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse2_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
 #endif
 #ifdef HAVE_SSE41
         sse41SipHash (PS fp off len) =
-            inlinePerformIO . withForeignPtr fp $ \ptr ->
+            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
             return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
 #endif
 

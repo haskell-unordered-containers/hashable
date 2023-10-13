@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.17.20230929
+# version: 0.17.20231010
 #
-# REGENDATA ("0.17.20230929",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
+# REGENDATA ("0.17.20231010",["github","--project","cabal.bench.project","-o",".github/workflows/haskell-ci-bench.yml","--github-action-name","Benchmarks"])
 #
 name: Benchmarks
 on:
@@ -32,9 +32,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.4.6
+          - compiler: ghc-9.8.1
             compilerKind: ghc
-            compilerVersion: 9.4.6
+            compilerVersion: 9.8.1
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.6.3
+            compilerKind: ghc
+            compilerVersion: 9.6.3
+            setup-method: ghcup
+            allow-failure: false
+          - compiler: ghc-9.4.7
+            compilerKind: ghc
+            compilerVersion: 9.4.7
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.2.8
