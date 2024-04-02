@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MagicHash             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PackageImports        #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE Trustworthy           #-}
@@ -167,7 +168,25 @@ import Data.Tuple (Solo (..))
 import GHC.Tuple (Solo (..))
 #endif
 
-#if MIN_VERSION_filepath(1,4,100)
+-- filepath >=1.4.100 && <1.5 has System.OsString.Internal.Types module
+#if MIN_VERSION_filepath(1,4,100) && !(MIN_VERSION_filepath(1,5,0))
+#define HAS_OS_STRING_filepath 1
+#else
+#define HAS_OS_STRING_filepath 0
+#endif
+
+-- if we depend on os_string module, then it has System.OsString.Internal.Types
+-- module as well
+#ifdef MIN_VERSION_os_string
+#define HAS_OS_STRING_os_string 1
+#else
+#define HAS_OS_STRING_os_string 0
+#endif
+
+#if HAS_OS_STRING_filepath && HAS_OS_STRING_os_string
+import "os-string" System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
+import qualified "filepath" System.OsString.Internal.Types as FP (OsString (..), PosixString (..), WindowsString (..))
+#elif HAS_OS_STRING_filepath || HAS_OS_STRING_os_string
 import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
 #endif
 
@@ -666,7 +685,7 @@ instance Hashable BSI.ShortByteString where
     hashWithSalt salt sbs@(BSI.SBS ba) =
         hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
 
-#if MIN_VERSION_filepath(1,4,100)
+#if HAS_OS_STRING_filepath || HAS_OS_STRING_os_string
 -- | @since 1.4.2.0
 instance Hashable PosixString where
     hashWithSalt salt (PosixString s) = hashWithSalt salt s
@@ -678,6 +697,17 @@ instance Hashable WindowsString where
 -- | @since 1.4.2.0
 instance Hashable OsString where
     hashWithSalt salt (OsString s) = hashWithSalt salt s
+#endif
+
+#if HAS_OS_STRING_filepath && HAS_OS_STRING_os_string
+instance Hashable FP.PosixString where
+    hashWithSalt salt (FP.PosixString s) = hashWithSalt salt s
+
+instance Hashable FP.WindowsString where
+    hashWithSalt salt (FP.WindowsString s) = hashWithSalt salt s
+
+instance Hashable FP.OsString where
+    hashWithSalt salt (FP.OsString s) = hashWithSalt salt s
 #endif
 
 #if MIN_VERSION_text(2,0,0)
