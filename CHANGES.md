@@ -1,5 +1,10 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.4.0
+
+  * Depend on `os-string-2` for GHC-9.2+
+  * Support `filepath-1.5`
+
 ## Version 1.4.3.0
 
  * Export `defaultHashWithSalt` and `defaultHash`.

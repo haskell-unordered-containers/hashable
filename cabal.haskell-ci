@@ -7,4 +7,12 @@ constraint-set random-initial-seed
   constraints: hashable +random-initial-seed
 
 constraint-set filepath-1.4.100.0
-  constraints: filepath >=1.4.100.0
+  constraints: filepath ^>=1.4.100.0
+  tests: True
+  run-tests: True
+
+constraint-set filepath-1.5
+  ghc: >=9.2
+  constraints: filepath ^>=1.5.2.0
+  tests: True
+  run-tests: True

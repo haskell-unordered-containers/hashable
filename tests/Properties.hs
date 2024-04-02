@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP, GeneralizedNewtypeDeriving, MagicHash,
     Rank2Types, UnboxedTuples #-}
-{-# LANGUAGE DeriveGeneric, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric, ScopedTypeVariables, PackageImports #-}
 
 -- | QuickCheck tests for the 'Data.Hashable' module.  We test
 -- functions by comparing the C and Haskell implementations.
@@ -29,6 +29,14 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import GHC.Generics
 
 import qualified Data.ByteString.Short as BS
+
+#if MIN_VERSION_filepath(1,4,100) && !(MIN_VERSION_filepath(1,5,0))
+import qualified "filepath" System.OsString.Internal.Types as FP
+#endif
+
+#ifdef MIN_VERSION_os_string
+import qualified "os-string" System.OsString.Internal.Types as OS
+#endif
 
 ------------------------------------------------------------------------
 -- * Properties
@@ -252,3 +260,23 @@ properties =
 
 fromStrict :: B.ByteString -> BL.ByteString
 fromStrict = BL.fromStrict
+
+------------------------------------------------------------------------
+-- test that instances exist
+
+instanceExists :: Hashable a => a -> ()
+instanceExists _ = ()
+
+#if MIN_VERSION_filepath(1,4,100) && !(MIN_VERSION_filepath(1,5,0))
+_fp1, _fp2, _fp3 :: ()
+_fp1 = instanceExists (undefined :: FP.OsString)
+_fp2 = instanceExists (undefined :: FP.WindowsString)
+_fp3 = instanceExists (undefined :: FP.PosixString)
+#endif
+
+#ifdef MIN_VERSION_os_string
+_os1, _os2, _os3 :: ()
+_os1 = instanceExists (undefined :: OS.OsString)
+_os2 = instanceExists (undefined :: OS.WindowsString)
+_os3 = instanceExists (undefined :: OS.PosixString)
+#endif
