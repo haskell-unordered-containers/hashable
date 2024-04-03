@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20240317
+# version: 0.19.20240402
 #
-# REGENDATA ("0.19.20240317",["github","cabal.project"])
+# REGENDATA ("0.19.20240402",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,6 +32,11 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.10.0.20240328
+            compilerKind: ghc
+            compilerVersion: 9.10.0.20240328
+            setup-method: ghcup
+            allow-failure: false
           - compiler: ghc-9.8.2
             compilerKind: ghc
             compilerVersion: 9.8.2
@@ -275,11 +280,11 @@ jobs:
           if [ $((HCNUMVER >= 90200)) -ne 0 ] ; then $CABAL v2-test $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.5.2.0' all ; fi
       - name: constraint set filepath-1.4.100.0
         run: |
-          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all --dry-run
-          cabal-plan topo | sort
-          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' --dependencies-only -j2 all
-          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all
-          $CABAL v2-test $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all
+          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all --dry-run ; fi
+          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then cabal-plan topo | sort ; fi
+          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' --dependencies-only -j2 all ; fi
+          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all ; fi
+          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then $CABAL v2-test $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='filepath ^>=1.4.100.0' all ; fi
       - name: constraint set random-initial-seed
         run: |
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='hashable +random-initial-seed' all --dry-run
