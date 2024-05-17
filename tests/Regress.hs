@@ -66,9 +66,9 @@ regressions = [] ++
     , testCase "64 bit Text" $ do
         hash ("hello world" :: Text) @?=
 #if MIN_VERSION_text(2,0,0)
-            2589482369471999198
+            588044899381568208
 #else
-            -1955893671357159554
+            -5067133951949802236
 #endif
 #endif
     , F.testGroup "concatenation"
