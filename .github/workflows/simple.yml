@@ -30,7 +30,7 @@ jobs:
         uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
-          cabal-version: '3.10.1.0'
+          cabal-version: '3.10.3.0'
 
       - name: Cache
         uses: actions/cache@v4
@@ -44,3 +44,68 @@ jobs:
 
       - name: Test
         run: cabal test all --enable-tests --test-show-details=direct
+
+  alpine-32bit:
+    name: Alpine Linux, musl, 32-bit
+    runs-on: ubuntu-latest
+    env:
+      CC: "gcc"
+    strategy:
+      matrix:
+        ghc: ['9.2.8']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Alpine Linux"
+        uses: jirutka/setup-alpine@v1
+        with:
+          arch: x86
+          branch: v3.17
+          packages: >
+            binutils-gold
+            curl
+            gcc
+            g++
+            git
+            gmp-dev
+            libc-dev
+            libffi-dev
+            make
+            musl-dev
+            ncurses-dev
+            openssh-client
+            perl
+            tar
+            zlib-dev
+            zlib-static
+
+      - name: "Setup"
+        shell: alpine.sh {0}
+        run: |
+          gcc --version
+          make --version
+          curl https://downloads.haskell.org/ghcup/0.1.22.0/i386-linux-ghcup-0.1.22.0 > ghcup
+          chmod a+x ghcup
+          whoami
+          echo $HOME
+          GHCUP_INSTALL_BASE_PREFIX=$HOME ./ghcup install cabal 3.10.3.0 --set
+          GHCUP_INSTALL_BASE_PREFIX=$HOME ./ghcup install ghc ${{matrix.ghc }} --set
+
+      - name: Update
+        shell: alpine.sh {0}
+        run: |
+            export PATH=$HOME/.ghcup/bin:$PATH
+            cabal update
+
+      - name: Build
+        shell: alpine.sh {0}
+        run: |
+            export PATH=$HOME/.ghcup/bin:$PATH
+            cabal build all --enable-tests
+
+      - name: Test
+        shell: alpine.sh {0}
+        run: |
+            export PATH=$HOME/.ghcup/bin:$PATH
+            cabal test all --enable-tests --test-show-details=direct
