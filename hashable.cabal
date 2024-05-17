@@ -12,7 +12,6 @@ description:
   The 'Hashable' 'hash' values are not guaranteed to be stable across library versions, operating systems or architectures. For stable hashing use named hashes: SHA256, CRC32 etc.
 
 homepage:           http://github.com/haskell-unordered-containers/hashable
-
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:
@@ -72,12 +71,13 @@ library
     Data.Hashable.Generic.Instances
     Data.Hashable.Imports
     Data.Hashable.LowLevel
+    Data.Hashable.Mix
 
   c-sources:        cbits/fnv.c
   include-dirs:     include
   hs-source-dirs:   src
   build-depends:
-      base        >=4.12.0.0 && <4.21
+    , base        >=4.12.0.0 && <4.21
     , bytestring  >=0.10.8.2 && <0.13
     , containers  >=0.6.0.1  && <0.8
     , deepseq     >=1.4.4.0  && <1.6
@@ -159,7 +159,7 @@ test-suite hashable-tests
     Regress
 
   build-depends:
-      base
+    , base
     , bytestring
     , filepath
     , ghc-prim
@@ -187,7 +187,7 @@ test-suite hashable-tests
 test-suite hashable-examples
   type:             exitcode-stdio-1.0
   build-depends:
-      base
+    , base
     , ghc-prim
     , hashable
 
