@@ -86,15 +86,16 @@ instance Arbitrary ChunkSize where
 
 -- | Ensure that the rechunk function causes a rechunked string to
 -- still match its original form.
-pTextRechunk :: T.Text -> NonEmptyList ChunkSize -> Bool
-pTextRechunk t cs = TL.fromStrict t == rechunkText t cs
+pTextRechunk :: T.Text -> NonEmptyList ChunkSize -> Property
+pTextRechunk t cs = TL.fromStrict t === rechunkText t cs
 
 -- | Lazy strings must hash to the same value no matter how they are
 -- chunked.
-pTextLazyRechunked :: T.Text
-                   -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
-pTextLazyRechunked t cs0 cs1 =
-    hash (rechunkText t cs0) == hash (rechunkText t cs1)
+pTextLazyRechunked :: T.Text -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Property
+pTextLazyRechunked t cs0 cs1 = hash (rechunkText t cs0) === hash (rechunkText t cs1)
+
+pTextLazyRechunked' :: T.Text -> Int -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Property
+pTextLazyRechunked' t salt cs0 cs1 = hashWithSalt salt (rechunkText t cs0) === hashWithSalt salt (rechunkText t cs1)
 
 -- | Break up a string into chunks of different sizes.
 rechunkText :: T.Text -> NonEmptyList ChunkSize -> TL.Text
@@ -133,9 +134,11 @@ pBSRechunk t cs = fromStrict t == rechunkBS t cs
 
 -- | Lazy bytestrings must hash to the same value no matter how they
 -- are chunked.
-pBSLazyRechunked :: B.ByteString
-                 -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Bool
-pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) == hash (rechunkBS t cs2)
+pBSLazyRechunked :: B.ByteString -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Property
+pBSLazyRechunked t cs1 cs2 = hash (rechunkBS t cs1) === hash (rechunkBS t cs2)
+
+pBSLazyRechunked' :: B.ByteString -> Int -> NonEmptyList ChunkSize -> NonEmptyList ChunkSize -> Property
+pBSLazyRechunked' t salt cs1 cs2 = hashWithSalt salt (rechunkBS t cs1) === hashWithSalt salt (rechunkBS t cs2)
 
 -- This wrapper is required by 'runST'.
 data ByteArray = BA { unBA :: ByteArray# }
@@ -230,6 +233,7 @@ properties =
       , testProperty "text/lazy" pTextLazy
       , testProperty "text/rechunk" pTextRechunk
       , testProperty "text/rechunked" pTextLazyRechunked
+      , testProperty "text/rechunked-salt" pTextLazyRechunked'
       ]
     , testGroup "bytestring"
       [ testProperty "bytestring/strict" pBS
@@ -237,6 +241,7 @@ properties =
       , testProperty "bytestring/short" pBSShort
       , testProperty "bytestring/rechunk" pBSRechunk
       , testProperty "bytestring/rechunked" pBSLazyRechunked
+      , testProperty "bytestring/rechunked-salt" pBSLazyRechunked'
       ]
     , testGroup "generics"
       [

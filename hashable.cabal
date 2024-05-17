@@ -47,13 +47,23 @@ tested-with:
 extra-source-files:
   CHANGES.md
   include/HsHashable.h
+  include/HsXXHash.h
   README.md
+  xxHash-0.8.2/xxhash.h
 
 flag integer-gmp
   description:
     Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
 
   manual:      False
+  default:     True
+
+flag arch-native
+  description:
+    Use @-march=native@ when compiling C sources.
+    You may need to disable this flag if you are building distributable binaries
+
+  manual:      True
   default:     True
 
 flag random-initial-seed
@@ -74,13 +84,19 @@ library
 
   other-modules:
     Data.Hashable.Class
+    Data.Hashable.FFI
     Data.Hashable.Generic.Instances
     Data.Hashable.Imports
     Data.Hashable.LowLevel
     Data.Hashable.Mix
+    Data.Hashable.XXH3
 
-  c-sources:        cbits/fnv.c
-  include-dirs:     include
+  include-dirs:     include xxHash-0.8.2
+  includes:
+    HsHashable.h
+    HsXXHash.h
+    xxhash.h
+
   hs-source-dirs:   src
   build-depends:
     , base        >=4.12.0.0 && <4.21
@@ -149,7 +165,12 @@ library
     TypeOperators
     UnliftedFFITypes
 
-  ghc-options:      -Wall -fwarn-tabs
+  ghc-options:      -Wall
+
+  if flag(arch-native)
+    -- Cabal doesn't pass cc-options to "ordinary" Haskell source compilation
+    -- https://github.com/haskell/cabal/issues/9801
+    ghc-options: -optc=-march=native -optc-mtune=native
 
   if impl(ghc >=9.0)
     -- these flags may abort compilation with GHC-8.10
@@ -189,6 +210,31 @@ test-suite hashable-tests
 
   ghc-options:      -Wall -fno-warn-orphans
   default-language: Haskell2010
+
+test-suite xxhash-tests
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   tests src
+  main-is:          xxhash-tests.hs
+  other-modules:
+    Data.Hashable.FFI
+    Data.Hashable.XXH3
+
+  default-language: Haskell2010
+  build-depends:
+    , base
+    , bytestring
+    , primitive         ^>=0.9.0.0
+    , tasty             ^>=1.5
+    , tasty-hunit       ^>=0.10.1
+    , tasty-quickcheck  ^>=0.10.3
+
+  include-dirs:     include xxHash-0.8.2
+  includes:
+    HsXXHash.h
+    xxhash.h
+
+  if !impl(ghc >=9.4)
+    build-depends: data-array-byte >=0.1.0.1 && <0.2
 
 test-suite hashable-examples
   type:             exitcode-stdio-1.0
