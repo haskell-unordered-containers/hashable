@@ -206,9 +206,15 @@ infixl 0 `hashWithSalt`
 --
 -- Minimal implementation: 'hashWithSalt'.
 --
--- /Note:/ the hash is not guaranteed to be stable across
--- library versions, operating systems or architectures.
--- For stable hashing use named hashes: SHA256, CRC32 etc.
+-- 'Hashable' is intended exclusively for use in in-memory data structures.
+-- .
+-- 'Hashable' does /not/ have a fixed standard.
+-- This allows it to improve over time.
+-- .
+-- Because it does not have a fixed standard, different computers or computers on different versions of the code will observe different hash values.
+-- As such, 'Hashable' is not recommended for use other than in-memory datastructures.
+-- Specifically, 'Hashable' is not intended for network use or in applications which persist hashed values.
+-- For stable hashing use named hashes: sha256, crc32, xxhash etc.
 --
 -- If you are looking for 'Hashable' instance in @time@ package,
 -- check [time-compat](https://hackage.haskell.org/package/time-compat)
