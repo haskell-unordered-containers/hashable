@@ -3,16 +3,21 @@ name:               hashable
 version:            1.4.5.0
 synopsis:           A class for types that can be converted to a hash value
 description:
-  This package defines a class, 'Hashable', for types that
-  can be converted to a hash value.  This class
-  exists for the benefit of hashing-based data
-  structures.  The package provides instances for
-  basic types and a way to combine hash values.
+  This package defines a class, 'Hashable', for types that can be converted to a hash value.
+  This class exists for the benefit of hashing-based data structures.
+  The package provides instances for basic types and a way to combine hash values.
   .
-  The 'Hashable' 'hash' values are not guaranteed to be stable across library versions, operating systems or architectures. For stable hashing use named hashes: SHA256, CRC32 etc.
+  'Hashable' is intended exclusively for use in in-memory data structures.
+  .
+  'Hashable' does /not/ have a fixed standard.
+  This allows it to improve over time.
+  .
+  Because it does not have a fixed standard, different computers or computers on different versions of the code will observe different hash values.
+  As such, 'hashable' is not recommended for use other than in-memory datastructures.
+  Specifically, 'hashable' is not intended for network use or in applications which persist hashed values.
+  For stable hashing use named hashes: sha256, crc32, xxhash etc.
 
 homepage:           http://github.com/haskell-unordered-containers/hashable
-
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:
@@ -77,7 +82,7 @@ library
   include-dirs:     include
   hs-source-dirs:   src
   build-depends:
-      base        >=4.12.0.0 && <4.21
+    , base        >=4.12.0.0 && <4.21
     , bytestring  >=0.10.8.2 && <0.13
     , containers  >=0.6.0.1  && <0.8
     , deepseq     >=1.4.4.0  && <1.6
@@ -159,7 +164,7 @@ test-suite hashable-tests
     Regress
 
   build-depends:
-      base
+    , base
     , bytestring
     , filepath
     , ghc-prim
@@ -187,7 +192,7 @@ test-suite hashable-tests
 test-suite hashable-examples
   type:             exitcode-stdio-1.0
   build-depends:
-      base
+    , base
     , ghc-prim
     , hashable
 
