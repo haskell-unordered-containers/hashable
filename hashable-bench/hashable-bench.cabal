@@ -33,24 +33,14 @@ tested-with:
    || ==9.10.1
 
 extra-source-files:
-  benchmarks/cbits/*.h
   include/HsHashable.h
 
 flag integer-gmp
   description:
     Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
 
+  manual:      False
   default:     True
-
-flag sse2
-  description: Do we want to assume that a target supports SSE 2?
-  default:     True
-  manual:      True
-
-flag sse41
-  description: Do we want to assume that a target supports SSE 4.1?
-  default:     False
-  manual:      True
 
 library
   exposed-modules:
@@ -130,7 +120,7 @@ library
 benchmark hashable-benchmark
   -- We cannot depend on the hashable library directly as that creates
   -- a dependency cycle.
-  hs-source-dirs:   benchmarks src-siphash
+  hs-source-dirs:   benchmarks
   main-is:          Benchmarks.hs
   type:             exitcode-stdio-1.0
   build-depends:
@@ -152,22 +142,6 @@ benchmark hashable-benchmark
 
   if impl(ghc >=7.2.1)
     cpp-options: -DGENERICS
-
-  include-dirs:     benchmarks/cbits
-  includes:         siphash.h
-  other-modules:    Data.Hashable.SipHash
-  c-sources:
-    benchmarks/cbits/inthash.c
-    benchmarks/cbits/siphash.c
-    benchmarks/cbits/wang.c
-
-  if ((arch(i386) || arch(x86_64)) && flag(sse2))
-    cpp-options: -DHAVE_SSE2
-    c-sources:   benchmarks/cbits/siphash-sse2.c
-
-    if flag(sse41)
-      cpp-options: -DHAVE_SSE41
-      c-sources:   benchmarks/cbits/siphash-sse41.c
 
   ghc-options:      -Wall -O2
   default-language: Haskell2010
