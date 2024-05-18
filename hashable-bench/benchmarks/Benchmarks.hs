@@ -6,14 +6,10 @@ module Main (main) where
 import Control.Monad.ST
 import Criterion.Main
 import Data.Hashable
-import Data.Hashable.SipHash
 import Data.Int
 import Foreign.ForeignPtr
 import GHC.Exts
 import GHC.ST (ST(..))
-import Data.Word
-import Foreign.C.Types (CInt(..), CLong(..), CSize(..))
-import Foreign.Ptr
 import Data.ByteString.Internal
 import GHC.Generics (Generic)
 import qualified Data.ByteString.Lazy as BL
@@ -72,27 +68,9 @@ main = do
 
     let k0 = 0x4a7330fae70f52e8
         k1 = 0x919ea5953a9a1ec9
-        sipHash = hashByteString 2 4 k0 k1
+
+        hsSipHash :: ByteString -> HS.SipHash
         hsSipHash = HS.hash (HS.SipKey k0 k1)
-        cSipHash (PS fp off len) =
-            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
-            return $! c_siphash 2 4 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
-        cSipHash24 (PS fp off len) =
-            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
-            return $! c_siphash24 k0 k1 (ptr `plusPtr` off) (fromIntegral len)
-        fnvHash (PS fp off len) =
-            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
-            return $! fnv_hash (ptr `plusPtr` off) (fromIntegral len) 2166136261
-#ifdef HAVE_SSE2
-        sse2SipHash (PS fp off len) =
-            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
-            return $! sse2_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
-#endif
-#ifdef HAVE_SSE41
-        sse41SipHash (PS fp off len) =
-            accursedUnutterablePerformIO . withForeignPtr fp $ \ptr ->
-            return $! sse41_siphash k0 k1 (ptr `plusPtr` off) (fromIntegral len)
-#endif
 
     withForeignPtr fp5 $ \ p5 ->
         withForeignPtr fp8 $ \ p8 ->
@@ -181,55 +159,6 @@ main = do
           , bench "Int64" $ whnf hash (0x7eadbeefdeadbeef :: Int64)
           , bench "Double" $ whnf hash (0.3780675796601578 :: Double)
           ]
-        , bgroup "sipHash"
-          [ bench "5" $ whnf sipHash bs5
-          , bench "8" $ whnf sipHash bs8
-          , bench "11" $ whnf sipHash bs11
-          , bench "40" $ whnf sipHash bs40
-          , bench "128" $ whnf sipHash bs128
-          , bench "512" $ whnf sipHash bs512
-          , bench "2^20" $ whnf sipHash bs1Mb
-          ]
-        , bgroup "cSipHash"
-          [ bench "5" $ whnf cSipHash bs5
-          , bench "8" $ whnf cSipHash bs8
-          , bench "11" $ whnf cSipHash bs11
-          , bench "40" $ whnf cSipHash bs40
-          , bench "128" $ whnf cSipHash bs128
-          , bench "512" $ whnf cSipHash bs512
-          , bench "2^20" $ whnf cSipHash bs1Mb
-          ]
-        , bgroup "cSipHash24"
-          [ bench "5" $ whnf cSipHash24 bs5
-          , bench "8" $ whnf cSipHash24 bs8
-          , bench "11" $ whnf cSipHash24 bs11
-          , bench "40" $ whnf cSipHash24 bs40
-          , bench "128" $ whnf cSipHash24 bs128
-          , bench "512" $ whnf cSipHash24 bs512
-          , bench "2^20" $ whnf cSipHash24 bs1Mb
-          ]
-#ifdef HAVE_SSE2
-        , bgroup "sse2SipHash"
-          [ bench "5" $ whnf sse2SipHash bs5
-          , bench "8" $ whnf sse2SipHash bs8
-          , bench "11" $ whnf sse2SipHash bs11
-          , bench "40" $ whnf sse2SipHash bs40
-          , bench "128" $ whnf sse2SipHash bs128
-          , bench "512" $ whnf sse2SipHash bs512
-          , bench "2^20" $ whnf sse2SipHash bs1Mb
-          ]
-#endif
-#ifdef HAVE_SSE41
-        , bgroup "sse41SipHash"
-          [ bench "5" $ whnf sse41SipHash bs5
-          , bench "8" $ whnf sse41SipHash bs8
-          , bench "11" $ whnf sse41SipHash bs11
-          , bench "40" $ whnf sse41SipHash bs40
-          , bench "128" $ whnf sse41SipHash bs128
-          , bench "512" $ whnf sse41SipHash bs512
-          , bench "2^20" $ whnf sse41SipHash bs1Mb
-          ]
-#endif
         , bgroup "pkgSipHash"
           [ bench "5" $ whnf hsSipHash bs5
           , bench "8" $ whnf hsSipHash bs8
@@ -239,22 +168,9 @@ main = do
           , bench "512" $ whnf hsSipHash bs512
           , bench "2^20" $ whnf hsSipHash bs1Mb
           ]
-        , bgroup "fnv"
-          [ bench "5" $ whnf fnvHash bs5
-          , bench "8" $ whnf fnvHash bs8
-          , bench "11" $ whnf fnvHash bs11
-          , bench "40" $ whnf fnvHash bs40
-          , bench "128" $ whnf fnvHash bs128
-          , bench "512" $ whnf fnvHash bs512
-          , bench "2^20" $ whnf fnvHash bs1Mb
-          ]
         , bgroup "Int"
           [ bench "id32"   $ whnf id           (0x7eadbeef :: Int32)
           , bench "id64"   $ whnf id           (0x7eadbeefdeadbeef :: Int64)
-          , bench "wang32" $ whnf hash_wang_32 0xdeadbeef
-          , bench "wang64" $ whnf hash_wang_64 0xdeadbeefdeadbeef
-          , bench "jenkins32a" $ whnf hash_jenkins_32a 0xdeadbeef
-          , bench "jenkins32b" $ whnf hash_jenkins_32b 0xdeadbeef
           ]
         , bgroup "Generic"
           [ bench "product" $ whnf hash exP
@@ -270,31 +186,6 @@ new (I# n#) = unBA (runST $ ST $ \s1 ->
     case newByteArray# n# s1 of
         (# s2, ary #) -> case unsafeFreezeByteArray# ary s2 of
             (# s3, ba #) -> (# s3, BA ba #))
-
-foreign import ccall unsafe "hashable_siphash" c_siphash
-    :: CInt -> CInt -> Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-foreign import ccall unsafe "hashable_siphash24" c_siphash24
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-#ifdef HAVE_SSE2
-foreign import ccall unsafe "hashable_siphash24_sse2" sse2_siphash
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-#endif
-#ifdef HAVE_SSE41
-foreign import ccall unsafe "hashable_siphash24_sse41" sse41_siphash
-    :: Word64 -> Word64 -> Ptr Word8 -> CSize -> Word64
-#endif
-
-foreign import ccall unsafe "hashable_fnv_hash" fnv_hash
-    :: Ptr Word8 -> CLong -> CLong -> CLong
-
-foreign import ccall unsafe "hashable_wang_32" hash_wang_32
-    :: Word32 -> Word32
-foreign import ccall unsafe "hashable_wang_64" hash_wang_64
-    :: Word64 -> Word64
-foreign import ccall unsafe "hash_jenkins_32a" hash_jenkins_32a
-    :: Word32 -> Word32
-foreign import ccall unsafe "hash_jenkins_32b" hash_jenkins_32b
-    :: Word32 -> Word32
 
 data PS
   = PS1 Int Char Bool
