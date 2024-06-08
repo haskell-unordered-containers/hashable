@@ -15,24 +15,6 @@ class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
   * The above changes require `base-4.18.0.0`, so we drop support for GHC prior GHC-9.6.5
     (The `hashable-1.4` branch will be maintained for time being for older GHC users).
 
-  * Change `Hashable` to work on `Word` instead of `Int`.
-    (Unsigned numbers are nicer for all kind of bit fiddling).
-    You may support `hashable-1.4` and `1.5` with a small shim, like:
-
-```diff
-+#if MIN_VERSION_hashable(1,5,0)
-+type Salt = Word
-+#else
-+type Salt = Int
-+#endif
-+
- instance (Hashable k, Hashable v) => Hashable (HashMap k v) where
-     hashWithSalt salt hm = go salt hm
-       where
--        go :: Int -> HashMap k v -> Int
-+        go :: Salt -> HashMap k v -> Salt
-```
-
   * Make `Arg a b` instance behave as `Hashable a` instance.
 
 ## Version 1.4.5.0
