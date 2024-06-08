@@ -9,13 +9,12 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PackageImports             #-}
 {-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE QuantifiedConstraints      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE Trustworthy                #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UnliftedFFITypes           #-}
-
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 ------------------------------------------------------------------------
@@ -86,6 +85,7 @@ import Data.List              (foldl')
 import Data.Proxy             (Proxy)
 import Data.Ratio             (Ratio, denominator, numerator)
 import Data.String            (IsString (..))
+import Data.Tuple             (Solo (..))
 import Data.Unique            (Unique, hashUnique)
 import Data.Version           (Version (..))
 import Data.Void              (Void, absurd)
@@ -134,31 +134,13 @@ import Foreign.C.Types (CInt (..))
 #endif
 #endif
 
-#ifdef VERSION_ghc_bignum
 import GHC.Exts        (Int (..), sizeofByteArray#)
 import GHC.Num.BigNat  (BigNat (..))
 import GHC.Num.Integer (Integer (..))
 import GHC.Num.Natural (Natural (..))
-#endif
 
-#ifdef VERSION_integer_gmp
-import GHC.Exts                  (Int (..))
-import GHC.Integer.GMP.Internals (Integer (..))
-import GHC.Exts                  (sizeofByteArray#)
-import GHC.Integer.GMP.Internals (BigNat (BN#))
-#endif
-
-#ifndef VERSION_ghc_bignum
-import GHC.Natural (Natural (..))
-#endif
 
 import GHC.Float (castDoubleToWord64, castFloatToWord32)
-
-#if MIN_VERSION_base(4,16,0)
-import Data.Tuple (Solo (..))
-#elif MIN_VERSION_base(4,15,0)
-import GHC.Tuple (Solo (..))
-#endif
 
 -- filepath >=1.4.100 && <1.5 has System.OsString.Internal.Types module
 #if MIN_VERSION_filepath(1,4,100) && !(MIN_VERSION_filepath(1,5,0))
@@ -180,14 +162,6 @@ import "os-string" System.OsString.Internal.Types (OsString (..), PosixString (.
 import qualified "filepath" System.OsString.Internal.Types as FP (OsString (..), PosixString (..), WindowsString (..))
 #elif HAS_OS_STRING_filepath || HAS_OS_STRING_os_string
 import System.OsString.Internal.Types (OsString (..), PosixString (..), WindowsString (..))
-#endif
-
-#ifdef VERSION_base_orphans
-import Data.Orphans ()
-#endif
-
-#ifdef VERSION_ghc_bignum_orphans
-import GHC.Num.Orphans ()
 #endif
 
 import Data.Hashable.Imports
@@ -275,7 +249,7 @@ newtype instance HashArgs One  a = HashArgs1 (Int -> a -> Int)
 class GHashable arity f where
     ghashWithSalt :: HashArgs arity a -> Int -> f a -> Int
 
-class Eq1 t => Hashable1 t where
+class (Eq1 t, forall a. Hashable a => Hashable (t a)) => Hashable1 t where
     -- | Lift a hashing function through the type constructor.
     liftHashWithSalt :: (Int -> a -> Int) -> Int -> t a -> Int
 
@@ -290,7 +264,7 @@ genericLiftHashWithSalt :: (Generic1 t, GHashable One (Rep1 t)) => (Int -> a -> 
 genericLiftHashWithSalt = \h salt -> ghashWithSalt (HashArgs1 h) salt . from1
 {-# INLINE genericLiftHashWithSalt #-}
 
-class Eq2 t => Hashable2 t where
+class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
     -- | Lift a hashing function through the binary type constructor.
     liftHashWithSalt2 :: (Int -> a -> Int) -> (Int -> b -> Int) -> Int -> t a b -> Int
 
@@ -407,32 +381,17 @@ instance Hashable Char where
     hash = fromEnum
     hashWithSalt = defaultHashWithSalt
 
-#if defined(VERSION_integer_gmp) || defined(VERSION_ghc_bignum)
 instance Hashable BigNat where
     hashWithSalt salt (BN# ba) = hashWithSalt salt (ByteArray ba)
-#endif
 
 instance Hashable Natural where
-#if defined(VERSION_ghc_bignum)
     hash (NS n)   = hash (W# n)
     hash (NB bn)  = hash (BN# bn)
 
     hashWithSalt salt (NS n)  = hashWithSalt salt (W# n)
     hashWithSalt salt (NB bn) = hashWithSalt salt (BN# bn)
-#elif defined(VERSION_integer_gmp)
-    hash (NatS# n)   = hash (W# n)
-    hash (NatJ# bn)  = hash bn
-
-    hashWithSalt salt (NatS# n)   = hashWithSalt salt (W# n)
-    hashWithSalt salt (NatJ# bn)  = hashWithSalt salt bn
-#else
-    hash (Natural n) = hash n
-
-    hashWithSalt salt (Natural n) = hashWithSalt salt n
-#endif
 
 instance Hashable Integer where
-#if defined(VERSION_ghc_bignum)
     hash (IS n)  = I# n
     hash (IP bn) = hash (BN# bn)
     hash (IN bn) = negate (hash (BN# bn))
@@ -440,22 +399,6 @@ instance Hashable Integer where
     hashWithSalt salt (IS n)  = hashWithSalt salt (I# n)
     hashWithSalt salt (IP bn) = hashWithSalt salt (BN# bn)
     hashWithSalt salt (IN bn) = negate (hashWithSalt salt (BN# bn))
-#elif defined(VERSION_integer_gmp)
-    hash (S# n)   = (I# n)
-    hash (Jp# bn) = hash bn
-    hash (Jn# bn) = negate (hash bn)
-
-    hashWithSalt salt (S# n)   = hashWithSalt salt (I# n)
-    hashWithSalt salt (Jp# bn) = hashWithSalt salt bn
-    hashWithSalt salt (Jn# bn) = negate (hashWithSalt salt bn)
-#else
-    hashWithSalt salt = foldl' hashWithSalt salt . go
-      where
-        go n | inBounds n = [fromIntegral n :: Int]
-             | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
-        maxInt = fromIntegral (maxBound :: Int)
-        inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
-#endif
 
 instance Hashable a => Hashable (Complex a) where
     {-# SPECIALIZE instance Hashable (Complex Double) #-}
@@ -835,8 +778,11 @@ deriving newtype instance Hashable a => Hashable (Semi.Max a)
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
+-- Since @hashable-1.5.0.0@, @hash (Semi.arg a _) = hash a@
+--
 -- @since 1.3.0.0
 instance Hashable a => Hashable (Semi.Arg a b) where
+    hash (Semi.Arg a _) = hash a
     hashWithSalt p (Semi.Arg a _) = hashWithSalt p a
 
 deriving newtype instance Hashable a => Hashable (Semi.First a)
@@ -870,10 +816,9 @@ deriving newtype instance Hashable a => Hashable (Semi.Option a)
 -- instance Hashable1 Option where liftHashWithSalt h salt (Option a) = liftHashWithSalt h salt a
 #endif
 
--- | In general, @hash (Compose x) ≠ hash x@. However, @hashWithSalt@ satisfies
--- its variant of this equivalence.
-instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (Compose f g a) where
-    hashWithSalt = hashWithSalt1
+instance (Hashable (f (g a))) => Hashable (Compose f g a) where
+    hash (Compose x) = hash x
+    hashWithSalt p (Compose x) = hashWithSalt p x
 
 instance (Hashable1 f, Hashable1 g) => Hashable1 (Compose f g) where
     liftHashWithSalt h s = liftHashWithSalt (liftHashWithSalt h) s . getCompose
@@ -881,15 +826,16 @@ instance (Hashable1 f, Hashable1 g) => Hashable1 (Compose f g) where
 instance (Hashable1 f, Hashable1 g) => Hashable1 (FP.Product f g) where
     liftHashWithSalt h s (FP.Pair a b) = liftHashWithSalt h (liftHashWithSalt h s a) b
 
-instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FP.Product f g a) where
-    hashWithSalt = hashWithSalt1
+instance (Hashable (f a), Hashable (g a)) => Hashable (FP.Product f g a) where
+    hashWithSalt s (FP.Pair a b) = s `hashWithSalt` a `hashWithSalt` b
 
 instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
     liftHashWithSalt h s (FS.InL a) = liftHashWithSalt h (s `hashInt` 0) a
     liftHashWithSalt h s (FS.InR a) = liftHashWithSalt h (s `hashInt` distinguisher) a
 
-instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
-    hashWithSalt = hashWithSalt1
+instance (Hashable (f a), Hashable (g a)) => Hashable (FS.Sum f g a) where
+    hashWithSalt s (FS.InL a) = hashWithSalt (s `hashInt` 0) a
+    hashWithSalt s (FS.InR a) = hashWithSalt (s `hashInt` distinguisher) a
 
 -- | This instance was available since 1.4.1.0 only for GHC-9.4+
 --
@@ -1047,9 +993,7 @@ instance Hashable v => Hashable (Tree.Tree v) where
 -- Solo
 -------------------------------------------------------------------------------
 
-#if MIN_VERSION_base(4,15,0)
 instance Hashable a => Hashable (Solo a) where
     hashWithSalt = hashWithSalt1
 instance Hashable1 Solo where
     liftHashWithSalt h salt (Solo x) = h salt x
-#endif

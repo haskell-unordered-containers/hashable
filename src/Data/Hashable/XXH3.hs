@@ -5,7 +5,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy         #-}
 {-# LANGUAGE UnboxedTuples       #-}
-{-# LANGUAGE ViewPatterns        #-}
 module Data.Hashable.XXH3 (
     -- * One shot
     xxh3_64bit_withSeed_ptr,
@@ -30,36 +29,10 @@ import Data.ByteString.Internal (ByteString (..), accursedUnutterablePerformIO)
 import Data.Word                (Word32, Word64, Word8)
 import Foreign                  (Ptr)
 import GHC.Exts                 (Int (..), MutableByteArray#, newAlignedPinnedByteArray#)
+import GHC.ForeignPtr           (unsafeWithForeignPtr)
 import GHC.ST                   (ST (..))
 
 import Data.Hashable.FFI
-
-#if MIN_VERSION_base(4,15,0)
-import GHC.ForeignPtr (unsafeWithForeignPtr)
-#else
-import Foreign (ForeignPtr, withForeignPtr)
-#endif
-
-#if MIN_VERSION_bytestring(0,11,0)
-#else
-import Foreign (ForeignPtr, plusForeignPtr)
-#endif
-
-#if !MIN_VERSION_base(4,15,0)
-unsafeWithForeignPtr :: ForeignPtr a -> (Ptr a -> IO b) -> IO b
-unsafeWithForeignPtr = withForeignPtr
-#endif
-
-#if MIN_VERSION_bytestring(0,11,0)
-#else
-pattern BS :: ForeignPtr Word8 -> Int -> ByteString
-pattern BS fptr len <- (matchBS -> (fptr,len))
-  where BS fptr len = PS fptr 0 len
-{-# COMPLETE BS #-}
-
-matchBS :: ByteString -> (ForeignPtr Word8, Int)
-matchBS (PS fptr off len) = (plusForeignPtr fptr off, len)
-#endif
 
 -------------------------------------------------------------------------------
 -- OneShot

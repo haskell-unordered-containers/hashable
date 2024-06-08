@@ -1,5 +1,22 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.5.0.0
+
+  * Add `QuantifiedConstraints` superclasses to `Hashable1/2`:
+
+```haskell
+class (Eq1 t, forall a. Hashable a => Hashable (t a)) => Hashable1 t where
+class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
+```
+
+  * Change contexts of `Compose`, `Product` and `Sum` instances.
+    This and above is the similar change as [CLC proposal #10](https://github.com/haskell/core-libraries-committee/issues/10)
+
+  * The above changes require `base-4.18.0.0`, so we drop support for GHC prior GHC-9.6.5
+    (The `hashable-1.4` branch will be maintained for time being for older GHC users).
+
+  * Make `Arg a b` instance behave as `Hashable a` instance.
+
 ## Version 1.4.7.0
 
   * Make `arch-native` disabled by default.
