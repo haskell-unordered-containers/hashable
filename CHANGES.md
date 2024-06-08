@@ -33,6 +33,8 @@ class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
 +        go :: Salt -> HashMap k v -> Salt
 ```
 
+  * Make `Arg a b` instance behave as `Hashable a` instance.
+
 ## Version 1.4.5.0
 
   * Drop support for GHCs prior 8.6.5
