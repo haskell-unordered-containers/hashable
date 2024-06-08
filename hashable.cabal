@@ -43,13 +43,6 @@ extra-source-files:
   README.md
   xxHash-0.8.2/xxhash.h
 
-flag integer-gmp
-  description:
-    Are we using @integer-gmp@ to provide fast Integer instances? No effect on GHC-9.0 or later.
-
-  manual:      False
-  default:     True
-
 flag arch-native
   description:
     Use @-march=native@ when compiling C sources.
