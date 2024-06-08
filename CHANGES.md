@@ -1,5 +1,32 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.5.0.0
+
+  * Add `QuantifiedConstraints` superclasses to `Hashable1/2`:
+
+```haskell
+class (Eq1 t, forall a. Hashable a => Hashable (t a)) => Hashable1 t where
+class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
+```
+
+  * Change `Hashable` to work on `Word` instead of `Int`.
+    (Unsigned numbers are nicer for all kind of bit fiddling).
+    You may support `hashable-1.4` and `1.5` with a small shim, like:
+
+```diff
++#if MIN_VERSION_hashable(1,5,0)
++type Salt = Word
++#else
++type Salt = Int
++#endif
++
+ instance (Hashable k, Hashable v) => Hashable (HashMap k v) where
+     hashWithSalt salt hm = go salt hm
+       where
+-        go :: Int -> HashMap k v -> Int
++        go :: Salt -> HashMap k v -> Salt
+```
+
 ## Version 1.4.5.0
 
   * Drop support for GHCs prior 8.6.5

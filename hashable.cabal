@@ -1,6 +1,6 @@
 cabal-version:      2.2
 name:               hashable
-version:            1.4.5.0
+version:            1.5.0.0
 synopsis:           A class for types that can be converted to a hash value
 description:
   This package defines a class, 'Hashable', for types that can be converted to a hash value.
@@ -160,6 +160,7 @@ library
     KindSignatures
     MagicHash
     MultiParamTypeClasses
+    QuantifiedConstraints
     ScopedTypeVariables
     Trustworthy
     TypeOperators
