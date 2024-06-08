@@ -5,10 +5,10 @@ module Main (main) where
 
 import Properties (properties)
 import Regress (regressions)
-import Test.Framework (defaultMain, testGroup)
+import Test.Tasty (defaultMain, testGroup)
 
 main :: IO ()
-main = defaultMain [
-         testGroup "properties" properties
-       , testGroup "regressions" regressions
-       ]
+main = defaultMain $ testGroup "hashable"
+    [ testGroup "properties" properties
+    , testGroup "regressions" regressions
+    ]

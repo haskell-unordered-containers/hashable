@@ -4,11 +4,10 @@
 
 module Regress (regressions) where
 
-import qualified Test.Framework as F
+import Test.Tasty (TestTree, testGroup)
 import Control.Monad (when)
-import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (Assertion, assertFailure, (@?=))
-import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.Tasty.HUnit (testCase, Assertion, assertFailure, (@?=))
+import Test.Tasty.QuickCheck (testProperty)
 import GHC.Generics (Generic)
 import Data.List (nub)
 import Data.Fixed (Pico)
@@ -33,7 +32,7 @@ assertInequal msg x y
     | x == y    = assertFailure msg
     | otherwise = return ()
 
-regressions :: [F.Test]
+regressions :: [TestTree]
 regressions = [] ++
 #ifdef HAVE_MMAP
     Mmap.regressions ++
@@ -41,7 +40,7 @@ regressions = [] ++
         (hash (1 :: Pico) == hash (2 :: Pico)) @?= False
     ] ++
 #endif
-    [ F.testGroup "Generic: sum of nullary constructors"
+    [ testGroup "Generic: sum of nullary constructors"
         [ testCase "0" $ nullaryCase 0 S0
         , testCase "1" $ nullaryCase 1 S1
         , testCase "2" $ nullaryCase 2 S2
@@ -72,7 +71,7 @@ regressions = [] ++
 #endif
         hash ("hello world" :: Text) @?= expected
 #endif
-    , F.testGroup "concatenation"
+    , testGroup "concatenation"
         [ testCase "String" $ do
             let lhs, rhs :: (String, String)
                 lhs = ("foo", "bar")

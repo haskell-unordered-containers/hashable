@@ -24,8 +24,8 @@ import GHC.Exts (unsafeCoerce#)
 import GHC.ST (ST(..), runST)
 import GHC.Word (Word8(..))
 import Test.QuickCheck hiding ((.&.))
-import Test.Framework (Test, testGroup)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.QuickCheck (testProperty)
 import GHC.Generics
 
 import qualified Data.ByteString.Short as BS
@@ -225,7 +225,7 @@ instance (Arbitrary a, Hashable a) => Arbitrary (Hashed a) where
 pLiftedHashed :: Int -> Hashed (Either Int String) -> Bool
 pLiftedHashed s h = hashWithSalt s h == hashWithSalt1 s h
 
-properties :: [Test]
+properties :: [TestTree]
 properties =
     [ testProperty "bernstein" pHash
     , testGroup "text"
