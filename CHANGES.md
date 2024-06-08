@@ -9,6 +9,12 @@ class (Eq1 t, forall a. Hashable a => Hashable (t a)) => Hashable1 t where
 class (Eq2 t, forall a. Hashable a => Hashable1 (t a)) => Hashable2 t where
 ```
 
+  * Change contexts of `Compose`, `Product` and `Sum` instances.
+    This and above is the similar change as [CLC proposal #10](https://github.com/haskell/core-libraries-committee/issues/10)
+ 
+  * The above changes require `base-4.18.0.0`, so we drop support for GHC prior GHC-9.6.5
+    (The `hashable-1.4` branch will be maintained for time being for older GHC users).
+
   * Change `Hashable` to work on `Word` instead of `Int`.
     (Unsigned numbers are nicer for all kind of bit fiddling).
     You may support `hashable-1.4` and `1.5` with a small shim, like:
