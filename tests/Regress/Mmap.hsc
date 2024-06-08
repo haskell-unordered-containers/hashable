@@ -14,8 +14,8 @@ import Foreign.C.Types (CInt(..), CSize(..))
 import Foreign.Ptr (Ptr, intPtrToPtr, nullPtr, plusPtr)
 import GHC.ForeignPtr (newForeignPtr_)
 import System.Posix.Types (COff(..))
-import Test.Framework (Test)
-import Test.Framework.Providers.HUnit (testCase)
+import Test.Tasty (TestTree)
+import Test.Tasty.HUnit (testCase)
 import qualified Data.ByteString as B
 
 withMapping :: (Ptr a -> Int -> IO ()) -> IO ()
@@ -43,7 +43,7 @@ hashNearPageBoundary =
     forM_ (B.tails bs0) $ \bs -> do
       evaluate (hash bs)
 
-regressions :: [Test]
+regressions :: [TestTree]
 regressions = [
    testCase "hashNearPageBoundary" hashNearPageBoundary
  ]
