@@ -4,11 +4,11 @@
 module Data.Hashable.Imports (
     Int64, Int32,
     Word64, Word32,
-    xor, shiftR, shiftL,
+    xor, shiftR, shiftL, unsafeShiftL, unsafeShiftR,
     (.&.),
 ) where
 
+import Data.Bits (shiftL, shiftR, unsafeShiftL, unsafeShiftR, xor, (.&.))
+import Data.Int  (Int32, Int64)
+import Data.Word (Word32, Word64)
 import Prelude ()
-import Data.Int (Int64, Int32)
-import Data.Word (Word64, Word32)
-import Data.Bits (xor, shiftR, shiftL, (.&.))

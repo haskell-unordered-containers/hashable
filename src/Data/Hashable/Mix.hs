@@ -2,12 +2,17 @@
 {-# LANGUAGE MagicHash     #-}
 {-# LANGUAGE Trustworthy   #-}
 {-# LANGUAGE UnboxedTuples #-}
-module Data.Hashable.Mix (mixHash) where
+module Data.Hashable.Mix (
+    Salt,
+    mixHash,
+) where
 
 #include "MachDeps.h"
 
 import Data.Bits (unsafeShiftR, xor)
 import GHC.Exts  (Word (..), byteSwap#, timesWord2#, xor#)
+
+type Salt = Int
 
 mulFold :: Word -> Word -> Word
 mulFold (W# x) (W# y) = case timesWord2# x y of

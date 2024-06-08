@@ -13,7 +13,7 @@ module Data.Hashable.LowLevel (
 
 #include "MachDeps.h"
 
-import Foreign.C (CString)
+import Data.Array.Byte (ByteArray (..))
 import Foreign.Ptr (Ptr, castPtr)
 import GHC.Base (ByteArray#)
 
@@ -23,12 +23,11 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Data.Hashable.Imports
 import Data.Hashable.Mix
+import Data.Hashable.XXH3
 
 -------------------------------------------------------------------------------
 -- Initial seed
 -------------------------------------------------------------------------------
-
-type Salt = Int
 
 #ifdef HASHABLE_RANDOM_SEED
 initialSeed :: Word64
@@ -62,20 +61,17 @@ defaultSalt' = -2128831035 -- 2166136261 :: Int32
 -- | Hash 'Int'. First argument is a salt, second argument is an 'Int'.
 -- The result is new salt / hash value.
 hashInt :: Salt -> Int -> Salt
-hashInt s x = fromIntegral (mixHash (fromIntegral s) (fromIntegral x))
-
--- Note: FNV-1 hash takes a byte of data at once, here we take an 'Int',
--- which is 4 or 8 bytes. Whether that's bad or not, I don't know.
+hashInt !s !x = fromIntegral (mixHash (fromIntegral s) (fromIntegral x))
 
 hashInt64  :: Salt -> Int64 -> Salt
 hashWord64 :: Salt -> Word64 -> Salt
 
 #if WORD_SIZE_IN_BITS == 64
-hashInt64  s x = hashInt s (fromIntegral x)
-hashWord64 s x = hashInt s (fromIntegral x)
+hashInt64  !s !x = hashInt s (fromIntegral x)
+hashWord64 !s !x = hashInt s (fromIntegral x)
 #else
-hashInt64  s x = hashInt (hashInt s (fromIntegral x)) (fromIntegral (x `shiftR` 32))
-hashWord64 s x = hashInt (hashInt s (fromIntegral x)) (fromIntegral (x `shiftR` 32))
+hashInt64  !s !x = hashInt (hashInt s (fromIntegral x)) (fromIntegral (x `unsafeShiftR` 32))
+hashWord64 !s !x = hashInt (hashInt s (fromIntegral x)) (fromIntegral (x `unsafeShiftR` 32))
 #endif
 
 -- | Compute a hash value for the content of this pointer, using an
@@ -88,9 +84,8 @@ hashPtrWithSalt :: Ptr a   -- ^ pointer to the data to hash
                 -> Int     -- ^ length, in bytes
                 -> Salt    -- ^ salt
                 -> IO Salt -- ^ hash value
-hashPtrWithSalt p len salt =
-    fromIntegral `fmap` c_hashCString (castPtr p) (fromIntegral len)
-    (fromIntegral salt)
+hashPtrWithSalt ptr len salt =
+    fromIntegral `fmap` xxh3_64bit_withSeed_ptr (castPtr ptr) len (fromIntegral salt)
 
 -- | Compute a hash value for the content of this 'ByteArray#', using
 -- an initial salt.
@@ -104,24 +99,5 @@ hashByteArrayWithSalt
     -> Int         -- ^ length, in bytes
     -> Salt        -- ^ salt
     -> Salt        -- ^ hash value
-hashByteArrayWithSalt ba !off !len !h =
-    fromIntegral $ c_hashByteArray ba (fromIntegral off) (fromIntegral len)
-    (fromIntegral h)
-
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash" c_hashCString
-#if WORD_SIZE_IN_BITS == 64
-    :: CString -> Int64 -> Int64 -> IO Word64
-#else
-    :: CString -> Int32 -> Int32 -> IO Word32
-#endif
-
-#if __GLASGOW_HASKELL__ >= 802
-foreign import capi unsafe "HsHashable.h hashable_fnv_hash_offset" c_hashByteArray
-#else
-foreign import ccall unsafe "hashable_fnv_hash_offset" c_hashByteArray
-#endif
-#if WORD_SIZE_IN_BITS == 64
-    :: ByteArray# -> Int64 -> Int64 -> Int64 -> Word64
-#else
-    :: ByteArray# -> Int32 -> Int32 -> Int32 -> Word32
-#endif
+hashByteArrayWithSalt ba !off !len !salt =
+    fromIntegral (xxh3_64bit_withSeed_ba (ByteArray ba) off len (fromIntegral salt))

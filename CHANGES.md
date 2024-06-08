@@ -3,6 +3,9 @@ See also https://pvp.haskell.org/faq
 ## Version 1.4.5.0
 
   * Drop support for GHCs prior 8.6.5
+  * Use xxhash for hashing bytestrings and bytearrays.
+    Note: when compiling binaries for distribution, you may need to disable
+    `arch-native` flag.
 
 ## Version 1.4.4.0
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE CApiFFI               #-}
 {-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DefaultSignatures     #-}
@@ -68,6 +69,8 @@ module Data.Hashable.Class
 import Control.Applicative    (Const (..))
 import Control.DeepSeq        (NFData (rnf))
 import Control.Exception      (assert)
+import Control.Monad.ST       (runST)
+import Data.Array.Byte        (ByteArray (..))
 import Data.Complex           (Complex (..))
 import Data.Fixed             (Fixed (..))
 import Data.Functor.Classes   (Eq1 (..), Eq2 (..), Ord1 (..), Show1 (..))
@@ -89,7 +92,6 @@ import GHC.Base               (ByteArray#)
 import GHC.Conc               (ThreadId (..))
 import GHC.Fingerprint.Type   (Fingerprint (..))
 import GHC.Word               (Word (..))
-import System.IO.Unsafe       (unsafeDupablePerformIO)
 import System.Mem.StableName  (StableName, hashStableName)
 import Type.Reflection        (SomeTypeRep (..), TypeRep)
 import Type.Reflection.Unsafe (typeRepFingerprint)
@@ -98,7 +100,6 @@ import qualified Data.Array.Byte                as AB
 import qualified Data.ByteString                as B
 import qualified Data.ByteString.Lazy           as BL
 import qualified Data.ByteString.Short.Internal as BSI
-import qualified Data.ByteString.Unsafe         as B
 import qualified Data.Functor.Product           as FP
 import qualified Data.Functor.Sum               as FS
 import qualified Data.IntMap                    as IntMap
@@ -137,17 +138,10 @@ import GHC.Num.Natural (Natural (..))
 #endif
 
 #ifdef VERSION_integer_gmp
-
-# if MIN_VERSION_integer_gmp(1,0,0)
-#  define MIN_VERSION_integer_gmp_1_0_0
-# endif
-
 import GHC.Exts                  (Int (..))
 import GHC.Integer.GMP.Internals (Integer (..))
-# if defined(MIN_VERSION_integer_gmp_1_0_0)
 import GHC.Exts                  (sizeofByteArray#)
 import GHC.Integer.GMP.Internals (BigNat (BN#))
-# endif
 #endif
 
 #ifndef VERSION_ghc_bignum
@@ -194,6 +188,7 @@ import GHC.Num.Orphans ()
 
 import Data.Hashable.Imports
 import Data.Hashable.LowLevel
+import Data.Hashable.XXH3
 
 #include "MachDeps.h"
 
@@ -389,6 +384,7 @@ instance Hashable Word32 where
     hashWithSalt = defaultHashWithSalt
 
 instance Hashable Word64 where
+    hash = fromIntegral
     hashWithSalt = hashWord64
 
 instance Hashable () where
@@ -407,13 +403,9 @@ instance Hashable Char where
     hash = fromEnum
     hashWithSalt = defaultHashWithSalt
 
-#if defined(MIN_VERSION_integer_gmp_1_0_0) || defined(VERSION_ghc_bignum)
+#if defined(VERSION_integer_gmp) || defined(VERSION_ghc_bignum)
 instance Hashable BigNat where
-    hashWithSalt salt (BN# ba) = hashByteArrayWithSalt ba 0 numBytes salt
-                                 `hashWithSalt` size
-      where
-        size     = numBytes `quot` SIZEOF_HSWORD
-        numBytes = I# (sizeofByteArray# ba)
+    hashWithSalt salt (BN# ba) = hashWithSalt salt (ByteArray ba)
 #endif
 
 instance Hashable Natural where
@@ -423,8 +415,7 @@ instance Hashable Natural where
 
     hashWithSalt salt (NS n)  = hashWithSalt salt (W# n)
     hashWithSalt salt (NB bn) = hashWithSalt salt (BN# bn)
-#else
-#if defined(MIN_VERSION_integer_gmp_1_0_0)
+#elif defined(VERSION_integer_gmp)
     hash (NatS# n)   = hash (W# n)
     hash (NatJ# bn)  = hash bn
 
@@ -434,7 +425,6 @@ instance Hashable Natural where
     hash (Natural n) = hash n
 
     hashWithSalt salt (Natural n) = hashWithSalt salt n
-#endif
 #endif
 
 instance Hashable Integer where
@@ -446,9 +436,7 @@ instance Hashable Integer where
     hashWithSalt salt (IS n)  = hashWithSalt salt (I# n)
     hashWithSalt salt (IP bn) = hashWithSalt salt (BN# bn)
     hashWithSalt salt (IN bn) = negate (hashWithSalt salt (BN# bn))
-#else
-#if defined(VERSION_integer_gmp)
-# if defined(MIN_VERSION_integer_gmp_1_0_0)
+#elif defined(VERSION_integer_gmp)
     hash (S# n)   = (I# n)
     hash (Jp# bn) = hash bn
     hash (Jn# bn) = negate (hash bn)
@@ -456,27 +444,6 @@ instance Hashable Integer where
     hashWithSalt salt (S# n)   = hashWithSalt salt (I# n)
     hashWithSalt salt (Jp# bn) = hashWithSalt salt bn
     hashWithSalt salt (Jn# bn) = negate (hashWithSalt salt bn)
-# else
-    hash (S# int) = I# int
-    hash n@(J# size# byteArray)
-        | n >= minInt && n <= maxInt = fromInteger n :: Int
-        | otherwise = let size = I# size#
-                          numBytes = SIZEOF_HSWORD * abs size
-                      in hashByteArrayWithSalt byteArray 0 numBytes defaultSalt
-                         `hashWithSalt` size
-      where minInt = fromIntegral (minBound :: Int)
-            maxInt = fromIntegral (maxBound :: Int)
-
-    hashWithSalt salt (S# n) = hashWithSalt salt (I# n)
-    hashWithSalt salt n@(J# size# byteArray)
-        | n >= minInt && n <= maxInt = hashWithSalt salt (fromInteger n :: Int)
-        | otherwise = let size = I# size#
-                          numBytes = SIZEOF_HSWORD * abs size
-                      in hashByteArrayWithSalt byteArray 0 numBytes salt
-                         `hashWithSalt` size
-      where minInt = fromIntegral (minBound :: Int)
-            maxInt = fromIntegral (maxBound :: Int)
-# endif
 #else
     hashWithSalt salt = foldl' hashWithSalt salt . go
       where
@@ -484,7 +451,6 @@ instance Hashable Integer where
              | otherwise   = fromIntegral n : go (n `shiftR` WORD_SIZE_IN_BITS)
         maxInt = fromIntegral (maxBound :: Int)
         inBounds x = x >= fromIntegral (minBound :: Int) && x <= maxInt
-#endif
 #endif
 
 instance Hashable a => Hashable (Complex a) where
@@ -660,76 +626,102 @@ instance Hashable1 [] where
         step (SP s l) x   = SP (h s x) (l + 1)
 
 instance Hashable B.ByteString where
-    hashWithSalt salt bs = unsafeDupablePerformIO $
-                           B.unsafeUseAsCStringLen bs $ \(p, len) ->
-                           hashPtrWithSalt p (fromIntegral len) (hashWithSalt salt len)
+    hash bs = fromIntegral (xxh3_64bit_withSeed_bs bs 0)
+
+    hashWithSalt salt bs =
+        fromIntegral (xxh3_64bit_withSeed_bs bs (fromIntegral (hashWithSalt salt len)))
+      where
+        len = B.length bs
 
 instance Hashable BL.ByteString where
-    hashWithSalt salt = finalise . BL.foldlChunks step (SP salt 0)
+    hashWithSalt salt lbs = runST $ do
+        s <- xxh3_64bit_createState
+        xxh3_64bit_reset_withSeed s (fromIntegral salt)
+        len <- BL.foldrChunks (step s) return lbs 0
+        xxh3_64bit_update_w64 s len
+        digest <- xxh3_64bit_digest s
+        return (fromIntegral digest)
       where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) bs  = unsafeDupablePerformIO $
-                            B.unsafeUseAsCStringLen bs $ \(p, len) -> do
-                                s' <- hashPtrWithSalt p (fromIntegral len) s
-                                return (SP s' (l + len))
+        step s bs next !acc = do
+            xxh3_64bit_update_bs s bs
+            next (acc + fromIntegral (B.length bs))
 
 instance Hashable BSI.ShortByteString where
-    hashWithSalt salt sbs@(BSI.SBS ba) =
-        hashByteArrayWithSalt ba 0 (BSI.length sbs) (hashWithSalt salt (BSI.length sbs))
+    hash (BSI.SBS ba) = hash (ByteArray ba)
+    hashWithSalt salt (BSI.SBS ba) = hashWithSalt salt (ByteArray ba)
 
 #if HAS_OS_STRING_filepath || HAS_OS_STRING_os_string
 -- | @since 1.4.2.0
 instance Hashable PosixString where
+    hash (PosixString s) = hash s
     hashWithSalt salt (PosixString s) = hashWithSalt salt s
 
 -- | @since 1.4.2.0
 instance Hashable WindowsString where
+    hash (WindowsString s) = hash s
     hashWithSalt salt (WindowsString s) = hashWithSalt salt s
 
 -- | @since 1.4.2.0
 instance Hashable OsString where
+    hash (OsString s) = hash s
     hashWithSalt salt (OsString s) = hashWithSalt salt s
 #endif
 
 #if HAS_OS_STRING_filepath && HAS_OS_STRING_os_string
 instance Hashable FP.PosixString where
+    hash (FP.PosixString s) = hash s
     hashWithSalt salt (FP.PosixString s) = hashWithSalt salt s
 
 instance Hashable FP.WindowsString where
+    hash (FP.WindowsString s) = hash s
     hashWithSalt salt (FP.WindowsString s) = hashWithSalt salt s
 
 instance Hashable FP.OsString where
+    hash (FP.OsString s) = hash s
     hashWithSalt salt (FP.OsString s) = hashWithSalt salt s
 #endif
 
 #if MIN_VERSION_text(2,0,0)
 
 instance Hashable T.Text where
+    hash (T.Text (TA.ByteArray arr) off len) =
+        fromIntegral (xxh3_64bit_withSeed_ba (ByteArray arr) off len 0)
     hashWithSalt salt (T.Text (TA.ByteArray arr) off len) =
-        hashByteArrayWithSalt arr off len (hashWithSalt salt len)
+        fromIntegral (xxh3_64bit_withSeed_ba (ByteArray arr) off len (fromIntegral (hashWithSalt salt len)))
 
 instance Hashable TL.Text where
-    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
+    hashWithSalt salt lt = runST $ do
+        s <- xxh3_64bit_createState
+        xxh3_64bit_reset_withSeed s (fromIntegral salt)
+        len <- TL.foldrChunks (step s) return lt 0
+        xxh3_64bit_update_w64 s len
+        digest <- xxh3_64bit_digest s
+        return (fromIntegral digest)
       where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) (T.Text (TA.ByteArray arr) off len) = SP
-            (hashByteArrayWithSalt arr off len s)
-            (l + len)
+        step s (T.Text (TA.ByteArray arr) off len) next !acc = do
+            xxh3_64bit_update_ba s (ByteArray arr) off len
+            next (acc + fromIntegral len)
 
 #else
 
 instance Hashable T.Text where
+    hash (T.Text arr off len) =
+        fromIntegral (xxh3_64bit_withSeed_ba (ByteArray (TA.aBA arr)) (unsafeShiftL off 1) (unsafeShiftL len 1) 0)
     hashWithSalt salt (T.Text arr off len) =
-        hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1)
-        (hashWithSalt salt len)
+        fromIntegral (xxh3_64bit_withSeed_ba (ByteArray (TA.aBA arr)) (unsafeShiftL off 1) (unsafeShiftL len 1) (fromIntegral (hashWithSalt salt len)))
 
 instance Hashable TL.Text where
-    hashWithSalt salt = finalise . TL.foldlChunks step (SP salt 0)
+    hashWithSalt salt lt = runST $ do
+        s <- xxh3_64bit_createState
+        xxh3_64bit_reset_withSeed s (fromIntegral salt)
+        len <- TL.foldrChunks (step s) return lt 0
+        xxh3_64bit_update_w64 s len
+        digest <- xxh3_64bit_digest s
+        return (fromIntegral digest)
       where
-        finalise (SP s l) = hashWithSalt s l
-        step (SP s l) (T.Text arr off len) = SP
-            (hashByteArrayWithSalt (TA.aBA arr) (off `shiftL` 1) (len `shiftL` 1) s)
-            (l + len)
+        step s (T.Text arr off len) next !acc = do
+            xxh3_64bit_update_ba s (ByteArray (TA.aBA arr)) (unsafeShiftL off 1) (unsafeShiftL len 1)
+            next (acc + fromIntegral len)
 
 #endif
 
@@ -930,12 +922,15 @@ instance (Hashable1 f, Hashable1 g, Hashable a) => Hashable (FS.Sum f g a) where
 -- @since 1.4.2.0
 --
 instance Hashable AB.ByteArray where
-    hashWithSalt salt (AB.ByteArray ba) =
-        hashByteArrayWithSalt ba 0 numBytes salt
-        `hashWithSalt` size
+    hash ba@(AB.ByteArray ba') =
+        fromIntegral (xxh3_64bit_withSeed_ba ba 0 len 0)
       where
-        size     = numBytes `quot` SIZEOF_HSWORD
-        numBytes = I# (sizeofByteArray# ba)
+        !len = I# (sizeofByteArray# ba')
+
+    hashWithSalt salt ba@(AB.ByteArray ba') =
+        fromIntegral (xxh3_64bit_withSeed_ba ba 0 len (fromIntegral (hashWithSalt salt len)))
+      where
+        !len = I# (sizeofByteArray# ba')
 
 -------------------------------------------------------------------------------
 -- Hashed
