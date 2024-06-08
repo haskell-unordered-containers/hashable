@@ -868,8 +868,8 @@ instance (Hashable1 f, Hashable1 g) => Hashable1 (FS.Sum f g) where
     liftHashWithSalt h s (FS.InR a) = liftHashWithSalt h (s `hashInt` distinguisher) a
 
 instance (Hashable (f a), Hashable (g a)) => Hashable (FS.Sum f g a) where
-    hashWithSalt s (FS.InL a) = hashWithSalt (s `hashWord` 0) a
-    hashWithSalt s (FS.InR a) = hashWithSalt (s `hashWord` distinguisher) a
+    hashWithSalt s (FS.InL a) = hashWithSalt (s `hashInt` 0) a
+    hashWithSalt s (FS.InR a) = hashWithSalt (s `hashInt` distinguisher) a
 
 -- | This instance was available since 1.4.1.0 only for GHC-9.4+
 --
