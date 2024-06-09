@@ -1,16 +1,20 @@
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE CApiFFI               #-}
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE MagicHash             #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PackageImports        #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE Trustworthy           #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UnliftedFFITypes      #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE CApiFFI                    #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MagicHash                  #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PackageImports             #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE Trustworthy                #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UnliftedFFITypes           #-}
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -652,33 +656,19 @@ instance Hashable BSI.ShortByteString where
 
 #if HAS_OS_STRING_filepath || HAS_OS_STRING_os_string
 -- | @since 1.4.2.0
-instance Hashable PosixString where
-    hash (PosixString s) = hash s
-    hashWithSalt salt (PosixString s) = hashWithSalt salt s
+deriving newtype instance Hashable PosixString
 
 -- | @since 1.4.2.0
-instance Hashable WindowsString where
-    hash (WindowsString s) = hash s
-    hashWithSalt salt (WindowsString s) = hashWithSalt salt s
+deriving newtype instance Hashable WindowsString
 
 -- | @since 1.4.2.0
-instance Hashable OsString where
-    hash (OsString s) = hash s
-    hashWithSalt salt (OsString s) = hashWithSalt salt s
+deriving newtype instance Hashable OsString
 #endif
 
 #if HAS_OS_STRING_filepath && HAS_OS_STRING_os_string
-instance Hashable FP.PosixString where
-    hash (FP.PosixString s) = hash s
-    hashWithSalt salt (FP.PosixString s) = hashWithSalt salt s
-
-instance Hashable FP.WindowsString where
-    hash (FP.WindowsString s) = hash s
-    hashWithSalt salt (FP.WindowsString s) = hashWithSalt salt s
-
-instance Hashable FP.OsString where
-    hash (FP.OsString s) = hash s
-    hashWithSalt salt (FP.OsString s) = hashWithSalt salt s
+deriving newtype instance Hashable FP.PosixString
+deriving newtype instance Hashable FP.WindowsString
+deriving newtype instance Hashable FP.OsString
 #endif
 
 #if MIN_VERSION_text(2,0,0)
@@ -811,17 +801,14 @@ instance Hashable Version where
     hashWithSalt salt (Version branch tags) =
         salt `hashWithSalt` branch `hashWithSalt` tags
 
-instance Hashable (Fixed a) where
-    hashWithSalt salt (MkFixed i) = hashWithSalt salt i
+deriving newtype instance Hashable (Fixed a)
 
-instance Hashable a => Hashable (Identity a) where
-    hashWithSalt = hashWithSalt1
+deriving newtype instance Hashable a => Hashable (Identity a)
 instance Hashable1 Identity where
     liftHashWithSalt h salt (Identity x) = h salt x
 
 -- Using hashWithSalt1 would cause needless constraint
-instance Hashable a => Hashable (Const a b) where
-    hashWithSalt salt (Const x) = hashWithSalt salt x
+deriving newtype instance Hashable a => Hashable (Const a b)
 
 instance Hashable a => Hashable1 (Const a) where
     liftHashWithSalt = defaultLiftHashWithSalt
@@ -843,11 +830,8 @@ instance Hashable a => Hashable (NE.NonEmpty a) where
 instance Hashable1 NE.NonEmpty where
     liftHashWithSalt h salt (a NE.:| as) = liftHashWithSalt h (h salt a) as
 
-instance Hashable a => Hashable (Semi.Min a) where
-    hashWithSalt p (Semi.Min a) = hashWithSalt p a
-
-instance Hashable a => Hashable (Semi.Max a) where
-    hashWithSalt p (Semi.Max a) = hashWithSalt p a
+deriving newtype instance Hashable a => Hashable (Semi.Min a)
+deriving newtype instance Hashable a => Hashable (Semi.Max a)
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
@@ -855,22 +839,12 @@ instance Hashable a => Hashable (Semi.Max a) where
 instance Hashable a => Hashable (Semi.Arg a b) where
     hashWithSalt p (Semi.Arg a _) = hashWithSalt p a
 
-instance Hashable a => Hashable (Semi.First a) where
-    hashWithSalt p (Semi.First a) = hashWithSalt p a
-
-
-instance Hashable a => Hashable (Semi.Last a) where
-    hashWithSalt p (Semi.Last a) = hashWithSalt p a
-
-
-instance Hashable a => Hashable (Semi.WrappedMonoid a) where
-    hashWithSalt p (Semi.WrapMonoid a) = hashWithSalt p a
-
+deriving newtype instance Hashable a => Hashable (Semi.First a)
+deriving newtype instance Hashable a => Hashable (Semi.Last a)
+deriving newtype instance Hashable a => Hashable (Semi.WrappedMonoid a)
 
 #if !MIN_VERSION_base(4,16,0)
-instance Hashable a => Hashable (Semi.Option a) where
-    hashWithSalt p (Semi.Option a) = hashWithSalt p a
-
+deriving newtype instance Hashable a => Hashable (Semi.Option a)
 #endif
 
 -- TODO: this instance is removed as there isn't Eq1 Min/Max, ...
