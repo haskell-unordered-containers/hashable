@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.6.0
+
+  * Use GND&DerivingVia to derive `newtype` intances (`Data.Semigroup`, `Data.Monoid`, `Identity` etc).
+
 ## Version 1.4.5.0
 
   * Drop support for GHCs prior 8.6.5
