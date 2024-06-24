@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.4.7.0
+
+  * Make `arch-native` disabled by default.
+
 ## Version 1.4.6.0
 
   * Use GND&DerivingVia to derive `newtype` intances (`Data.Semigroup`, `Data.Monoid`, `Identity` etc).
