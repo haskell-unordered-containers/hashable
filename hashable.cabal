@@ -1,6 +1,6 @@
 cabal-version:      2.2
 name:               hashable
-version:            1.4.6.0
+version:            1.4.7.0
 synopsis:           A class for types that can be converted to a hash value
 description:
   This package defines a class, 'Hashable', for types that can be converted to a hash value.
@@ -61,10 +61,11 @@ flag integer-gmp
 flag arch-native
   description:
     Use @-march=native@ when compiling C sources.
-    You may need to disable this flag if you are building distributable binaries
+    Portable implementation is 15-50% slower.
+    Consider enabling this flag if hashing performance is important.
 
   manual:      True
-  default:     True
+  default:     False
 
 flag random-initial-seed
   description:
