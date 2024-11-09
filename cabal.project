@@ -1,6 +1,7 @@
 packages: .
 tests: True
 
+allow-newer: splitmix:base
 --
 -- allow-newer: base
 -- allow-newer: bytestring

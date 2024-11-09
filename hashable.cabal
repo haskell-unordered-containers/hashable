@@ -31,7 +31,7 @@ bug-reports:
 stability:          Provisional
 category:           Data
 build-type:         Simple
-tested-with:        GHC ==9.6.5 || ==9.8.2 || ==9.10.1
+tested-with:        GHC ==9.6.5 || ==9.8.2 || ==9.10.1 || ==9.12.1
 extra-source-files:
   CHANGES.md
   include/HsHashable.h
@@ -81,7 +81,7 @@ library
 
   hs-source-dirs:   src
   build-depends:
-    , base        >=4.18.0.0 && <4.21
+    , base        >=4.18.0.0 && <4.22
     , bytestring  >=0.11.5.3 && <0.13
     , containers  >=0.6.7    && <0.8
     , deepseq     >=1.4.8.1  && <1.6
@@ -182,7 +182,7 @@ test-suite xxhash-tests
 
   default-language: Haskell2010
   build-depends:
-    , base
+    , base              <5
     , bytestring
     , primitive         ^>=0.9.0.0
     , tasty             ^>=1.5
