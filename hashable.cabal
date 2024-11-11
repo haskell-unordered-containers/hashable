@@ -31,7 +31,7 @@ bug-reports:
 stability:          Provisional
 category:           Data
 build-type:         Simple
-tested-with:        GHC ==9.6.5 || ==9.8.2 || ==9.10.1 || ==9.12.1
+tested-with:        GHC ==9.6.5 || ==9.8.2 || ==9.8.3 || ==9.10.1 || ==9.12.1
 extra-source-files:
   CHANGES.md
   include/HsHashable.h
