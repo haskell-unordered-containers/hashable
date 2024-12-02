@@ -1,7 +1,9 @@
 packages: .
 tests: True
 
-allow-newer: splitmix:base
+allow-newer: splitmix-0.1.0.5:base
+allow-newer: tagged-0.8.8:template-haskell
+
 --
 -- allow-newer: base
 -- allow-newer: bytestring
