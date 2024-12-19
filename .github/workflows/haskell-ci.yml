@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20241202
+# version: 0.19.20241219
 #
-# REGENDATA ("0.19.20241202",["github","cabal.project"])
+# REGENDATA ("0.19.20241219",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,10 +32,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.12.0.20241128
+          - compiler: ghc-9.12.1
             compilerKind: ghc
-            compilerVersion: 9.12.0.20241128
-            setup-method: ghcup-prerelease
+            compilerVersion: 9.12.1
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.10.1
             compilerKind: ghc
@@ -68,10 +68,11 @@ jobs:
           mkdir -p "$HOME/.ghcup/bin"
           curl -sL https://downloads.haskell.org/ghcup/0.1.30.0/x86_64-linux-ghcup-0.1.30.0 > "$HOME/.ghcup/bin/ghcup"
           chmod a+x "$HOME/.ghcup/bin/ghcup"
-      - name: Install cabal-install
+      - name: Install cabal-install (prerelease)
         run: |
-          "$HOME/.ghcup/bin/ghcup" install cabal 3.12.1.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
-          echo "CABAL=$HOME/.ghcup/bin/cabal-3.12.1.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+          "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.8.yaml;
+          "$HOME/.ghcup/bin/ghcup" install cabal 3.15.0.0.2024.10.3 || (cat "$HOME"/.ghcup/logs/*.* && false)
+          echo "CABAL=$HOME/.ghcup/bin/cabal-3.15.0.0.2024.10.3 -vnormal+nowrap" >> "$GITHUB_ENV"
       - name: Install GHC (GHCup)
         if: matrix.setup-method == 'ghcup'
         run: |
@@ -90,21 +91,6 @@ jobs:
         if: matrix.setup-method == 'ghcup-vanilla'
         run: |
           "$HOME/.ghcup/bin/ghcup" -s https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-vanilla-0.0.8.yaml install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
-          HC=$("$HOME/.ghcup/bin/ghcup" whereis ghc "$HCVER")
-          HCPKG=$(echo "$HC" | sed 's#ghc$#ghc-pkg#')
-          HADDOCK=$(echo "$HC" | sed 's#ghc$#haddock#')
-          echo "HC=$HC" >> "$GITHUB_ENV"
-          echo "HCPKG=$HCPKG" >> "$GITHUB_ENV"
-          echo "HADDOCK=$HADDOCK" >> "$GITHUB_ENV"
-        env:
-          HCKIND: ${{ matrix.compilerKind }}
-          HCNAME: ${{ matrix.compiler }}
-          HCVER: ${{ matrix.compilerVersion }}
-      - name: Install GHC (GHCup prerelease)
-        if: matrix.setup-method == 'ghcup-prerelease'
-        run: |
-          "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.8.yaml;
-          "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
           HC=$("$HOME/.ghcup/bin/ghcup" whereis ghc "$HCVER")
           HCPKG=$(echo "$HC" | sed 's#ghc$#ghc-pkg#')
           HADDOCK=$(echo "$HC" | sed 's#ghc$#haddock#')
@@ -204,7 +190,6 @@ jobs:
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
           allow-newer: splitmix-0.1.0.5:base
-          allow-newer: tagged-0.8.8:template-haskell
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: any.$_ installed\n" unless /^(hashable)$/; }' >> cabal.project.local
           cat cabal.project

@@ -1,6 +1,7 @@
 cabal-version:      2.2
 name:               hashable
 version:            1.5.0.0
+x-revision:         1
 synopsis:           A class for types that can be converted to a hash value
 description:
   This package defines a class, 'Hashable', for types that can be converted to a hash value.
@@ -31,7 +32,9 @@ bug-reports:
 stability:          Provisional
 category:           Data
 build-type:         Simple
-tested-with:        GHC ==9.6.5 || ==9.8.2 || ==9.8.3 || ==9.10.1 || ==9.12.1
+tested-with:
+  GHC ==9.6.5 || ==9.8.2 || ==9.8.3 || ==9.10.1 || ==9.12.1
+
 extra-source-files:
   CHANGES.md
   include/HsHashable.h
@@ -157,7 +160,7 @@ test-suite hashable-tests
     , random            >=1.0      && <1.3
     , tasty             ^>=1.5
     , tasty-hunit       ^>=0.10.1
-    , tasty-quickcheck  ^>=0.10.3
+    , tasty-quickcheck  ^>=0.10.3  || ^>=0.11
     , text              >=0.11.0.5
 
   if impl(ghc >=9.2)
@@ -187,7 +190,7 @@ test-suite xxhash-tests
     , primitive         ^>=0.9.0.0
     , tasty             ^>=1.5
     , tasty-hunit       ^>=0.10.1
-    , tasty-quickcheck  ^>=0.10.3
+    , tasty-quickcheck  ^>=0.10.3  || ^>=0.11
 
   include-dirs:     include xxHash-0.8.2
   includes:
