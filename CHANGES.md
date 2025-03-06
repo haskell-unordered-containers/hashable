@@ -1,5 +1,9 @@
 See also https://pvp.haskell.org/faq
 
+## Version 1.5.1.0
+
+  * Update xxHash to version 0.8.3
+
 ## Version 1.5.0.0
 
   * Add `QuantifiedConstraints` superclasses to `Hashable1/2`:

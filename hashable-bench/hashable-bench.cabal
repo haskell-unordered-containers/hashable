@@ -27,7 +27,7 @@ tested-with:
 extra-source-files:
   include/HsHashable.h
   include/HsXXHash.h
-  xxHash-0.8.2/xxhash.h
+  xxHash-0.8.3/xxhash.h
 
 library
   exposed-modules:
@@ -44,7 +44,7 @@ library
     Data.Hashable.Mix
     Data.Hashable.XXH3
 
-  include-dirs:     include xxHash-0.8.2/
+  include-dirs:     include xxHash-0.8.3/
   includes:
     HsHashable.h
     HsXXHash.h
