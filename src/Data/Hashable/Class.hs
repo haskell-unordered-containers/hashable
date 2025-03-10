@@ -777,6 +777,8 @@ deriving newtype instance Hashable a => Hashable (Semi.Min a)
 deriving newtype instance Hashable a => Hashable (Semi.Max a)
 
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
+-- Additionally, as of @hashable-1.3.0.0@, and going forward as part of the API guarantee, the hash of @'Arg' a _@ is the same value as the hash of @a@.
+-- This means that it's safe to add and remove 'Arg' from elements stored in hash-indexed data structures without changing any hashes.
 --
 -- Since @hashable-1.5.0.0@, @hash (Semi.arg a _) = hash a@
 --
