@@ -776,6 +776,9 @@ instance Hashable1 NE.NonEmpty where
 deriving newtype instance Hashable a => Hashable (Semi.Min a)
 deriving newtype instance Hashable a => Hashable (Semi.Max a)
 
+deriving newtype instance Hashable a => Hashable (Semi.Sum a)
+deriving newtype instance Hashable a => Hashable (Semi.Product a)
+
 -- | __Note__: Prior to @hashable-1.3.0.0@ the hash computation included the second argument of 'Arg' which wasn't consistent with its 'Eq' instance.
 --
 -- Since @hashable-1.5.0.0@, @hash (Semi.arg a _) = hash a@
