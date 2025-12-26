@@ -87,7 +87,6 @@ library
     , bytestring  >=0.11.5.3 && <0.13
     , containers  >=0.6.7    && <0.8
     , deepseq     >=1.4.8.1  && <1.6
-    , ghc-prim
     , text        >=2.0.2    && <2.2
 
   -- depend on os-string on newer GHCs only.
@@ -152,7 +151,6 @@ test-suite hashable-tests
     , base
     , bytestring
     , filepath
-    , ghc-prim
     , hashable
     , HUnit
     , QuickCheck        >=2.15
@@ -203,7 +201,6 @@ test-suite hashable-examples
   type:             exitcode-stdio-1.0
   build-depends:
     , base
-    , ghc-prim
     , hashable
 
   hs-source-dirs:   examples

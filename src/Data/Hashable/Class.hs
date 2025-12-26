@@ -124,7 +124,7 @@ import GHC.Generics
 #if MIN_VERSION_base(4,19,0)
 import GHC.Conc.Sync (fromThreadId)
 #else
-import GHC.Prim (ThreadId#)
+import GHC.Exts (ThreadId#)
 #if __GLASGOW_HASKELL__ >= 904
 import Foreign.C.Types (CULLong (..))
 #elif __GLASGOW_HASKELL__ >= 900
