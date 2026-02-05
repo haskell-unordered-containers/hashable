@@ -92,6 +92,9 @@ library
   if impl(ghc <9.8)
     build-depends: ghc-prim
 
+  if impl(ghc >9.14)
+    build-depends: ghc-bignum >= 1.3 && < 1.5
+
   -- depend on os-string on newer GHCs only.
   -- os-string has tight lower bound on bytestring, which prevents
   -- using bundled version on older GHCs.
