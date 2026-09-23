@@ -32,7 +32,7 @@ stability:          Provisional
 category:           Data
 build-type:         Simple
 tested-with:
-  GHC ==9.6.5 || ==9.8.2 || ==9.8.3 || ==9.10.2 || ==9.12.2 || ==9.14.1
+  GHC ==9.6.5 || ==9.8.2 || ==9.8.3 || ==9.10.2 || ==9.12.2 || ==9.14.1 || ==10.0.1
 
 extra-source-files:
   CHANGES.md
@@ -83,7 +83,7 @@ library
 
   hs-source-dirs:   src
   build-depends:
-    , base        >=4.18.0.0 && <4.23
+    , base        >=4.18.0.0 && <4.24
     , bytestring  >=0.11.5.3 && <0.13
     , containers  >=0.6.7    && <0.9
     , deepseq     >=1.4.8.1  && <1.6
@@ -100,6 +100,9 @@ library
   -- we also ensure that we can get filepath-1.5 only with GHC-9.2
   -- therefore there is else-branch with stricter upper bound.
   build-depends:    filepath >=1.4.200.1 && <1.6
+
+  if impl(ghc >=10.0)
+    build-depends: ghc-bignum >=1.4 && <1.5
 
   if (flag(random-initial-seed) && impl(ghc))
     cpp-options: -DHASHABLE_RANDOM_SEED=1
